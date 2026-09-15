@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Check, Search, Filter, Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { X, Check, Search, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export type BankQuestion = {
@@ -76,15 +76,23 @@ export default function QuestionBankSelectorModal({
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedIds(initialSelectedIds);
-      if (quizSubject) setSelectedSubject(quizSubject);
-      if (quizStream) setSelectedStream(quizStream);
+      const resetTimer = window.setTimeout(() => {
+        setSelectedIds(initialSelectedIds);
+        if (quizSubject) setSelectedSubject(quizSubject);
+        if (quizStream) setSelectedStream(quizStream);
+      }, 0);
+
+      return () => window.clearTimeout(resetTimer);
     }
   }, [isOpen, initialSelectedIds, quizSubject, quizStream]);
 
   useEffect(() => {
     if (isOpen) {
-      loadBankQuestions();
+      const loadTimer = window.setTimeout(() => {
+        void loadBankQuestions();
+      }, 0);
+
+      return () => window.clearTimeout(loadTimer);
     }
   }, [isOpen, loadBankQuestions]);
 
