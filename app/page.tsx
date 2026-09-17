@@ -2,7 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Trophy, LayoutDashboard, UserPlus, LogIn, ShieldCheck } from "lucide-react";
+import {
+  GraduationCap,
+  Trophy,
+  LayoutDashboard,
+  UserPlus,
+  LogIn,
+  ShieldCheck,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function HomePage() {
@@ -11,7 +18,9 @@ export default function HomePage() {
 
   useEffect(() => {
     async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setIsLoggedIn(true);
       }
@@ -23,12 +32,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-6 text-center">
       <div className="max-w-2xl bg-white p-8 sm:p-10 rounded-2xl shadow-sm border border-gray-200 space-y-6">
-        
         {/* Logo Badge */}
         <div className="inline-flex p-4 bg-blue-50 text-blue-600 rounded-2xl">
           <GraduationCap className="w-12 h-12" />
         </div>
-        
+
         {/* Title & Subtitle */}
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
@@ -43,7 +51,7 @@ export default function HomePage() {
           A/L විද්‍යා අංශයේ (Bio & Maths) සිසුන් සඳහා සජීවී ඔන්ලයින් ප්‍රශ්න පත්‍ර, ක්ෂණික ලකුණු විශ්ලේෂණය සහ දිවයිනේ හා පාසල් මට්ටමේ Real-time Leaderboards.
         </p>
 
-        {/* Student Action Buttons */}
+        {/* Action Buttons */}
         {!loading && (
           <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
             {isLoggedIn ? (
@@ -74,12 +82,6 @@ export default function HomePage() {
                   className="px-6 py-3.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-5 h-5" /> Student Login
-                </Link>
-                <Link
-                  href="/student/leaderboard"
-                  className="px-6 py-3.5 border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium rounded-xl transition flex items-center justify-center gap-2"
-                >
-                  <Trophy className="w-5 h-5 text-yellow-500" /> Leaderboard
                 </Link>
               </>
             )}

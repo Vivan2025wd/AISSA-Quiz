@@ -2,12 +2,15 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn, Mail, Lock, ArrowRight, ShieldCheck, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
+
 export default function StudentLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
 
   // Step 1: password login
   const [email, setEmail] = useState("");
@@ -17,7 +20,15 @@ export default function StudentLoginPage() {
   const [needsAdminCode, setNeedsAdminCode] = useState(false);
   const [adminCode, setAdminCode] = useState("");
 
-  const [error, setError] = useState("");
+  // Pre-populated when we've been redirected here (e.g. from the
+  // dashboard guard) because the auth user has no matching
+  // profiles row — surfaces the same message shown when the
+  // no-profile case is caught inline during login below.
+  const [error, setError] = useState(
+    reason === "no_profile"
+      ? "ඔබගේ ගිණුම සම්පූර්ණ නැත — කරුණාකර නැවත ලියාපදිංචි වන්න."
+      : ""
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
