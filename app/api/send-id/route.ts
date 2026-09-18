@@ -4,8 +4,6 @@ import { Resend } from "resend";
 
 export const runtime = "nodejs"; // required for Resend's Node SDK
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const NON_AISSA_REGEX =
   /^N(\d{2})([A-Z]{2,6})(\d{3})-([A-Z0-9]{2,6})-([A-Z]{2,4})$/;
 
@@ -13,6 +11,15 @@ interface SendIdPayload {
   email: string;
   fullName: string;
   aisId: string;
+}
+
+// Dynamic helper function to initialize Resend strictly at runtime
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+  return new Resend(apiKey);
 }
 
 function buildHtml(fullName: string, aisId: string): string {
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
 
   const { email, fullName, aisId } = body ?? ({} as SendIdPayload);
 
-  // ---- 2. Validate --------------------------------------------------------
+  // ---- 2. Validate inputs -------------------------------------------------
   if (!email || typeof email !== "string" || !email.includes("@")) {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
@@ -91,15 +98,21 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (!process.env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY is not configured");
+
+  // ---- 3. Safely initialize Resend client ---------------------------------
+  let resend: Resend;
+  try {
+    resend = getResendClient();
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown initialization error";
+    console.error("Resend Initialization Error:", errorMessage);
     return NextResponse.json(
       { error: "Email service not configured" },
       { status: 500 },
     );
   }
 
-  // ---- 3. Send via Resend -------------------------------------------------
+  // ---- 4. Send via Resend -------------------------------------------------
   try {
     const { error: sendError } = await resend.emails.send({
       from:
@@ -120,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("Unexpected /api/send-id error:", err);
     return NextResponse.json(
       { error: "Unexpected error sending email" },
