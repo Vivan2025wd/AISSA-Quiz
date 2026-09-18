@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Loader2,
   AlertTriangle,
-  XCircle,
   Eye,
   Hourglass,
   Sparkles,
@@ -578,7 +577,6 @@ function QuizShell({
 // REVIEW MODE
 // ---------------------------------------------------------------------------
 function ReviewMode({
-  quiz,
   questions,
   myResult,
   reviewIndex,
