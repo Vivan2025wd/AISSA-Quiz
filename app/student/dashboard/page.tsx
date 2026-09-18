@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -14,16 +14,24 @@ import {
   Target,
   Timer,
   AlertTriangle,
+  Hourglass,
 } from "lucide-react";
+import {
+  getQuizWindowStatus,
+  msUntilEnd,
+  msUntilStart,
+  formatCountdown,
+} from "@/lib/quiz-window";
 
 type Quiz = {
   id: string;
   title: string;
   subject?: string | null;
   stream?: string | null;
-  duration_minutes?: number | null;
+  duration_minutes: number;
   total_questions?: number | null;
   is_live?: boolean | null;
+  scheduled_at: string | null;
   created_at?: string | null;
 };
 
@@ -34,7 +42,6 @@ type Profile = {
   stream?: string | null;
 };
 
-// Aggregates returned by the get_student_stats() RPC (migration 015).
 type StudentStats = {
   quizzes_completed: number | null;
   total_score: number | null;
@@ -43,9 +50,9 @@ type StudentStats = {
   island_rank: number | null;
 };
 
-// Row shape from quiz_results joined against quizzes.
 type PastQuizRow = {
   id: string;
+  quiz_id: string;
   score: number;
   total_marks: number;
   time_spent_seconds: number;
@@ -71,7 +78,6 @@ function formatDuration(seconds: number) {
   return `${m}m ${s}s`;
 }
 
-// Compact: "2h 14m" / "45m 30s" / "45s"
 function formatTotalTime(seconds: number | null | undefined) {
   if (!seconds || seconds <= 0) return "—";
   const h = Math.floor(seconds / 3600);
@@ -92,90 +98,84 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [guardError, setGuardError] = useState<string | null>(null);
 
-  const averageScoreText =
-    typeof stats?.average_score === "number" ? `${stats.average_score}%` : "N/A";
+  // Re-render every 30s so "start in ..." countdowns and "ends in ..."
+  // badges stay fresh without manual refresh.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const load = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, full_name, school, stream")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      setGuardError("Profile එක load කිරීමේදී දෝෂයක් ඇති විය.");
+      setLoading(false);
+      return;
+    }
+
+    if (!profileData) {
+      await supabase.auth.signOut();
+      router.replace("/auth/login?reason=no_profile");
+      return;
+    }
+
+    setProfile(profileData);
+
+    const { data: statsData } = await supabase.rpc("get_student_stats", {
+      p_student_id: user.id,
+    });
+    if (statsData && statsData.length > 0) setStats(statsData[0]);
+
+    const { data: resultsData } = await supabase
+      .from("quiz_results")
+      .select(
+        "id, quiz_id, score, total_marks, time_spent_seconds, submitted_at, quizzes(title, subject, stream)",
+      )
+      .eq("student_id", user.id)
+      .order("submitted_at", { ascending: false });
+
+    if (resultsData) {
+      setPastQuizzes(resultsData as unknown as PastQuizRow[]);
+    }
+
+    // Fetch quizzes with time info
+    const { data: quizData } = await supabase
+      .from("quizzes")
+      .select(
+        "id, title, subject, stream, duration_minutes, total_questions, is_live, scheduled_at, created_at",
+      )
+      .eq("is_live", true)
+      .order("scheduled_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+
+    setQuizzes((quizData as Quiz[]) ?? []);
+    setLoading(false);
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
-
-    async function loadDashboardData() {
-      // ---- 1. Auth check ---------------------------------------------
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.replace("/auth/login");
-        return;
-      }
-
-      // ---- 2. Registration check (must have a profiles row) ----------
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, full_name, school, stream")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (profileError) {
-        setGuardError("Profile එක load කිරීමේදී දෝෂයක් ඇති විය.");
-        setLoading(false);
-        return;
-      }
-
-      if (!profileData) {
-        // Half-set-up account: sign out and push back through login.
-        await supabase.auth.signOut();
-        router.replace("/auth/login?reason=no_profile");
-        return;
-      }
-
-      setProfile(profileData);
-
-      // ---- 3. Student stats (RPC — matches leaderboard ranking) ------
-      const { data: statsData, error: statsError } = await supabase.rpc(
-        "get_student_stats",
-        { p_student_id: user.id },
-      );
-
-      if (statsError) {
-        console.warn("get_student_stats error:", statsError.message);
-      } else if (statsData && statsData.length > 0) {
-        setStats(statsData[0]);
-      }
-
-      // ---- 4. Past quiz results --------------------------------------
-      const { data: resultsData } = await supabase
-        .from("quiz_results")
-        .select(
-          "id, score, total_marks, time_spent_seconds, submitted_at, quizzes(title, subject, stream)",
-        )
-        .eq("student_id", user.id)
-        .order("submitted_at", { ascending: false });
-
-      if (!cancelled && resultsData) {
-        setPastQuizzes(resultsData as unknown as PastQuizRow[]);
-      }
-
-      // ---- 5. Active live quizzes ------------------------------------
-      const { data: quizData } = await supabase
-        .from("quizzes")
-        .select("*")
-        .eq("is_live", true)
-        .order("created_at", { ascending: false });
-
-      if (!cancelled) {
-        if (quizData) setQuizzes(quizData);
-        setLoading(false);
-      }
-    }
-
-    loadDashboardData();
+    void (async () => {
+      if (!cancelled) await load();
+    })();
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [load]);
 
   if (loading) {
     return (
@@ -188,10 +188,7 @@ export default function StudentDashboard() {
       <div className="p-8 max-w-md mx-auto text-center space-y-3">
         <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
         <p className="text-red-600 font-medium">{guardError}</p>
-        <Link
-          href="/auth/login"
-          className="text-sm text-blue-600 hover:underline"
-        >
+        <Link href="/auth/login" className="text-sm text-blue-600 hover:underline">
           ← නැවත Login වෙත
         </Link>
       </div>
@@ -199,6 +196,18 @@ export default function StudentDashboard() {
   }
 
   const hasAttempts = (stats?.quizzes_completed ?? 0) > 0;
+  const averageScoreText =
+    typeof stats?.average_score === "number" ? `${stats.average_score}%` : "N/A";
+
+  // Split by window status
+  const activeQuizzes: Quiz[] = [];
+  const upcomingQuizzes: Quiz[] = [];
+  for (const q of quizzes) {
+    const status = getQuizWindowStatus(q);
+    if (status === "active" || status === "unscheduled") activeQuizzes.push(q);
+    else if (status === "upcoming") upcomingQuizzes.push(q);
+    // expired → not shown in live area; visible via past-quiz history/review
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -220,76 +229,43 @@ export default function StudentDashboard() {
             href="/student/leaderboard"
             className="px-5 py-2.5 bg-white text-blue-900 font-bold rounded-xl hover:bg-blue-50 transition shadow-sm flex items-center gap-2"
           >
-            <Trophy className="w-5 h-5 text-amber-500" /> Leaderboard එක බලන්න
+            <Trophy className="w-5 h-5 text-amber-500" /> Leaderboard
           </Link>
         </div>
 
-        {/* Quick Stats Grid — now shows total score + total time */}
+        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Quizzes completed */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 font-medium">
-                සම්පූර්ණ කළ Quizzes
-              </p>
-              <p className="text-xl font-bold text-gray-800">
-                {stats?.quizzes_completed ?? 0}
-              </p>
-            </div>
-          </div>
-
-          {/* Total score */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-              <Target className="w-6 h-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 font-medium">
-                මුළු ලකුණු එකතුව
-              </p>
-              <p className="text-xl font-bold text-gray-800">
-                {stats?.total_score ?? 0}
-              </p>
-            </div>
-          </div>
-
-          {/* Total time */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Timer className="w-6 h-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 font-medium">
-                මුළු කාලය
-              </p>
-              <p className="text-xl font-bold text-gray-800">
-                {formatTotalTime(stats?.total_time_seconds)}
-              </p>
-            </div>
-          </div>
-
-          {/* Island rank */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-              <Trophy className="w-6 h-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 font-medium">
-                දිවයිනේ ශ්‍රේණිගත කිරීම
-              </p>
-              <p className="text-xl font-bold text-gray-800">
-                {hasAttempts && stats?.island_rank != null
-                  ? `#${stats.island_rank}`
-                  : "—"}
-              </p>
-            </div>
-          </div>
+          <StatCard
+            icon={<BookOpen className="w-6 h-6" />}
+            color="blue"
+            label="සම්පූර්ණ කළ Quizzes"
+            value={String(stats?.quizzes_completed ?? 0)}
+          />
+          <StatCard
+            icon={<Target className="w-6 h-6" />}
+            color="emerald"
+            label="මුළු ලකුණු එකතුව"
+            value={String(stats?.total_score ?? 0)}
+          />
+          <StatCard
+            icon={<Timer className="w-6 h-6" />}
+            color="indigo"
+            label="මුළු කාලය"
+            value={formatTotalTime(stats?.total_time_seconds)}
+          />
+          <StatCard
+            icon={<Trophy className="w-6 h-6" />}
+            color="amber"
+            label="දිවයිනේ ශ්‍රේණිගත කිරීම"
+            value={
+              hasAttempts && stats?.island_rank != null
+                ? `#${stats.island_rank}`
+                : "—"
+            }
+          />
         </div>
 
-        {/* Secondary stat — average score, since it's still useful */}
+        {/* Average score strip */}
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-green-50 text-green-600 rounded-lg">
@@ -309,60 +285,50 @@ export default function StudentDashboard() {
           </p>
         </div>
 
-        {/* Live Quizzes Section */}
-        <div className="space-y-4">
+        {/* ACTIVE quizzes — only quizzes within their time window */}
+        <section className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" /> Active Live Quizzes
             </h2>
+            {activeQuizzes.length > 0 && (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                {activeQuizzes.length} දැන් සක්‍රියයි
+              </span>
+            )}
           </div>
 
-          {quizzes.length === 0 ? (
+          {activeQuizzes.length === 0 ? (
             <div className="p-6 bg-white rounded-xl text-center text-gray-500 border border-gray-200">
-              No live quizzes available right now. Check back soon!
+              දැන් කිසිම Live Quiz එකක් නොමැත. ඉදිරි Quizzes සඳහා පහළ බලන්න.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {quizzes.map((quiz) => (
-                <div
-                  key={quiz.id}
-                  className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4 hover:border-blue-300 transition"
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-md">
-                      {quiz.subject}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Clock className="w-3.5 h-3.5" /> {quiz.duration_minutes}{" "}
-                      mins
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {quiz.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                      <BookOpen className="w-3.5 h-3.5" /> {quiz.total_questions}{" "}
-                      ප්‍රශ්න
-                      {quiz.stream ? ` • ${quiz.stream}` : ""}
-                    </p>
-                  </div>
-
-                  <Link
-                    href={`/student/quiz/${quiz.id}`}
-                    className="w-full mt-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg flex justify-center items-center gap-2 transition"
-                  >
-                    Quiz එක ආරම්භ කරන්න <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
+              {activeQuizzes.map((quiz) => (
+                <ActiveQuizCard key={quiz.id} quiz={quiz} />
               ))}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Past Performance Section */}
-        <div className="space-y-4 pt-4">
+        {/* UPCOMING quizzes — scheduled but not yet open */}
+        {upcomingQuizzes.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Hourglass className="w-5 h-5 text-amber-600" /> ඉදිරි Quizzes
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {upcomingQuizzes.map((quiz) => (
+                <UpcomingQuizCard key={quiz.id} quiz={quiz} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* PAST quizzes — history + Review Answers links */}
+        <section className="space-y-4 pt-4">
           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" /> පසුගිය Quizzes සහ
             ප්‍රතිඵල
@@ -377,12 +343,13 @@ export default function StudentDashboard() {
                     <th className="p-4">තැබූ දිනය</th>
                     <th className="p-4">ලකුණු</th>
                     <th className="p-4">ගතකළ කාලය</th>
+                    <th className="p-4 text-right">Answers</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {pastQuizzes.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-6 text-center text-gray-400">
+                      <td colSpan={5} className="p-6 text-center text-gray-400">
                         No completed quizzes yet.
                       </td>
                     </tr>
@@ -402,6 +369,14 @@ export default function StudentDashboard() {
                         <td className="p-4">
                           {formatDuration(pq.time_spent_seconds)}
                         </td>
+                        <td className="p-4 text-right">
+                          <Link
+                            href={`/student/quiz/${pq.quiz_id}`}
+                            className="text-xs font-bold text-blue-600 hover:underline"
+                          >
+                            Review →
+                          </Link>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -409,8 +384,127 @@ export default function StudentDashboard() {
               </table>
             </div>
           </div>
-        </div>
+        </section>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Small building blocks
+// ---------------------------------------------------------------------------
+
+function StatCard({
+  icon,
+  color,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  color: "blue" | "emerald" | "indigo" | "amber";
+  label: string;
+  value: string;
+}) {
+  const colorMap: Record<typeof color, string> = {
+    blue: "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    indigo: "bg-indigo-50 text-indigo-600",
+    amber: "bg-amber-50 text-amber-600",
+  };
+  return (
+    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+      <div className={`p-3 rounded-lg ${colorMap[color]}`}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-xs text-gray-500 font-medium">{label}</p>
+        <p className="text-xl font-bold text-gray-800">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
+  const msLeft = msUntilEnd(quiz);
+  const endsIn = msLeft != null ? formatCountdown(msLeft) : null;
+
+  return (
+    <div className="bg-white p-6 rounded-xl border border-emerald-200 shadow-sm space-y-4 hover:shadow-md transition relative">
+      <div className="flex justify-between items-start">
+        <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-md">
+          {quiz.subject}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-gray-500">
+          <Clock className="w-3.5 h-3.5" /> {quiz.duration_minutes} mins
+        </span>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
+        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+          <BookOpen className="w-3.5 h-3.5" /> {quiz.total_questions} ප්‍රශ්න
+          {quiz.stream ? ` • ${quiz.stream}` : ""}
+        </p>
+      </div>
+
+      {endsIn && (
+        <div className="text-[11px] font-bold text-red-600 flex items-center gap-1.5">
+          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          අවසන් වන තෙක්: {endsIn}
+        </div>
+      )}
+
+      <Link
+        href={`/student/quiz/${quiz.id}`}
+        className="w-full mt-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg flex justify-center items-center gap-2 transition"
+      >
+        Quiz එක ආරම්භ කරන්න <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  );
+}
+
+function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
+  const msWait = msUntilStart(quiz);
+  const startsIn = msWait != null && msWait > 0 ? formatCountdown(msWait) : null;
+  const startTime = quiz.scheduled_at
+    ? new Date(quiz.scheduled_at).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  return (
+    <div className="bg-white p-6 rounded-xl border border-amber-200 shadow-sm space-y-4 opacity-90">
+      <div className="flex justify-between items-start">
+        <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-md">
+          {quiz.subject}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-gray-500">
+          <Clock className="w-3.5 h-3.5" /> {quiz.duration_minutes} mins
+        </span>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
+        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+          <BookOpen className="w-3.5 h-3.5" /> {quiz.total_questions} ප්‍රශ්න
+          {quiz.stream ? ` • ${quiz.stream}` : ""}
+        </p>
+      </div>
+
+      <div className="text-[11px] font-bold text-amber-700 flex items-center gap-1.5">
+        <Hourglass className="w-3.5 h-3.5" />
+        {startsIn ? `ආරම්භ වන තෙක්: ${startsIn}` : `ආරම්භය: ${startTime}`}
+      </div>
+
+      <button
+        type="button"
+        disabled
+        className="w-full mt-2 py-2.5 bg-gray-200 text-gray-500 font-semibold rounded-lg flex justify-center items-center gap-2 cursor-not-allowed"
+      >
+        <Hourglass className="w-4 h-4" /> තවම ආරම්භ වී නැත
+      </button>
     </div>
   );
 }

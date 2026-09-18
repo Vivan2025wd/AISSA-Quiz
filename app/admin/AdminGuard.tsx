@@ -4,40 +4,50 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { isAdminVerificationValid } from "@/lib/admin-session";
 
-// Wrap every /admin/* page (or app/admin/layout.tsx) with this.
-// Even though RLS already grants a logged-in admin real DB
-// access, this stops the UI from being reachable just by typing
-// a URL: it re-checks (a) is_admin is still true in the DB, and
-// (b) this specific browser session already passed the code step
-// on the login page. sessionStorage clears when the tab/browser
-// closes, so the code really is required again next time they
-// log in — not just the first time ever.
-export default function AdminGuard({ children }: { children: React.ReactNode }) {
+export default function AdminGuard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function check() {
+      // 1. Must be signed in
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      if (cancelled) return;
 
       if (!user) {
         router.replace("/auth/login");
         return;
       }
 
+      // 2. Must have is_admin = true in the DB
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_admin")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
-      const sessionVerified = sessionStorage.getItem("aissa_admin_verified") === "true";
+      if (cancelled) return;
 
-      if (!profile?.is_admin || !sessionVerified) {
+      if (!profile?.is_admin) {
+        router.replace("/auth/login");
+        return;
+      }
+
+      // 3. Must have passed the code step in THIS tab, for THIS user,
+      //    within the last 30 minutes (helper handles all three checks).
+      if (!isAdminVerificationValid(user.id)) {
         router.replace("/auth/login");
         return;
       }
@@ -45,7 +55,11 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       setAllowed(true);
       setChecking(false);
     }
-    check();
+
+    void check();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   if (checking) {

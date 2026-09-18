@@ -395,7 +395,7 @@ export default function StudentRegisterPage() {
             {/* ---------- Full Name ---------- */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                සම්පූර්ණ නම (Full Name)
+                නම (Name)
               </label>
               <div className="relative">
                 <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />

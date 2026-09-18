@@ -9,11 +9,13 @@ import {
   UserPlus,
   LogIn,
   ShieldCheck,
+  BarChart3,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -21,13 +23,65 @@ export default function HomePage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user) {
-        setIsLoggedIn(true);
+
+      if (!user) {
+        setLoading(false);
+        return;
       }
+
+      setIsLoggedIn(true);
+
+      // Determine admin status so we can render the right admin CTA
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.is_admin) {
+        setIsAdmin(true);
+      }
+
       setLoading(false);
     }
-    checkUser();
+
+    void checkUser();
   }, []);
+
+  // ============================================================
+  // Admin CTA — one element, three states
+  // ============================================================
+  const renderAdminCTA = () => {
+    if (loading) return null;
+
+    // Logged-in admin → prominent button to the panel
+    if (isLoggedIn && isAdmin) {
+      return (
+        <Link
+          href="/admin/dashboard"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition"
+        >
+          <BarChart3 className="w-4 h-4" /> Go to Admin Panel
+        </Link>
+      );
+    }
+
+    // Logged-in student → admin CTA hidden entirely
+    if (isLoggedIn && !isAdmin) {
+      return null;
+    }
+
+    // Not logged in → small subtle link to login (which will
+    // auto-prompt for the admin code if the account is an admin)
+    return (
+      <Link
+        href="/auth/login"
+        className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-600 font-medium transition"
+      >
+        <ShieldCheck className="w-4 h-4" /> Admin Access Portal
+      </Link>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-6 text-center">
@@ -51,9 +105,9 @@ export default function HomePage() {
           A/L විද්‍යා අංශයේ (Bio & Maths) සිසුන් සඳහා සජීවී ඔන්ලයින් ප්‍රශ්න පත්‍ර, ක්ෂණික ලකුණු විශ්ලේෂණය සහ දිවයිනේ හා පාසල් මට්ටමේ Real-time Leaderboards.
         </p>
 
-        {/* Action Buttons */}
+        {/* Primary Action Buttons */}
         {!loading && (
-          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
             {isLoggedIn ? (
               <>
                 <Link
@@ -81,21 +135,16 @@ export default function HomePage() {
                   href="/auth/login"
                   className="px-6 py-3.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2"
                 >
-                  <LogIn className="w-5 h-5" /> Student Login
+                  <LogIn className="w-5 h-5" /> Login
                 </Link>
               </>
             )}
           </div>
         )}
 
-        {/* Admin Access Portal Link */}
-        <div className="pt-6 border-t border-gray-100 mt-6">
-          <Link
-            href="/admin/quizzes"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-600 font-medium transition"
-          >
-            <ShieldCheck className="w-4 h-4" /> Admin Access Portal
-          </Link>
+        {/* Admin CTA — one element, conditionally rendered */}
+        <div className="pt-6 border-t border-gray-100 mt-6 min-h-10 flex items-center justify-center">
+          {renderAdminCTA()}
         </div>
       </div>
     </div>

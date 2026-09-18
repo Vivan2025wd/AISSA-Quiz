@@ -3,14 +3,21 @@
 import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LogIn, Mail, Lock, ArrowRight, ShieldCheck, KeyRound, Loader2 } from "lucide-react";
+import {
+  LogIn,
+  Mail,
+  Lock,
+  ArrowRight,
+  ShieldCheck,
+  KeyRound,
+  Loader2,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  clearAdminSession,
+  markAdminVerified,
+} from "@/lib/admin-session";
 
-// Default export: just wraps the real page in a Suspense boundary,
-// since useSearchParams() (used inside StudentLoginPageInner) needs
-// one during static prerendering — otherwise Next.js throws
-// "useSearchParams() should be wrapped in a suspense boundary" at
-// build time.
 export default function StudentLoginPage() {
   return (
     <Suspense fallback={<LoginPageFallback />}>
@@ -19,9 +26,6 @@ export default function StudentLoginPage() {
   );
 }
 
-// Minimal placeholder shown for the instant before the client
-// component mounts and reads the search params. Keep it visually
-// close to the real page's shell so there's no layout jump.
 function LoginPageFallback() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -30,7 +34,9 @@ function LoginPageFallback() {
           <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-1">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">AISSA Quiz Platform</h1>
+          <h1 className="text-2xl font-extrabold text-gray-900">
+            AISSA Quiz Platform
+          </h1>
         </div>
         <div className="flex justify-center py-6">
           <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
@@ -45,29 +51,33 @@ function StudentLoginPageInner() {
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
 
-  // Step 1: password login
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Step 2: shown only if the account turns out to be an admin
   const [needsAdminCode, setNeedsAdminCode] = useState(false);
   const [adminCode, setAdminCode] = useState("");
 
-  // Pre-populated when we've been redirected here (e.g. from the
-  // dashboard guard) because the auth user has no matching
-  // profiles row — surfaces the same message shown when the
-  // no-profile case is caught inline during login below.
   const [error, setError] = useState(
     reason === "no_profile"
       ? "ඔබගේ ගිණුම සම්පූර්ණ නැත — කරුණාකර නැවත ලියාපදිංචි වන්න."
-      : ""
+      : "",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ============================================================
+  // Step 1 — email + password
+  // ============================================================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
+
+    // 🔑 Clear any admin-verified flag from a PREVIOUS session
+    // BEFORE attempting login. Otherwise an admin who used this
+    // browser earlier leaves a stale flag that lets the NEXT user
+    // skip the code prompt — even if they were only just granted
+    // admin rights in the DB.
+    clearAdminSession();
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -84,10 +94,6 @@ function StudentLoginPageInner() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // maybeSingle() (not single()) so a missing row returns null
-    // instead of throwing — this is exactly the "auth user exists
-    // but profiles row doesn't" case from email-confirmation
-    // timing, and we need to detect it, not just fall through.
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("is_admin")
@@ -102,13 +108,9 @@ function StudentLoginPageInner() {
     }
 
     if (!profile) {
-      // Auth account exists, but no matching profiles row — don't
-      // let them into the dashboard with a half-set-up account.
-      // Sign them back out so they're not left in a dangling
-      // authenticated-but-profile-less session.
       setIsSubmitting(false);
       setError(
-        "ඔබගේ ගිණුම සම්පූර්ණ නැත — Profile එකක් සොයාගත නොහැක. කරුණාකර නැවත ලියාපදිංචි වන්න හෝ Admin අමතන්න."
+        "ඔබගේ ගිණුම සම්පූර්ණ නැත — Profile එකක් සොයාගත නොහැක. කරුණාකර නැවත ලියාපදිංචි වන්න හෝ Admin අමතන්න.",
       );
       await supabase.auth.signOut();
       return;
@@ -117,15 +119,17 @@ function StudentLoginPageInner() {
     setIsSubmitting(false);
 
     if (profile.is_admin) {
+      // Force the code prompt — flag cleared above, so always fresh.
       setNeedsAdminCode(true);
       return;
     }
 
-    // Regular student, confirmed to have a real profile row.
-    sessionStorage.removeItem("aissa_admin_verified");
     router.push("/student/dashboard");
   };
 
+  // ============================================================
+  // Step 2 — admin code
+  // ============================================================
   const handleAdminCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -133,27 +137,34 @@ function StudentLoginPageInner() {
 
     const { data: verified, error: verifyError } = await supabase.rpc(
       "verify_admin_code",
-      { p_code: adminCode }
+      { p_code: adminCode },
     );
 
-    setIsSubmitting(false);
-
     if (verifyError) {
+      setIsSubmitting(false);
       setError("Verification Error: " + verifyError.message);
       return;
     }
 
     if (!verified) {
+      setIsSubmitting(false);
       setError("Admin Access Code එක වැරදිය. නැවත උත්සාහ කරන්න.");
       return;
     }
 
-    // Marks this browser session (not the account) as having
-    // passed the code check. Cleared on tab/browser close, and
-    // checked again by AdminGuard on every admin page load — so
-    // the code is genuinely required again on the next login,
-    // not just skippable via direct URL.
-    sessionStorage.setItem("aissa_admin_verified", "true");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setIsSubmitting(false);
+
+    if (!user) {
+      setError("Session expired — කරුණාකර නැවත login වන්න.");
+      return;
+    }
+
+    // Bind the flag to the current user id + timestamp
+    markAdminVerified(user.id);
     router.push("/admin/quizzes");
   };
 
@@ -164,7 +175,9 @@ function StudentLoginPageInner() {
           <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-1">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">AISSA Quiz Platform</h1>
+          <h1 className="text-2xl font-extrabold text-gray-900">
+            AISSA Quiz Platform
+          </h1>
           <p className="text-xs text-gray-500">
             {needsAdminCode
               ? "Admin ගිණුමක් හඳුනාගන්නා ලදී — Access Code එක ඇතුළත් කරන්න"
@@ -181,7 +194,9 @@ function StudentLoginPageInner() {
         {!needsAdminCode ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">ඊමේල් ලිපිනය (Email)</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                ඊමේල් ලිපිනය (Email)
+              </label>
               <div className="relative">
                 <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -198,8 +213,13 @@ function StudentLoginPageInner() {
 
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase">මුරපදය (Password)</label>
-                <a href="#" className="text-xs font-semibold text-blue-600 hover:underline">
+                <label className="text-xs font-bold text-gray-700 uppercase">
+                  මුරපදය (Password)
+                </label>
+                <a
+                  href="#"
+                  className="text-xs font-semibold text-blue-600 hover:underline"
+                >
                   Password අමතකද?
                 </a>
               </div>
@@ -258,7 +278,7 @@ function StudentLoginPageInner() {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  තහවුරු කර ඇතුළු වන්න <ArrowRight className="w-4 h-4" />
+                  තහවුරු කර ඇතුළත් වන්න <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
@@ -268,7 +288,10 @@ function StudentLoginPageInner() {
         {!needsAdminCode && (
           <div className="pt-4 border-t text-center text-xs text-gray-600">
             ගිණුමක් තවම නැද්ද?{" "}
-            <Link href="/auth/register" className="font-bold text-blue-600 hover:underline inline-flex items-center gap-0.5">
+            <Link
+              href="/auth/register"
+              className="font-bold text-blue-600 hover:underline inline-flex items-center gap-0.5"
+            >
               ලියාපදිංචි වන්න <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { X, Check, Search, Loader2, AlertTriangle } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  X,
+  Check,
+  Search,
+  Loader2,
+  AlertTriangle,
+  Filter,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export type BankQuestion = {
@@ -30,7 +37,15 @@ interface QuestionBankSelectorModalProps {
   maxLimit?: number;
 }
 
-const streams = ["All", "Bio Science", "Physical Science", "Maths", "Commerce", "Arts", "Technology"];
+const streams = [
+  "All",
+  "Bio Science",
+  "Physical Science",
+  "Maths",
+  "Commerce",
+  "Arts",
+  "Technology",
+];
 const subjects = ["All", "Physics", "Chemistry", "Biology"];
 
 export default function QuestionBankSelectorModal({
@@ -52,12 +67,42 @@ export default function QuestionBankSelectorModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
 
+  // ============================================================
+  // FIX: Only reset state on the closed → open TRANSITION.
+  // Previously the effect depended on initialSelectedIds, and
+  // since the parent passes a fresh array (e.g. questions.map(...))
+  // on every render, the effect fired mid-session and snapped the
+  // subject/stream filters back to the quiz defaults — wiping the
+  // user's filter changes and hiding their selection.
+  // ============================================================
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (justOpened) {
+      setSelectedIds(initialSelectedIds);
+      setSelectedSubject(quizSubject || "All");
+      setSelectedStream(quizStream || "All");
+      setSearchQuery("");
+      setSelectedTopic("");
+    }
+    // Intentionally depending ONLY on isOpen — see comment above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // ============================================================
+  // Load questions whenever subject/stream filters change (or on open)
+  // ============================================================
   const loadBankQuestions = useCallback(async () => {
     setLoading(true);
 
     let query = supabase
       .from("questions")
-      .select("id, subject, stream, topic, question_text, image_url, option_1, option_2, option_3, option_4, option_5, correct_option, explanation")
+      .select(
+        "id, subject, stream, topic, question_text, image_url, option_1, option_2, option_3, option_4, option_5, correct_option, explanation",
+      )
       .order("created_at", { ascending: false });
 
     if (selectedSubject && selectedSubject !== "All") {
@@ -69,44 +114,36 @@ export default function QuestionBankSelectorModal({
 
     const { data, error } = await query;
     if (!error && data) {
-      setQuestions(data);
+      setQuestions(data as BankQuestion[]);
     }
     setLoading(false);
   }, [selectedSubject, selectedStream]);
 
   useEffect(() => {
-    if (isOpen) {
-      const resetTimer = window.setTimeout(() => {
-        setSelectedIds(initialSelectedIds);
-        if (quizSubject) setSelectedSubject(quizSubject);
-        if (quizStream) setSelectedStream(quizStream);
-      }, 0);
+    if (!isOpen) return;
 
-      return () => window.clearTimeout(resetTimer);
-    }
-  }, [isOpen, initialSelectedIds, quizSubject, quizStream]);
+    const loadTimer = window.setTimeout(() => {
+      void loadBankQuestions();
+    }, 0);
 
-  useEffect(() => {
-    if (isOpen) {
-      const loadTimer = window.setTimeout(() => {
-        void loadBankQuestions();
-      }, 0);
-
-      return () => window.clearTimeout(loadTimer);
-    }
+    return () => window.clearTimeout(loadTimer);
   }, [isOpen, loadBankQuestions]);
 
   if (!isOpen) return null;
 
-  // Client-side search and topic filtering
+  // ============================================================
+  // Client-side search + topic filtering
+  // ============================================================
   const filteredQuestions = questions.filter((q) => {
     if (searchQuery.trim()) {
-      const matchText = q.question_text.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchTopic = q.topic?.toLowerCase().includes(searchQuery.toLowerCase());
+      const s = searchQuery.toLowerCase();
+      const matchText = q.question_text.toLowerCase().includes(s);
+      const matchTopic = q.topic?.toLowerCase().includes(s);
       if (!matchText && !matchTopic) return false;
     }
     if (selectedTopic.trim()) {
-      if (!q.topic?.toLowerCase().includes(selectedTopic.toLowerCase())) return false;
+      if (!q.topic?.toLowerCase().includes(selectedTopic.toLowerCase()))
+        return false;
     }
     return true;
   });
@@ -116,7 +153,9 @@ export default function QuestionBankSelectorModal({
       setSelectedIds(selectedIds.filter((item) => item !== id));
     } else {
       if (selectedIds.length >= maxLimit) {
-        alert(`උපරිම ප්‍රශ්න ${maxLimit}ක් පමණක් තෝරාගත හැක (Maximum ${maxLimit} questions allowed per quiz).`);
+        alert(
+          `උපරිම ප්‍රශ්න ${maxLimit}ක් පමණක් තෝරාගත හැක (Maximum ${maxLimit} questions allowed per quiz).`,
+        );
         return;
       }
       setSelectedIds([...selectedIds, id]);
@@ -146,11 +185,12 @@ export default function QuestionBankSelectorModal({
   };
 
   const isAtLimit = selectedIds.length >= maxLimit;
+  const remaining = maxLimit - selectedIds.length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
       <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden my-6 flex flex-col max-h-[92vh]">
-        {/* Header */}
+        {/* ─── Header ──────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-slate-900 text-white shrink-0">
           <div>
             <h3 className="text-lg font-bold flex items-center gap-2">
@@ -168,34 +208,42 @@ export default function QuestionBankSelectorModal({
           </button>
         </div>
 
-        {/* Counter & Limit Banner */}
-        <div className={`px-6 py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 ${
-          isAtLimit ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-100"
-        }`}>
-          <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-xs font-extrabold ${
-              isAtLimit ? "bg-amber-600 text-white" : "bg-blue-600 text-white"
-            }`}>
+        {/* ─── Counter & Limit Banner ──────────────────────────── */}
+        <div
+          className={`px-6 py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 ${
+            isAtLimit
+              ? "bg-amber-50 border-amber-200"
+              : "bg-blue-50 border-blue-100"
+          }`}
+        >
+          <div className="flex items-center gap-3 flex-wrap">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-extrabold tabular-nums ${
+                isAtLimit ? "bg-amber-600 text-white" : "bg-blue-600 text-white"
+              }`}
+            >
               තෝරාගත් ප්‍රශ්න: {selectedIds.length} / {maxLimit}
             </span>
             <span className="text-xs text-gray-600 font-medium">
               {isAtLimit ? (
                 <span className="text-amber-800 font-bold flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" /> උපරිම ප්‍රශ්න සීමාවට ({maxLimit}) ළඟා වී ඇත.
+                  <AlertTriangle className="w-3.5 h-3.5" /> උපරිම ප්‍රශ්න සීමාවට
+                  ({maxLimit}) ළඟා වී ඇත.
                 </span>
               ) : (
-                `තව ${maxLimit - selectedIds.length}ක් තෝරාගත හැක.`
+                `තව ${remaining}ක් තෝරාගත හැක.`
               )}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleSelectAllFiltered}
               disabled={isAtLimit || filteredQuestions.length === 0}
               className="text-xs font-semibold px-2.5 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
             >
-              Select All Shown ({Math.min(filteredQuestions.length, maxLimit - selectedIds.length)})
+              Select All Shown (
+              {Math.min(filteredQuestions.length, remaining)})
             </button>
             <button
               onClick={handleClearSelection}
@@ -207,24 +255,33 @@ export default function QuestionBankSelectorModal({
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-1 sm:grid-cols-4 gap-3 shrink-0">
-          <div className="relative">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-            <input
-              type="text"
-              placeholder="Search question text..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-gray-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        {/* ─── Filter Controls (FIXED LAYOUT) ──────────────────── */}
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="w-3.5 h-3.5 text-gray-500" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+              Filter Questions
+            </span>
           </div>
 
-          <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search question text..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs  text-gray-700  outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Subject */}
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
             >
               {subjects.map((s) => (
                 <option key={s} value={s}>
@@ -232,13 +289,12 @@ export default function QuestionBankSelectorModal({
                 </option>
               ))}
             </select>
-          </div>
 
-          <div>
+            {/* Stream */}
             <select
               value={selectedStream}
               onChange={(e) => setSelectedStream(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
             >
               {streams.map((st) => (
                 <option key={st} value={st}>
@@ -246,24 +302,24 @@ export default function QuestionBankSelectorModal({
                 </option>
               ))}
             </select>
-          </div>
 
-          <div>
+            {/* Topic */}
             <input
               type="text"
-              placeholder="Filter by Topic (e.g. තාපය)..."
+              placeholder="Filter by topic..."
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
             />
           </div>
         </div>
 
-        {/* Question List */}
+        {/* ─── Question List ────────────────────────────────────── */}
         <div className="p-6 overflow-y-auto space-y-3 flex-1">
           {loading ? (
             <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" /> Question Bank එකෙන් ප්‍රශ්න ලෝඩ් වෙමින්...
+              <Loader2 className="w-5 h-5 animate-spin" /> Question Bank එකෙන්
+              ප්‍රශ්න ලෝඩ් වෙමින්...
             </div>
           ) : filteredQuestions.length === 0 ? (
             <div className="p-12 text-center text-gray-400">
@@ -277,13 +333,15 @@ export default function QuestionBankSelectorModal({
               return (
                 <div
                   key={q.id}
-                  onClick={() => !disabledBecauseLimit && toggleSelect(q.id)}
+                  onClick={() =>
+                    !disabledBecauseLimit && toggleSelect(q.id)
+                  }
                   className={`p-4 rounded-xl border transition cursor-pointer flex items-start gap-4 ${
                     isSelected
                       ? "bg-blue-50/70 border-blue-500 ring-1 ring-blue-500/30"
                       : disabledBecauseLimit
-                      ? "bg-gray-100/60 border-gray-200 opacity-60 cursor-not-allowed"
-                      : "bg-white border-gray-200 hover:border-blue-300 hover:bg-gray-50/50"
+                        ? "bg-gray-100/60 border-gray-200 opacity-60 cursor-not-allowed"
+                        : "bg-white border-gray-200 hover:border-blue-300 hover:bg-gray-50/50"
                   }`}
                 >
                   <input
@@ -294,9 +352,11 @@ export default function QuestionBankSelectorModal({
                     className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
                   />
 
-                  <div className="space-y-1.5 flex-1">
+                  <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-gray-500">#{idx + 1}</span>
+                      <span className="text-xs font-bold text-gray-500">
+                        #{idx + 1}
+                      </span>
                       {q.subject && (
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">
                           {q.subject}
@@ -314,7 +374,7 @@ export default function QuestionBankSelectorModal({
                       )}
                       {disabledBecauseLimit && (
                         <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
-                          Limit reached (20/20)
+                          Limit reached ({maxLimit}/{maxLimit})
                         </span>
                       )}
                     </div>
@@ -347,10 +407,14 @@ export default function QuestionBankSelectorModal({
           )}
         </div>
 
-        {/* Footer */}
+        {/* ─── Footer ───────────────────────────────────────────── */}
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
           <span className="text-xs text-gray-500 font-medium">
-            තෝරාගත් ප්‍රශ්න ගණන: <strong className="text-gray-900">{selectedIds.length}</strong> / {maxLimit}
+            තෝරාගත් ප්‍රශ්න ගණන:{" "}
+            <strong className="text-gray-900 tabular-nums">
+              {selectedIds.length}
+            </strong>{" "}
+            / {maxLimit}
           </span>
 
           <div className="flex items-center gap-3">
@@ -366,7 +430,8 @@ export default function QuestionBankSelectorModal({
               onClick={handleConfirm}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm"
             >
-              <Check className="w-4 h-4" /> තෝරාගත් ප්‍රශ්න ({selectedIds.length}) Quiz එකට එකතු කරන්න
+              <Check className="w-4 h-4" /> තෝරාගත් ප්‍රශ්න ({selectedIds.length}) Quiz
+              එකට එකතු කරන්න
             </button>
           </div>
         </div>
