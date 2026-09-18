@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,9 @@ import {
   Map,
   AlertCircle,
   IdCard,
+  Calendar,
+  Hash,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import SchoolAutocomplete from "@/components/SchoolAutocomplete";
@@ -55,6 +58,8 @@ export default function StudentRegisterPage() {
     stream: streams[0],
     aissaIdInput: "",
     aissaDistrict: "AWC" as AissaDistrictCode,
+    schoolYear: String(new Date().getFullYear()),
+    studentNumber: "",
     password: "",
     confirmPassword: "",
   });
@@ -63,6 +68,10 @@ export default function StudentRegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false);
 
+  const [nextNumber, setNextNumber] = useState<number | null>(null);
+  const [numberLoading, setNumberLoading] = useState(false);
+  const [numberError, setNumberError] = useState<string | null>(null);
+
   const aissaValidation = useMemo(
     () => (idMode === "has-aissa" ? validateAissaId(formData.aissaIdInput) : null),
     [idMode, formData.aissaIdInput],
@@ -70,27 +79,146 @@ export default function StudentRegisterPage() {
 
   const finalAisId = useMemo(() => {
     if (idMode === "has-aissa") return aissaValidation?.parsed?.raw ?? "";
-    if (!formData.fullName.trim() || !formData.school.trim()) return "";
-    return generateNonAissaId(formData.fullName, formData.school, formData.aissaDistrict);
-  }, [idMode, aissaValidation, formData.fullName, formData.school, formData.aissaDistrict]);
+
+    if (
+      !formData.fullName.trim() ||
+      !formData.school.trim() ||
+      !formData.schoolYear.trim() ||
+      !formData.studentNumber.trim()
+    ) {
+      return "";
+    }
+
+    try {
+      const yearNum = Number(formData.schoolYear);
+      if (!Number.isFinite(yearNum) || yearNum < 2000 || yearNum > 2099) {
+        return "";
+      }
+      return generateNonAissaId(
+        formData.fullName,
+        formData.school,
+        formData.aissaDistrict,
+        {
+          year: yearNum,
+          studentNumber: formData.studentNumber,
+        },
+      );
+    } catch {
+      return "";
+    }
+  }, [
+    idMode,
+    aissaValidation,
+    formData.fullName,
+    formData.school,
+    formData.aissaDistrict,
+    formData.schoolYear,
+    formData.studentNumber,
+  ]);
 
   const effectiveAissaDistrict: AissaDistrictCode | null = useMemo(() => {
     if (idMode === "has-aissa") return aissaValidation?.parsed?.districtCode ?? null;
     return formData.aissaDistrict;
   }, [idMode, aissaValidation, formData.aissaDistrict]);
 
+  useEffect(() => {
+    if (idMode !== "no-aissa") return;
+
+    const school = formData.school.trim();
+    const yearStr = formData.schoolYear.trim();
+    const yearNum = Number(yearStr);
+
+    if (!school || !yearStr || !Number.isFinite(yearNum)) {
+      const resetTimer = window.setTimeout(() => {
+        setNextNumber(null);
+        setNumberError(null);
+        setNumberLoading(false);
+      }, 0);
+      return () => window.clearTimeout(resetTimer);
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setNumberLoading(true);
+      setNumberError(null);
+
+      const { data, error } = await supabase.rpc("get_next_student_number", {
+        p_school: school,
+        p_school_year: yearNum,
+      });
+
+      if (cancelled) return;
+
+      setNumberLoading(false);
+
+      if (error) {
+        console.warn("Could not fetch next student number:", error.message);
+        setNumberError("Auto-number ලබාගත නොහැක — අතින් ඇතුළත් කරන්න.");
+        setNextNumber(null);
+        return;
+      }
+
+      const n = typeof data === "number" ? data : Number(data);
+      if (Number.isFinite(n) && n > 0) {
+        setNextNumber(n);
+        setFormData((prev) => {
+          const userTouched = prev.studentNumber.trim() !== "";
+          if (userTouched) return prev;
+          return { ...prev, studentNumber: String(n).padStart(3, "0") };
+        });
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [idMode, formData.school, formData.schoolYear]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "studentNumber"
+          ? value.replace(/[^0-9]/g, "").slice(0, 4)
+          : name === "schoolYear"
+            ? value.replace(/[^0-9]/g, "").slice(0, 4)
+            : value,
+    }));
   };
 
   const handleSchoolChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, school: value }));
+    setFormData((prev) => ({ ...prev, school: value, studentNumber: "" }));
   };
 
   const handleAissaIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, aissaIdInput: e.target.value.toUpperCase() }));
+  };
+
+  const refreshNextNumber = async () => {
+    const school = formData.school.trim();
+    const yearNum = Number(formData.schoolYear.trim());
+    if (!school || !Number.isFinite(yearNum)) return;
+
+    setNumberLoading(true);
+    const { data, error } = await supabase.rpc("get_next_student_number", {
+      p_school: school,
+      p_school_year: yearNum,
+    });
+    setNumberLoading(false);
+
+    if (error) {
+      setNumberError("Auto-number ලබාගත නොහැක.");
+      return;
+    }
+    const n = typeof data === "number" ? data : Number(data);
+    if (Number.isFinite(n) && n > 0) {
+      setNextNumber(n);
+      setFormData((prev) => ({ ...prev, studentNumber: String(n).padStart(3, "0") }));
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -116,8 +244,17 @@ export default function StudentRegisterPage() {
         return;
       }
     } else {
+      const yearNum = Number(formData.schoolYear.trim());
+      if (!Number.isFinite(yearNum) || yearNum < 2000 || yearNum > 2099) {
+        setError("පාසල් වර්ෂය වලංගු අගයක් නොවේ (2000–2099).");
+        return;
+      }
+      if (!formData.studentNumber.trim()) {
+        setError("පාසල් අංකය ඇතුළත් කරන්න.");
+        return;
+      }
       if (!finalAisId) {
-        setError("Non-AISSA Quiz ID එක Auto-Generate කළ නොහැක.");
+        setError("Non-AISSA Quiz ID එක Auto-Generate කළ නොහැක. විස්තර පරීක්ෂා කරන්න.");
         return;
       }
     }
@@ -132,13 +269,16 @@ export default function StudentRegisterPage() {
         data: {
           full_name: formData.fullName,
           address: formData.address,
-          district: formData.district,           // residential
+          district: formData.district,
           school: formData.school,
           stream: formData.stream,
-          // index_number intentionally omitted — the field no longer exists.
           ais_id: finalAisId,
           aissa_district: effectiveAissaDistrict,
           is_aissa_member: isAissaMember,
+          school_year: isAissaMember ? null : Number(formData.schoolYear),
+          student_number: isAissaMember
+            ? null
+            : Number(formData.studentNumber) || null,
         },
       },
     });
@@ -154,7 +294,6 @@ export default function StudentRegisterPage() {
       return;
     }
 
-    // Non-AISSA → email them the generated ID (best-effort).
     if (!isAissaMember) {
       void fetch("/api/send-id", {
         method: "POST",
@@ -346,7 +485,7 @@ export default function StudentRegisterPage() {
                 placeholder="පාසලේ නම ලියන්න — උදා: Royal"
               />
               <p className="text-[11px] text-gray-500 mt-1">
-                * Database එකේ ඇති පාසල් ලැයිස්තුවෙන් Suggestions පෙන්වයි. ඔබගේ පාසල ලැයිස්තුවේ නැත්නම් ලෙසම ලියා තබන්න.
+                * Database එකේ ඇති පාසල් ලැයිස්තුවෙන් Suggestions පෙන්වයි.
               </p>
             </div>
 
@@ -369,7 +508,7 @@ export default function StudentRegisterPage() {
             </div>
 
             {/* ============================================================ */}
-            {/* AISSA ID BLOCK                                               */}
+            {/* AISSA ID / Non-AISSA BLOCK                                   */}
             {/* ============================================================ */}
             {idMode === "has-aissa" ? (
               <div
@@ -390,7 +529,7 @@ export default function StudentRegisterPage() {
                     type="text"
                     value={formData.aissaIdInput}
                     onChange={handleAissaIdChange}
-                    placeholder="R26THENUMI-SBVC-AWC"
+                    placeholder="R25THENUMI-SBVC-AWC"
                     required
                     disabled={isSubmitting}
                     className="w-full pl-10 pr-4 py-3 bg-white border border-blue-300 rounded-xl font-bold text-sm tracking-wider text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none placeholder:font-normal placeholder:tracking-normal disabled:opacity-60"
@@ -399,7 +538,7 @@ export default function StudentRegisterPage() {
                 {formData.aissaIdInput && aissaValidation?.valid && (
                   <p className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    වලංගුයි · දිස්ත්‍රික්කය:{" "}
+                    වලංගුයි · කලාපය:{" "}
                     <span className="font-mono">{aissaValidation.parsed?.districtCode}</span>
                   </p>
                 )}
@@ -409,35 +548,120 @@ export default function StudentRegisterPage() {
                     {aissaValidation?.error}
                   </p>
                 )}
+                <p className="text-[11px] text-blue-700 font-medium">
+                  * ආරම්භය <strong>R, T, O, හෝ M</strong> අක්ෂරයක් විය යුතුය
+                </p>
               </div>
             ) : (
-              <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+              <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-4">
+                {/* Info header */}
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs font-extrabold text-indigo-900 uppercase">
-                      AISSA District Code
+                      Non-AISSA Quiz ID — විස්තර
                     </p>
                     <p className="text-[11px] text-indigo-700 mt-0.5">
-                      ඔබ අයත් AISSA කලාපය තෝරන්න — අපි ඔබට නව Quiz ID එකක් Auto-Generate කර ඊමේල් කරන්නෙමු.
+                      පහත විස්තර පුරවන්න — අපි ඔබට නව Quiz ID එකක් Auto-Generate කර ඊමේල් කරන්නෙමු.
                     </p>
                   </div>
                 </div>
 
-                <select
-                  name="aissaDistrict"
-                  value={formData.aissaDistrict}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className="w-full px-3 py-3 bg-white border border-indigo-300 rounded-xl font-bold text-sm text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer disabled:opacity-60"
-                >
-                  {AISSA_DISTRICT_CODES.map((code) => (
-                    <option key={code} value={code}>
-                      {AISSA_DISTRICT_LABELS[code]}
-                    </option>
-                  ))}
-                </select>
+                {/* School Year + Student Number */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* School Year */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-indigo-900 uppercase mb-1.5">
+                      පාසල් වර්ෂය
+                    </label>
+                    <div className="relative">
+                      <Calendar className="w-4 h-4 text-indigo-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        name="schoolYear"
+                        placeholder="2025"
+                        value={formData.schoolYear}
+                        onChange={handleChange}
+                        required
+                        disabled={isSubmitting}
+                        maxLength={4}
+                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-indigo-300 rounded-xl font-bold text-sm text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none placeholder:font-normal placeholder:text-indigo-300 disabled:opacity-60"
+                      />
+                    </div>
+                    <p className="text-[10px] text-indigo-600 mt-1">
+                      ඔබ A/L ආරම්භ කළ වර්ෂය
+                    </p>
+                  </div>
 
+                  {/* Student Number — auto */}
+                  <div>
+                    <label className="flex items-center justify-between text-[11px] font-bold text-indigo-900 uppercase mb-1.5">
+                      <span>පාසල් අංකය</span>
+                      <button
+                        type="button"
+                        onClick={refreshNextNumber}
+                        disabled={numberLoading || !formData.school || !formData.schoolYear}
+                        className="text-indigo-600 hover:text-indigo-800 disabled:opacity-40"
+                        title="Auto-number refresh"
+                      >
+                        <RefreshCw
+                          className={`w-3 h-3 ${numberLoading ? "animate-spin" : ""}`}
+                        />
+                      </button>
+                    </label>
+                    <div className="relative">
+                      <Hash className="w-4 h-4 text-indigo-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        name="studentNumber"
+                        placeholder="001"
+                        value={formData.studentNumber}
+                        onChange={handleChange}
+                        required
+                        disabled={isSubmitting}
+                        maxLength={4}
+                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-indigo-300 rounded-xl font-bold text-sm text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none placeholder:font-normal placeholder:text-indigo-300 disabled:opacity-60"
+                      />
+                      {numberLoading && (
+                        <Loader2 className="w-3.5 h-3.5 text-indigo-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+                      )}
+                    </div>
+                    {numberError ? (
+                      <p className="text-[10px] text-red-600 mt-1">{numberError}</p>
+                    ) : nextNumber !== null ? (
+                      <p className="text-[10px] text-indigo-600 mt-1">
+                        Auto: ඊළඟ අංකය{" "}
+                        <strong className="font-mono">
+                          {String(nextNumber).padStart(3, "0")}
+                        </strong>
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* AISSA District */}
+                <div>
+                  <label className="block text-[11px] font-bold text-indigo-900 uppercase mb-1.5">
+                    AISSA කලාපය
+                  </label>
+                  <select
+                    name="aissaDistrict"
+                    value={formData.aissaDistrict}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full px-3 py-2.5 bg-white border border-indigo-300 rounded-xl font-bold text-sm text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer disabled:opacity-60"
+                  >
+                    {AISSA_DISTRICT_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {AISSA_DISTRICT_LABELS[code]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Live preview */}
                 <div className="p-3 bg-white border border-indigo-200 rounded-xl">
                   <p className="text-[10px] uppercase font-bold text-indigo-500 tracking-wider">
                     Auto-Generated Quiz ID
@@ -445,7 +669,7 @@ export default function StudentRegisterPage() {
                   <p className="mt-1 font-mono font-extrabold text-sm text-indigo-900 break-all">
                     {finalAisId || (
                       <span className="text-indigo-300 font-sans font-medium">
-                        නම සහ පාසල ඇතුළත් කළ පසු මෙහි දිස්වේ...
+                        නම, පාසල, වර්ෂය සහ අංකය පිරවූ පසු මෙහි දිස්වේ...
                       </span>
                     )}
                   </p>

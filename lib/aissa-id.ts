@@ -1,36 +1,48 @@
 // lib/aissa-id.ts
 // -----------------------------------------------------------------------------
-// Utilities for parsing / validating AISSA member IDs (R-prefix) and
-// generating non-member quiz IDs (N-prefix).
+// AISSA member IDs:  [R|T|O|M]<YY><STUDENT>-<SCHOOL>-<DISTRICT>
+// Non-AISSA quiz IDs: N<YY><NAME><STUDENT_NUMBER>-<SCHOOL>-<DISTRICT>
+//
+// District codes are AISSA's OWN zones — not Sri Lankan administrative
+// districts — so they are used as-is without geographic expansion.
+//
+// School-code generation lives in `lib/school-codes.ts`.
 // -----------------------------------------------------------------------------
 
+import { abbreviateSchool } from "./school-codes";
+
+// ============================================================
+// Districts — AISSA zones
+// ============================================================
 export const AISSA_DISTRICT_CODES = [
   "AWC", "AWK", "AUS", "AS", "AC", "ANCW", "ANE", "AWG",
 ] as const;
 
 export type AissaDistrictCode = (typeof AISSA_DISTRICT_CODES)[number];
 
-/** Human-friendly labels for UI dropdowns. */
 export const AISSA_DISTRICT_LABELS: Record<AissaDistrictCode, string> = {
-  AWC:  "AWC ",
-  AWK:  "AWK ",
-  AUS:  "AUS ",
-  AS:   "AS ",
-  AC:   "AC ",
-  ANCW: "ANCW ",
-  ANE:  "ANE ",
-  AWG:  "AWG ",
+  AWC:  "AWC",
+  AWK:  "AWK",
+  AUS:  "AUS",
+  AS:   "AS",
+  AC:   "AC",
+  ANCW: "ANCW",
+  ANE:  "ANE",
+  AWG:  "AWG",
 };
 
-// -----------------------------------------------------------------------------
-// AISSA member ID (R-prefix): R<YY><STUDENT>-<SCHOOL>-<DISTRICT>
-// Example: R26THENUMI-SBVC-AWC
-// -----------------------------------------------------------------------------
-const AISSA_ID_REGEX = /^R(\d{2})([A-Z0-9]+)-([A-Z0-9]+)-([A-Z]{2,4})$/i;
+// ============================================================
+// AISSA member prefixes — R / T / O / M
+// ============================================================
+export const AISSA_MEMBER_PREFIXES = ["R", "T", "O", "M"] as const;
+export type AissaMemberPrefix = (typeof AISSA_MEMBER_PREFIXES)[number];
 
+// ============================================================
+// Types
+// ============================================================
 export interface ParsedAissaId {
   raw: string;
-  prefix: "R";
+  prefix: AissaMemberPrefix;
   batchYear: string;
   studentCode: string;
   schoolCode: string;
@@ -43,16 +55,32 @@ export interface IdValidationResult {
   parsed?: ParsedAissaId;
 }
 
-export function isAissaDistrictCode(
-  code: string,
-): code is AissaDistrictCode {
+// ============================================================
+// Guards
+// ============================================================
+export function isAissaDistrictCode(code: string): code is AissaDistrictCode {
   return (AISSA_DISTRICT_CODES as readonly string[]).includes(
     code.toUpperCase(),
   );
 }
 
+export function isAissaMemberPrefix(ch: string): ch is AissaMemberPrefix {
+  return (AISSA_MEMBER_PREFIXES as readonly string[]).includes(
+    ch.toUpperCase(),
+  );
+}
+
+// ============================================================
+// AISSA member ID — [RTOM]<YY><STUDENT>-<SCHOOL>-<DISTRICT>
+//   Examples: R25THENUMI-SBVC-AWC
+//             T26KAMAL-SBVC-AWC
+// ============================================================
+const AISSA_ID_REGEX =
+  /^([RTOM])(\d{2})([A-Z0-9]+)-([A-Z0-9]{2,6})-([A-Z]{2,4})$/i;
+
 export function validateAissaId(input: string): IdValidationResult {
   const value = (input ?? "").trim().toUpperCase();
+
   if (!value) {
     return { valid: false, error: "AISSA ID එක ඇතුළත් කරන්න." };
   }
@@ -61,15 +89,23 @@ export function validateAissaId(input: string): IdValidationResult {
   if (!match) {
     return {
       valid: false,
-      error: "AISSA ID ආකෘතිය වැරදිය. උදා: R26THENUMI-SBVC-AWC",
+      error: "AISSA ID ආකෘතිය වැරදිය. උදා: R25THENUMI-SBVC-AWC",
     };
   }
 
-  const [, batchYear, studentCode, schoolCode, districtCode] = match;
+  const [, prefix, batchYear, studentCode, schoolCode, districtCode] = match;
+
+  if (!isAissaMemberPrefix(prefix)) {
+    return {
+      valid: false,
+      error: `"${prefix}" වලංගු AISSA උපසර්ගයක් නොවේ. අනුමත: R, T, O, M`,
+    };
+  }
+
   if (!isAissaDistrictCode(districtCode)) {
     return {
       valid: false,
-      error: `"${districtCode}" වලංගු AISSA දිස්ත්‍රික්ක කේතයක් නොවේ. අනුමත කේත: ${AISSA_DISTRICT_CODES.join(", ")}`,
+      error: `"${districtCode}" වලංගු AISSA කලාප කේතයක් නොවේ. අනුමත: ${AISSA_DISTRICT_CODES.join(", ")}`,
     };
   }
 
@@ -77,7 +113,7 @@ export function validateAissaId(input: string): IdValidationResult {
     valid: true,
     parsed: {
       raw: value,
-      prefix: "R",
+      prefix: prefix.toUpperCase() as AissaMemberPrefix,
       batchYear,
       studentCode,
       schoolCode,
@@ -86,12 +122,18 @@ export function validateAissaId(input: string): IdValidationResult {
   };
 }
 
-// -----------------------------------------------------------------------------
-// Non-AISSA ID (N-prefix): N<YY><NAME6><RND3>-<SCHOOL3>-<DISTRICT>
-// Example: N26VIVAN123-COL-AWC
-// -----------------------------------------------------------------------------
+// ============================================================
+// Non-AISSA ID — N<YY><NAME><STUDENT_NUMBER>-<SCHOOL>-<DISTRICT>
+//   Example: N25VIVAN001-CCC-AWC
+// ============================================================
+//   N        prefix
+//   25       school year (2 digits)
+//   VIVAN    name (2–10 letters, first 6 taken)
+//   001      student number from school (1–4 digits, zero-padded to 3)
+//   CCC      school code (2–6 chars)
+//   AWC      AISSA district
 const NON_AISSA_REGEX =
-  /^N(\d{2})([A-Z]{2,6})(\d{3})-([A-Z0-9]{2,6})-([A-Z]{2,4})$/;
+  /^N(\d{2})([A-Z]{2,10})(\d{1,4})-([A-Z0-9]{2,6})-([A-Z]{2,4})$/;
 
 function cleanAlpha(s: string): string {
   return (s ?? "").replace(/[^A-Za-z]/g, "").toUpperCase();
@@ -102,62 +144,81 @@ export function abbreviateName(fullName: string): string {
   return cleaned ? cleaned.slice(0, 6) : "STUDENT";
 }
 
-export function abbreviateSchool(school: string): string {
-  const cleaned = cleanAlpha(school);
-  if (!cleaned) return "SCH";
-  // First three letters of the cleaned school name, padded if too short.
-  return cleaned.slice(0, 3).padEnd(3, "X");
+/**
+ * Normalize a school-provided student number into a 1–4 digit string
+ * with leading zeros kept if the user provided them ("1" → "001").
+ */
+export function normalizeStudentNumber(raw: string): string {
+  const digits = (raw ?? "").replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  // If the user typed a short number, pad to 3 digits; longer is kept as-is
+  if (digits.length <= 3) return digits.padStart(3, "0");
+  return digits.slice(0, 4);
 }
 
 export interface GenerateNonAissaOptions {
-  /** Override the year code (last two digits). Defaults to current year. */
-  year?: number;
-  /** Deterministic random 3-digit value (100–999) — handy for tests. */
-  randomSeed?: number;
+  /** Year the student entered their A/L batch — 2025 → "25". Required. */
+  year: number;
+  /** Student number assigned by their school — "1" or "001" both → "001". */
+  studentNumber: string;
 }
 
 export function generateNonAissaId(
   fullName: string,
   school: string,
   district: AissaDistrictCode,
-  options: GenerateNonAissaOptions = {},
+  options: GenerateNonAissaOptions,
 ): string {
-  const year = (options.year ?? new Date().getFullYear())
-    .toString()
-    .padStart(4, "0")
-    .slice(-2);
+  const { year, studentNumber } = options;
 
+  if (!year || year < 2000 || year > 2099) {
+    throw new Error("Valid year (2000–2099) is required for Non-AISSA ID.");
+  }
+  if (!studentNumber) {
+    throw new Error("Student number is required for Non-AISSA ID.");
+  }
+
+  const yearCode = year.toString().padStart(4, "0").slice(-2);
   const namePart = abbreviateName(fullName);
+  const studentPart = normalizeStudentNumber(studentNumber);
   const schoolPart = abbreviateSchool(school);
 
-  const randomPart =
-    options.randomSeed !== undefined
-      ? (((options.randomSeed % 900) + 900) % 900 + 100).toString()
-      : Math.floor(100 + Math.random() * 900).toString();
-
-  return `N${year}${namePart}${randomPart}-${schoolPart}-${district}`;
+  return `N${yearCode}${namePart}${studentPart}-${schoolPart}-${district}`;
 }
 
 export function validateNonAissaId(input: string): IdValidationResult {
   const value = (input ?? "").trim().toUpperCase();
   const match = value.match(NON_AISSA_REGEX);
+
   if (!match) {
     return { valid: false, error: "Non-AISSA ID ආකෘතිය වැරදිය." };
   }
+
   const district = match[5];
   if (!isAissaDistrictCode(district)) {
-    return { valid: false, error: "වලංගු නොවන AISSA දිස්ත්‍රික්ක කේතයක්." };
+    return { valid: false, error: "වලංගු නොවන AISSA කලාප කේතයක්." };
   }
+
   return { valid: true };
 }
 
-/** Accepts either an R-prefixed AISSA ID or an N-prefixed non-member ID. */
+// ============================================================
+// Universal entry — accepts any of R/T/O/M or N
+// ============================================================
 export function validateAnyId(input: string): IdValidationResult {
   const value = (input ?? "").trim().toUpperCase();
-  if (value.startsWith("R")) return validateAissaId(value);
-  if (value.startsWith("N")) return validateNonAissaId(value);
+
+  if (!value) {
+    return { valid: false, error: "ID එක ඇතුළත් කරන්න." };
+  }
+
+  const first = value[0];
+  if (isAissaMemberPrefix(first)) return validateAissaId(value);
+  if (first === "N") return validateNonAissaId(value);
+
   return {
     valid: false,
-    error: "ID එක R (AISSA member) හෝ N (non-member) අක්ෂරයෙන් ආරම්භ විය යුතුය.",
+    error:
+      "ID එක R, T, O, M (AISSA member) හෝ N (non-member) අක්ෂරයෙන් ආරම්භ විය යුතුය.",
   };
 }

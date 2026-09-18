@@ -9,13 +9,14 @@ import {
   ArrowLeft,
   Loader2,
   Clock,
-  Target,
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
-
+// ============================================================
+// Types — matching the RPC output from migration 018
+// ============================================================
 type IndividualRow = {
   rank: number;
   student_id: string;
@@ -31,7 +32,11 @@ type SchoolRow = {
   rank: number;
   school: string;
   students_count: number;
+  participating_students: number;
   total_quizzes: number;
+  top5_marks: number;
+  academic_score: number;
+  participation_score: number;
   total_score: number;
   avg_score: number | null;
 };
@@ -45,6 +50,41 @@ function formatTime(seconds: number | null | undefined): string {
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
+}
+
+// Safe numeric formatter — never returns "NaN"
+function fmt(value: unknown, decimals = 1): string {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n.toFixed(decimals) : "0.0";
+}
+
+// ============================================================
+// Small helper — coloured progress bar
+// ============================================================
+function ScoreBar({
+  value,
+  max,
+  color,
+  width = "w-20",
+}: {
+  value: number;
+  max: number;
+  color: string;
+  width?: string;
+}) {
+  const n = typeof value === "number" ? value : Number(value);
+  const safe = Number.isFinite(n) ? n : 0;
+  const pct = max > 0 ? Math.min(100, (safe / max) * 100) : 0;
+  return (
+    <div
+      className={`${width} h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1 ml-auto`}
+    >
+      <div
+        className={`h-full ${color} transition-all`}
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
 }
 
 export default function LeaderboardPage() {
@@ -69,7 +109,6 @@ export default function LeaderboardPage() {
         return;
       }
 
-      // Must also have a profiles row (registered student)
       const { data: profile } = await supabase
         .from("profiles")
         .select("id")
@@ -91,6 +130,7 @@ export default function LeaderboardPage() {
     };
   }, [router]);
 
+  // ---- Load both leaderboards ----
   useEffect(() => {
     async function loadLeaderboards() {
       setLoading(true);
@@ -122,7 +162,9 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Navigation & Header */}
+        {/* ============================================================ */}
+        {/* Header + Tabs                                                 */}
+        {/* ============================================================ */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <Link
@@ -134,12 +176,8 @@ export default function LeaderboardPage() {
             <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
               <Trophy className="w-7 h-7 text-amber-500" /> AISSA Leaderboard
             </h1>
-            <p className="text-xs text-gray-500">
-              මුළු ලකුණු එකතුව මත ශ්‍රේණිගත කිරීම · සම ලකුණු විට වේගවත් කෙනා ඉහළට
-            </p>
           </div>
 
-          {/* Toggle Tabs */}
           <div className="bg-gray-200 p-1 rounded-xl flex gap-1">
             <button
               onClick={() => setActiveTab("school")}
@@ -176,34 +214,29 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-            {/* ============================================== */}
-            {/* SCHOOL VIEW — ranked by SUM(score)             */}
-            {/* ============================================== */}
+            {/* ============================================================ */}
+            {/* SCHOOL VIEW                                                  */}
+            {/* ============================================================ */}
             {activeTab === "school" && (
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="p-4 bg-blue-50/50 border-b flex justify-between items-center text-xs text-blue-900 font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5" />
-                    පාසලේ සියලුම සිසුන්ගේ මුළු ලකුණු එකතුව අනුව
-                  </span>
-                  <span>Active Schools: {schoolLeaderboard.length}</span>
-                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 border-b text-gray-700 uppercase text-xs font-semibold">
                       <tr>
-                        <th className="p-4 w-16">Rank</th>
-                        <th className="p-4">පාසල</th>
-                        <th className="p-4">සිසුන්</th>
-                        <th className="p-4">Quizzes</th>
-                        <th className="p-4 text-right">මුළු ලකුණු</th>
-                        <th className="p-4 text-right">Avg %</th>
+                        <th className="p-4 w-14">Rank</th>
+                        <th className="p-4 min-w-[50]">පාසල</th>
+                        <th className="p-4 text-center">සහභාගී</th>
+                        <th className="p-4 text-right">Top 5</th>
+                        <th className="p-4 text-right">Academic /80</th>
+                        <th className="p-4 text-right">Participation /20</th>
+                        <th className="p-4 text-right">Total /100</th>
                       </tr>
                     </thead>
+
                     <tbody className="divide-y divide-gray-100">
                       {schoolLeaderboard.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-6 text-center text-gray-400">
+                          <td colSpan={7} className="p-6 text-center text-gray-400">
                             තවම දත්ත නොමැත.
                           </td>
                         </tr>
@@ -223,20 +256,61 @@ export default function LeaderboardPage() {
                               {item.rank === 3 && <span className="text-xl">🥉</span>}
                               {item.rank > 3 && `#${item.rank}`}
                             </td>
-                            <td className="p-4 font-bold text-gray-900">
-                              {item.school}
+
+                            <td className="p-4">
+                              <div className="font-bold text-gray-900">
+                                {item.school}
+                              </div>
+                              <div className="text-[11px] text-gray-400 mt-0.5">
+                                {item.students_count} registered ·{" "}
+                                {item.total_quizzes} attempts
+                              </div>
                             </td>
-                            <td className="p-4 font-medium text-gray-700">
-                              {item.students_count}
+
+                            <td className="p-4 text-center">
+                              <span className="font-semibold text-gray-800">
+                                {item.participating_students}
+                              </span>
                             </td>
-                            <td className="p-4 text-gray-600">
-                              {item.total_quizzes}
+
+                            <td className="p-4 text-right">
+                              <span className="font-mono text-sm font-bold text-gray-700">
+                                {fmt(item.top5_marks)}
+                              </span>
                             </td>
-                            <td className="p-4 text-right font-extrabold text-blue-700 text-base">
-                              {item.total_score}
+
+                            <td className="p-4 text-right align-top">
+                              <div className="font-extrabold text-blue-700">
+                                {fmt(item.academic_score)}
+                              </div>
+                              <ScoreBar
+                                value={item.academic_score}
+                                max={80}
+                                color="bg-blue-500"
+                              />
                             </td>
-                            <td className="p-4 text-right text-xs font-semibold text-gray-500">
-                              {item.avg_score != null ? `${item.avg_score}%` : "—"}
+
+                            <td className="p-4 text-right align-top">
+                              <div className="font-extrabold text-emerald-700">
+                                {fmt(item.participation_score)}
+                              </div>
+                              <ScoreBar
+                                value={item.participation_score}
+                                max={20}
+                                color="bg-emerald-500"
+                              />
+                            </td>
+
+                            <td className="p-4 text-right align-top">
+                              <div className="text-lg font-extrabold text-indigo-700">
+                                {fmt(item.total_score)}
+                              </div>
+                              <ScoreBar
+                                value={item.total_score}
+                                max={100}
+                                color="bg-indigo-500"
+                                width="w-24"
+                              />
                             </td>
                           </tr>
                         ))
@@ -247,18 +321,11 @@ export default function LeaderboardPage() {
               </div>
             )}
 
-            {/* ============================================== */}
-            {/* INDIVIDUAL VIEW — score, then timing           */}
-            {/* ============================================== */}
+            {/* ============================================================ */}
+            {/* INDIVIDUAL VIEW                                              */}
+            {/* ============================================================ */}
             {activeTab === "individual" && (
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="p-4 bg-green-50/50 border-b flex justify-between items-center text-xs text-green-900 font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5" />
-                    මුළු ලකුණු එකතුව අනුව · සම ලකුණු විට වේගවත් කෙනා ඉහළට
-                  </span>
-                  <span>All Island A/L Rank</span>
-                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 border-b text-gray-700 uppercase text-xs font-semibold">
@@ -272,6 +339,7 @@ export default function LeaderboardPage() {
                         <th className="p-4 text-right">Avg %</th>
                       </tr>
                     </thead>
+
                     <tbody className="divide-y divide-gray-100">
                       {individualLeaderboard.length === 0 ? (
                         <tr>
@@ -295,25 +363,33 @@ export default function LeaderboardPage() {
                               {item.rank === 3 && <span className="text-xl">🥉</span>}
                               {item.rank > 3 && `#${item.rank}`}
                             </td>
+
                             <td className="p-4 font-bold text-gray-900">
                               <div className="flex items-center gap-2">
                                 <Award className="w-4 h-4 text-blue-600 shrink-0" />
                                 <span className="truncate">{item.full_name}</span>
                               </div>
                             </td>
+
                             <td className="p-4 text-gray-600 text-xs">
                               {item.school}
                             </td>
+
                             <td className="p-4 text-center text-gray-500">
                               {item.quizzes_completed}
                             </td>
+
                             <td className="p-4 text-right font-extrabold text-blue-700 text-base">
                               {item.total_score}
                             </td>
-                            <td className="p-4 text-right text-xs text-gray-500 font-mono flex items-center justify-end gap-1">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(item.total_time_seconds)}
+
+                            <td className="p-4 text-right text-xs text-gray-500 font-mono">
+                              <span className="flex items-center justify-end gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(item.total_time_seconds)}
+                              </span>
                             </td>
+
                             <td className="p-4 text-right text-xs font-semibold text-gray-500">
                               {item.average_score != null
                                 ? `${item.average_score}%`
@@ -329,15 +405,6 @@ export default function LeaderboardPage() {
             )}
           </>
         )}
-
-        {/* Ranking Rules Note */}
-        <div className="text-[11px] text-gray-400 text-center leading-relaxed">
-          <p>
-            <strong className="text-gray-500">Ranking rules:</strong>{" "}
-            මුළු ලකුණු එකතුව (score) ඉහළම කෙනා ඉහළට. සම ලකුණු නම්,
-            <strong className="text-gray-500"> අඩු මුළු කාලයක්</strong> ගතකළ කෙනා ඉහළට.
-          </p>
-        </div>
       </div>
     </div>
   );
