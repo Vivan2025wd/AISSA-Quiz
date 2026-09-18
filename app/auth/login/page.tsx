@@ -1,13 +1,46 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn, Mail, Lock, ArrowRight, ShieldCheck, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
-
+// Default export: just wraps the real page in a Suspense boundary,
+// since useSearchParams() (used inside StudentLoginPageInner) needs
+// one during static prerendering — otherwise Next.js throws
+// "useSearchParams() should be wrapped in a suspense boundary" at
+// build time.
 export default function StudentLoginPage() {
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <StudentLoginPageInner />
+    </Suspense>
+  );
+}
+
+// Minimal placeholder shown for the instant before the client
+// component mounts and reads the search params. Keep it visually
+// close to the real page's shell so there's no layout jump.
+function LoginPageFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-md p-6 sm:p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-1">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-gray-900">AISSA Quiz Platform</h1>
+        </div>
+        <div className="flex justify-center py-6">
+          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StudentLoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
