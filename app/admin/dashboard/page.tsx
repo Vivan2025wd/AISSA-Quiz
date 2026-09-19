@@ -65,12 +65,6 @@ export default function AdminDashboardPage() {
     setFetchError(null);
 
     try {
-      // ============================================================
-      // 1. Live quizzes — include scheduled AND unscheduled, sort
-      //    by scheduled_at (NULLs last), then created_at desc.
-      //    Previously we filtered out scheduled_at = NULL, which
-      //    hid any quiz without an explicit schedule.
-      // ============================================================
       const { data: quizData, error: quizError } = await supabase
         .from("quizzes")
         .select(
@@ -89,13 +83,6 @@ export default function AdminDashboardPage() {
         setQuizzes((quizData as Quiz[]) ?? []);
       }
 
-      // ============================================================
-      // 2. Question count by subject.
-      //    FIX: read `questions.subject` directly. The old query
-      //    joined through quizzes(quiz_id), but bank questions now
-      //    live with quiz_id = NULL (linked via quiz_questions), so
-      //    that join always returned NULL → everything was "Other".
-      // ============================================================
       const { data: questionRows, error: questionError } = await supabase
         .from("questions")
         .select("subject");
@@ -118,9 +105,6 @@ export default function AdminDashboardPage() {
         }
       }
 
-      // ============================================================
-      // 3. Total registered students (non-admin)
-      // ============================================================
       const { count: studentCount, error: studentError } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
@@ -130,9 +114,6 @@ export default function AdminDashboardPage() {
         console.error("Error fetching student count:", studentError);
       }
 
-      // ============================================================
-      // 4. Distinct active schools — exclude placeholder values
-      // ============================================================
       const { data: schoolRows, error: schoolError } = await supabase
         .from("profiles")
         .select("school")
@@ -167,21 +148,17 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    // This effect intentionally loads external data on mount; the callback
-    // updates state when the asynchronous request completes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentTime(Date.now());
     void fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Sort subjects by count desc for the summary line
   const subjectSummary =
     Object.entries(stats.questionsBySubject)
       .sort((a, b) => b[1] - a[1])
       .map(([subject, count]) => `${subject}: ${count}`)
       .join(" • ") || "දත්ත නැත";
 
-  // Split live vs. upcoming using duration window
   const now = currentTime ?? 0;
   const liveNow = quizzes.filter((q) => {
     if (!q.scheduled_at) return false;
@@ -195,48 +172,61 @@ export default function AdminDashboardPage() {
   });
   const orderedQuizzes = [...liveNow, ...upcoming];
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">
-            Admin Control Center
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            AISSA Quiz Engine ප්‍රශ්න බැංකුව සහ Quiz සටහන පාලනය කරන්න.
-          </p>
-        </div>
+  const statusBadge = (isLiveNow: boolean) =>
+    isLiveNow ? (
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-200 whitespace-nowrap">
+        <Radio className="w-3 h-3 animate-pulse" /> Live Now
+      </span>
+    ) : (
+      <span className="inline-block text-[11px] font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-md border border-amber-200 whitespace-nowrap">
+        Scheduled
+      </span>
+    );
 
-        <div className="flex items-center gap-2 flex-wrap">
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+      {/* Header Banner */}
+      <div className="flex flex-col gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+              Admin Control Center
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              AISSA Quiz Engine ප්‍රශ්න බැංකුව සහ Quiz සටහන පාලනය කරන්න.
+            </p>
+          </div>
+
           <button
             onClick={() => void fetchDashboardData()}
             disabled={loading}
-            className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-2 transition disabled:opacity-60"
+            className="self-start sm:self-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-2 transition disabled:opacity-60 shrink-0"
             title="Refresh data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
+        </div>
 
+        {/* Action buttons — stack on mobile, inline on tablet+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <Link
             href="/admin/questions"
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition"
           >
             <PlusCircle className="w-4 h-4" /> නව ප්‍රශ්නයක්
           </Link>
 
           <Link
             href="/admin/quizzes"
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition"
           >
             <Calendar className="w-4 h-4" /> Live Quiz Schedule
           </Link>
 
-          {/* NEW: Performance button */}
           <Link
             href="/admin/performance"
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition"
           >
             <BarChart3 className="w-4 h-4" /> Performance
           </Link>
@@ -249,10 +239,9 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Overview Analytics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Questions */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="p-2.5 bg-blue-50 text-blue-600 w-fit rounded-lg mb-3">
             <FileQuestion className="w-5 h-5" />
           </div>
@@ -267,8 +256,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Live / Upcoming Quizzes */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="p-2.5 bg-green-50 text-green-600 w-fit rounded-lg mb-3">
             <Calendar className="w-5 h-5" />
           </div>
@@ -289,8 +277,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Total Students */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="p-2.5 bg-purple-50 text-purple-600 w-fit rounded-lg mb-3">
             <Users className="w-5 h-5" />
           </div>
@@ -303,8 +290,7 @@ export default function AdminDashboardPage() {
           <p className="text-[11px] text-gray-400 mt-1">දිවයින පුරා සිසුන්</p>
         </div>
 
-        {/* Active Schools */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="p-2.5 bg-amber-50 text-amber-600 w-fit rounded-lg mb-3">
             <School className="w-5 h-5" />
           </div>
@@ -320,8 +306,8 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Quick Action Tables View */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+      {/* ============ QUIZZES — separate mobile / desktop rendering ============ */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-base font-bold text-gray-900">
             Live Quizzes වල තත්ත්වය
@@ -330,72 +316,103 @@ export default function AdminDashboardPage() {
             href="/admin/quizzes"
             className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline"
           >
-            සියල්ල බලන්න <ArrowUpRight className="w-3.5 h-3.5" />
+            සියල්ල <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        <div className="divide-y divide-gray-100 border rounded-xl overflow-hidden text-sm">
-          <div className="bg-gray-50 p-3.5 font-bold text-xs uppercase text-gray-500 grid grid-cols-4">
-            <span>Subject & Topic</span>
-            <span>Scheduled Time</span>
-            <span>Questions</span>
-            <span>Status</span>
+        {loading ? (
+          <div className="p-6 flex items-center justify-center text-gray-400 text-xs gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading...
           </div>
-
-          {loading ? (
-            <div className="p-6 flex items-center justify-center text-gray-400 text-xs gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Loading...
-            </div>
-          ) : orderedQuizzes.length === 0 ? (
-            <div className="p-6 text-center text-gray-400 text-xs">
-              දැනට Live Quiz කිසිවක් නොමැත. Quiz එකක් Schedule කරන්න.
-            </div>
-          ) : (
-            orderedQuizzes.map((quiz) => {
-              const isLiveNow = liveNow.some((q) => q.id === quiz.id);
-              return (
-                <div
-                  key={quiz.id}
-                  className="p-3.5 grid grid-cols-4 items-center"
-                >
-                  <div>
-                    <span className="text-xs font-bold text-blue-600 block">
-                      {quiz.subject}
+        ) : orderedQuizzes.length === 0 ? (
+          <div className="p-6 text-center text-gray-400 text-xs">
+            දැනට Live Quiz කිසිවක් නොමැත. Quiz එකක් Schedule කරන්න.
+          </div>
+        ) : (
+          <>
+            {/* -------- DESKTOP table (md+) -------- */}
+            <div className="hidden md:block divide-y divide-gray-100 border rounded-xl overflow-hidden text-sm">
+              <div className="bg-gray-50 p-3.5 font-bold text-xs uppercase text-gray-500 grid grid-cols-4 gap-3">
+                <span>Subject & Topic</span>
+                <span>Scheduled Time</span>
+                <span>Questions</span>
+                <span>Status</span>
+              </div>
+              {orderedQuizzes.map((quiz) => {
+                const isLiveNow = liveNow.some((q) => q.id === quiz.id);
+                return (
+                  <div
+                    key={quiz.id}
+                    className="p-3.5 grid grid-cols-4 items-center gap-3"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-blue-600 block truncate">
+                        {quiz.subject}
+                      </span>
+                      <span className="font-semibold text-gray-800 truncate block">
+                        {quiz.title}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-600">
+                      {formatScheduledTime(quiz.scheduled_at)}
                     </span>
-                    <span className="font-semibold text-gray-800">
-                      {quiz.title}
+                    <span className="text-xs text-gray-600">
+                      {quiz.total_questions} MCQ
                     </span>
+                    {statusBadge(isLiveNow)}
                   </div>
-                  <span className="text-xs text-gray-600">
-                    {formatScheduledTime(quiz.scheduled_at)}
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    {quiz.total_questions} MCQ
-                  </span>
-                  {isLiveNow ? (
-                    <span className="w-fit text-[11px] font-bold px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-200 flex items-center gap-1">
-                      <Radio className="w-3 h-3 animate-pulse" /> Live Now
-                    </span>
-                  ) : (
-                    <span className="w-fit text-[11px] font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-md border border-amber-200">
-                      Scheduled
-                    </span>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+                );
+              })}
+            </div>
+
+            {/* -------- MOBILE cards (<md) -------- */}
+            <div className="md:hidden space-y-2">
+              {orderedQuizzes.map((quiz) => {
+                const isLiveNow = liveNow.some((q) => q.id === quiz.id);
+                return (
+                  <div
+                    key={quiz.id}
+                    className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-blue-600 block">
+                          {quiz.subject}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900 block leading-snug">
+                          {quiz.title}
+                        </span>
+                      </div>
+                      <div className="shrink-0">{statusBadge(isLiveNow)}</div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatScheduledTime(quiz.scheduled_at)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FileQuestion className="w-3 h-3" />
+                        {quiz.total_questions} MCQ
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* NEW: Bottom quick-access strip to Performance */}
-      <div className="bg-linear-to-r from-indigo-600 to-indigo-700 rounded-2xl p-6 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+      {/* Bottom Performance strip */}
+      <div className="bg-linear-to-r from-indigo-600 to-indigo-700 rounded-2xl p-5 sm:p-6 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="p-2.5 bg-white/15 rounded-xl shrink-0">
             <BarChart3 className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-bold text-lg">Student Performance Analytics</h3>
+            <h3 className="font-bold text-base sm:text-lg">
+              Student Performance Analytics
+            </h3>
             <p className="text-indigo-100 text-xs mt-0.5">
               සියලුම සිසුන්ගේ ලකුණු, ප්‍රගතිය, AISSA IDs සහ CSV export මෙතැනින් බලන්න.
             </p>
@@ -403,9 +420,9 @@ export default function AdminDashboardPage() {
         </div>
         <Link
           href="/admin/performance"
-          className="px-5 py-2.5 bg-white text-indigo-700 font-bold text-sm rounded-xl hover:bg-indigo-50 transition flex items-center gap-2 shrink-0"
+          className="w-full sm:w-auto px-5 py-2.5 bg-white text-indigo-700 font-bold text-sm rounded-xl hover:bg-indigo-50 transition flex items-center justify-center gap-2 shrink-0"
         >
-          Performance එකට යන්න <ArrowUpRight className="w-4 h-4" />
+          Performance <ArrowUpRight className="w-4 h-4" />
         </Link>
       </div>
     </div>
