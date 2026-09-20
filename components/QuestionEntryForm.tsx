@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  Image as ImageIcon,
   CheckCircle2,
   Save,
   Sparkles,
@@ -11,6 +10,7 @@ import {
   Languages,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import ImageUploadField from "@/components/ImageUploadField";
 
 // Physics & Chemistry are COMMON across all science streams
 // (stored with stream = NULL). Biology is Bio-Science-only.
@@ -417,24 +417,11 @@ export default function QuestionEntryForm(props: Props) {
       </div>
 
       {/* ---------- Diagram URL ---------- */}
-      <div>
-        <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
-          <ImageIcon className="w-4 h-4 text-gray-500" />
-          රූපසටහන (Diagram URL - Optional)
-        </label>
-        <input
-          type="text"
-          placeholder="https://example.com/diagram.png"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          disabled={isSubmitting || isAtLimit}
-          className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-        />
-        <p className="text-[11px] text-gray-500 mt-1">
-          * රූපය සියලු භාෂාවන්ට පොදුයි — එකම රූපය හැම භාෂාවටම පෙන්වයි.
-        </p>
-      </div>
-
+      <ImageUploadField
+        value={imageUrl}
+        onChange={setImageUrl}
+        disabled={isSubmitting || isAtLimit}
+      />
       {/* ============================================================ */}
       {/*                  LANGUAGE TABS SECTION                       */}
       {/* ============================================================ */}

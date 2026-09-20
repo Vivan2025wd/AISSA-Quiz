@@ -897,13 +897,20 @@ function ReviewMode({
           </h2>
 
           {localized.image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={localized.image_url}
-              alt="Question illustration"
-              className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
-            />
-          )}
+              // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={localized.image_url}
+                    alt="Question illustration"
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
+                    onError={(e) => {
+                    const el = e.target as HTMLImageElement;
+                    el.onerror = null;
+                    el.style.display = "none";   // hide broken image
+                    }}
+                />
+          )} 
 
           <div className="space-y-2">
             {optionsList.map((opt, idx) => {

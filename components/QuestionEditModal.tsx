@@ -6,10 +6,10 @@ import {
   Save,
   Loader2,
   Sparkles,
-  Image as ImageIcon,
   CheckCircle2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import ImageUploadField from "@/components/ImageUploadField";
 
 export type EditableQuestion = {
   id: string;
@@ -364,33 +364,11 @@ function QuestionEditorForm({
           </div>
 
           {/* Diagram URL (language-independent) */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
-              <ImageIcon className="w-4 h-4 text-gray-500" /> රූපසටහන (Diagram URL - Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="https://example.com/diagram.png"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              disabled={isSubmitting}
-              className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-            />
-            {imageUrl && (
-              <div className="mt-2 p-2 bg-gray-50 rounded-xl border border-gray-200">
-                <p className="text-[11px] text-gray-500 mb-1">Image Preview:</p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imageUrl}
-                  alt="Diagram preview"
-                  className="max-h-40 rounded-lg object-contain mx-auto"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-              </div>
-            )}
-          </div>
+          <ImageUploadField
+            value={imageUrl}
+            onChange={setImageUrl}
+            disabled={isSubmitting}
+          />
 
           {/* ---- LANGUAGE TABS ---- */}
           <div>
