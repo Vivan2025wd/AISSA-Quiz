@@ -24,6 +24,11 @@ import {
 
 const DEFAULT_QUIZ_DURATION_SECONDS = 1800;
 
+// ------------------------------------------------------------
+// Types
+// ------------------------------------------------------------
+type Medium = "sinhala" | "english" | "tamil";
+
 type Quiz = {
   id: string;
   title: string;
@@ -36,16 +41,36 @@ type Quiz = {
 type Question = {
   id: string;
   quiz_id: string;
-  question_text: string;
   image_url: string | null;
+  correct_option: number;
+  topic: string | null;
+
+  // Sinhala — always present (base columns)
+  question_text: string;
   option_1: string;
   option_2: string;
   option_3: string;
   option_4: string;
   option_5: string | null;
-  correct_option: number;
   explanation: string | null;
-  topic: string | null;
+
+  // English — optional columns
+  question_text_en?: string | null;
+  option_1_en?: string | null;
+  option_2_en?: string | null;
+  option_3_en?: string | null;
+  option_4_en?: string | null;
+  option_5_en?: string | null;
+  explanation_en?: string | null;
+
+  // Tamil — optional columns
+  question_text_ta?: string | null;
+  option_1_ta?: string | null;
+  option_2_ta?: string | null;
+  option_3_ta?: string | null;
+  option_4_ta?: string | null;
+  option_5_ta?: string | null;
+  explanation_ta?: string | null;
 };
 
 type QuizQuestionRow = {
@@ -61,6 +86,90 @@ type StudentResult = {
   submitted_at: string;
 };
 
+// ------------------------------------------------------------
+// Stream → Subject rules
+//   Bio Science       → Physics · Chemistry · Biology
+//   Physical / Maths  → Physics · Chemistry  (NO Biology)
+//   Unknown           → all three (safe fallback)
+// ------------------------------------------------------------
+function isSubjectBlockedForStream(
+  quizSubject: string | null | undefined,
+  studentStream: string | null | undefined,
+): boolean {
+  if (!quizSubject || !studentStream) return false;
+  const subj = quizSubject.toLowerCase();
+  const s = studentStream.toLowerCase();
+
+  // Maths / Physical Science students cannot access Biology.
+  if ((s.includes("physical") || s.includes("maths")) && subj.includes("biology")) {
+    return true;
+  }
+  return false;
+}
+
+// ------------------------------------------------------------
+// Localization helpers
+// ------------------------------------------------------------
+
+/**
+ * Pick a value from the three language variants, with fallback
+ * to Sinhala (the base column). A "missing" translation is
+ * either null/undefined OR an empty/whitespace string.
+ */
+function pickByMedium<T>(
+  medium: Medium,
+  si: T,
+  en: T | null | undefined,
+  ta: T | null | undefined,
+): T {
+  const isFilled = (v: unknown): boolean =>
+    v !== null && v !== undefined && (typeof v !== "string" || v.trim() !== "");
+
+  if (medium === "english" && isFilled(en)) return en as T;
+  if (medium === "tamil" && isFilled(ta)) return ta as T;
+  return si;
+}
+
+/**
+ * Return a "view" of the question in the student's chosen medium.
+ * correct_option is language-independent, so it is passed through.
+ */
+function localizeQuestion(q: Question, medium: Medium) {
+  return {
+    question_text: pickByMedium(medium, q.question_text, q.question_text_en, q.question_text_ta),
+    option_1: pickByMedium(medium, q.option_1, q.option_1_en, q.option_1_ta),
+    option_2: pickByMedium(medium, q.option_2, q.option_2_en, q.option_2_ta),
+    option_3: pickByMedium(medium, q.option_3, q.option_3_en, q.option_3_ta),
+    option_4: pickByMedium(medium, q.option_4, q.option_4_en, q.option_4_ta),
+    option_5: pickByMedium(medium, q.option_5, q.option_5_en, q.option_5_ta),
+    explanation: pickByMedium(medium, q.explanation, q.explanation_en, q.explanation_ta),
+    image_url: q.image_url,
+    correct_option: q.correct_option,
+  };
+}
+
+type LocalizedQuestion = ReturnType<typeof localizeQuestion>;
+
+/**
+ * Strip blank trailing options (option_5 is optional) and return
+ * a renderable list. Since we already localized, this operates on
+ * the localized strings directly.
+ */
+function getLocalizedOptions(lq: LocalizedQuestion): string[] {
+  return [
+    lq.option_1,
+    lq.option_2,
+    lq.option_3,
+    lq.option_4,
+    lq.option_5,
+  ].filter(
+    (o): o is string => o !== null && o !== undefined && o.trim() !== "",
+  );
+}
+
+// ------------------------------------------------------------
+// Main component
+// ------------------------------------------------------------
 export default function StudentQuizPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -72,6 +181,13 @@ export default function StudentQuizPage() {
   const [loadingQuiz, setLoadingQuiz] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Student's chosen medium — defaults to Sinhala until the profile loads.
+  const [medium, setMedium] = useState<Medium>("sinhala");
+  // Student's stream — used for subject-access guard.
+  const [studentStream, setStudentStream] = useState<string | null>(null);
+  // True when this student's stream cannot access this quiz's subject.
+  const [streamBlocked, setStreamBlocked] = useState(false);
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
   const [timeLeft, setTimeLeft] = useState(DEFAULT_QUIZ_DURATION_SECONDS);
@@ -81,6 +197,9 @@ export default function StudentQuizPage() {
 
   const [reviewIndex, setReviewIndex] = useState(0);
 
+  // ------------------------------------------------------------
+  // Load quiz, questions, result, user medium, user stream
+  // ------------------------------------------------------------
   useEffect(() => {
     if (!quizId) return;
     let cancelled = false;
@@ -89,6 +208,30 @@ export default function StudentQuizPage() {
       setLoadingQuiz(true);
       setLoadError(null);
 
+      // ---- 1. Get auth user + their medium + stream ----
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let localStream: string | null = null;
+
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("medium, stream")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!cancelled && profileData?.medium) {
+          setMedium(profileData.medium as Medium);
+        }
+        if (!cancelled && profileData?.stream) {
+          setStudentStream(profileData.stream);
+          localStream = profileData.stream;
+        }
+      }
+
+      // ---- 2. Fetch quiz ----
       const { data: quizData, error: quizError } = await supabase
         .from("quizzes")
         .select("id, title, subject, stream, duration_minutes, scheduled_at")
@@ -103,9 +246,22 @@ export default function StudentQuizPage() {
         return;
       }
 
+      // ---- 2b. Stream guard ----
+      // Block Maths / Physical Science students from a Biology quiz
+      // even when they hit the URL directly.
+      if (isSubjectBlockedForStream(quizData.subject, localStream)) {
+        if (!cancelled) {
+          setQuiz(quizData as Quiz);
+          setStreamBlocked(true);
+          setLoadingQuiz(false);
+        }
+        return;
+      }
+
       setQuiz(quizData as Quiz);
       setTimeLeft((quizData.duration_minutes || 30) * 60);
 
+      // ---- 3. Fetch questions (via junction, with legacy fallback) ----
       let loaded: Question[] = [];
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
@@ -129,10 +285,7 @@ export default function StudentQuizPage() {
       if (cancelled) return;
       setQuestions(loaded.slice(0, 20));
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      // ---- 4. Fetch existing result (if any) ----
       if (user) {
         const { data: resultData } = await supabase
           .from("quiz_results")
@@ -153,6 +306,9 @@ export default function StudentQuizPage() {
     };
   }, [quizId]);
 
+  // ------------------------------------------------------------
+  // Quiz window status
+  // ------------------------------------------------------------
   const windowStatus = useMemo(
     () =>
       quiz
@@ -164,11 +320,9 @@ export default function StudentQuizPage() {
     [quiz],
   );
 
-  const getOptions = (q: Question) =>
-    [q.option_1, q.option_2, q.option_3, q.option_4, q.option_5].filter(
-      (o): o is string => o !== null && o !== undefined && o.trim() !== "",
-    );
-
+  // ------------------------------------------------------------
+  // Scoring — uses correct_option which is language-independent
+  // ------------------------------------------------------------
   const calculateScore = useCallback(() => {
     let correct = 0;
     questions.forEach((q, idx) => {
@@ -177,6 +331,9 @@ export default function StudentQuizPage() {
     return correct;
   }, [questions, selectedAnswers]);
 
+  // ------------------------------------------------------------
+  // Submission
+  // ------------------------------------------------------------
   const submitQuizResult = useCallback(
     async (finalScore: number, totalMarks: number, timeSpent: number) => {
       setIsSubmitting(true);
@@ -224,6 +381,7 @@ export default function StudentQuizPage() {
   );
 
   const startingDuration = (quiz?.duration_minutes ?? 30) * 60;
+
   const finishQuiz = useCallback(async () => {
     setIsSubmitted(true);
     const finalScore = calculateScore();
@@ -235,6 +393,7 @@ export default function StudentQuizPage() {
   useEffect(() => {
     if (windowStatus !== "active") return;
     if (isSubmitted || loadingQuiz || questions.length === 0) return;
+    if (streamBlocked) return;
 
     if (timeLeft <= 0) {
       const t = setTimeout(() => {
@@ -246,7 +405,7 @@ export default function StudentQuizPage() {
 
     const interval = setInterval(() => setTimeLeft((p) => p - 1), 1000);
     return () => clearInterval(interval);
-  }, [timeLeft, isSubmitted, loadingQuiz, questions.length, finishQuiz, windowStatus]);
+  }, [timeLeft, isSubmitted, loadingQuiz, questions.length, finishQuiz, windowStatus, streamBlocked]);
 
   const handleSelectOption = (i: number) => {
     if (isSubmitted) return;
@@ -291,13 +450,52 @@ export default function StudentQuizPage() {
     );
   }
 
+  // ============================================================
+  // STREAM BLOCKED — Maths / Physical student opening Biology
+  // ============================================================
+  if (streamBlocked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200 text-center space-y-4">
+          <div className="inline-flex p-3 bg-amber-50 text-amber-600 rounded-2xl">
+            <AlertTriangle className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              ප්‍රවේශය සීමා කර ඇත
+            </h2>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              මෙම Quiz එක ඔබේ stream එකට අදාළ නොවේ.{" "}
+              <strong className="text-gray-800">Biology</strong> විෂය Bio
+              Science stream එකට විතරයි.
+            </p>
+            <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-gray-500">
+              <span className="px-2 py-1 bg-gray-100 rounded-md">
+                ඔබේ stream: {studentStream || "—"}
+              </span>
+              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md">
+                Physics · Chemistry විතරයි
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push("/student/dashboard")}
+            className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <div className="p-6 max-w-md mx-auto text-center space-y-3">
         <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
         <h2 className="text-base font-bold text-gray-800">{quiz.title}</h2>
         <p className="text-gray-500 text-sm">
-          මෙම Quiz එකට තවම ප්‍රශ්න එකතු කර නොමැත.
+          මෙම Quiz එකට තවම ප්‍රශ්න එකතු කර නැත.
         </p>
         <button
           onClick={() => router.push("/student/dashboard")}
@@ -353,7 +551,7 @@ export default function StudentQuizPage() {
   }
 
   // ============================================================
-  // EXPIRED — Review mode
+  // EXPIRED — Review mode (also localized)
   // ============================================================
   if (windowStatus === "expired") {
     return (
@@ -361,6 +559,7 @@ export default function StudentQuizPage() {
         <ReviewMode
           quiz={quiz}
           questions={questions}
+          medium={medium}
           myResult={myResult}
           reviewIndex={reviewIndex}
           setReviewIndex={setReviewIndex}
@@ -374,7 +573,8 @@ export default function StudentQuizPage() {
   // ACTIVE
   // ============================================================
   const currentQ = questions[currentQuestionIndex];
-  const currentOptions = getOptions(currentQ);
+  const localized = localizeQuestion(currentQ, medium);
+  const currentOptions = getLocalizedOptions(localized);
   const msEnd = msUntilEnd(quiz);
   const endsIn = msEnd != null ? formatCountdown(msEnd) : null;
 
@@ -429,7 +629,7 @@ export default function StudentQuizPage() {
         </div>
       ) : (
         <>
-          {/* -------- Mobile: palette collapsible top strip -------- */}
+          {/* -------- Mobile palette -------- */}
           <div className="md:hidden bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-2">
             <div className="flex items-center justify-between text-xs text-gray-600">
               <span className="font-semibold">ප්‍රශ්න</span>
@@ -467,13 +667,13 @@ export default function StudentQuizPage() {
             {/* -------- Question panel -------- */}
             <div className="md:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 sm:space-y-6">
               <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
-                {currentQuestionIndex + 1}. {currentQ.question_text}
+                {currentQuestionIndex + 1}. {localized.question_text}
               </h2>
 
-              {currentQ.image_url && (
+              {localized.image_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={currentQ.image_url}
+                  src={localized.image_url}
                   alt="Question illustration"
                   className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
                 />
@@ -609,10 +809,11 @@ function QuizShell({
 }
 
 // ---------------------------------------------------------------------------
-// Review mode
+// Review mode — also localized by medium
 // ---------------------------------------------------------------------------
 function ReviewMode({
   questions,
+  medium,
   myResult,
   reviewIndex,
   setReviewIndex,
@@ -620,15 +821,15 @@ function ReviewMode({
 }: {
   quiz: Quiz;
   questions: Question[];
+  medium: Medium;
   myResult: StudentResult | null;
   reviewIndex: number;
   setReviewIndex: (i: number) => void;
   onBack: () => void;
 }) {
   const q = questions[reviewIndex];
-  const optionsList = [q.option_1, q.option_2, q.option_3, q.option_4, q.option_5].filter(
-    (o): o is string => o !== null && o !== undefined && o.trim() !== "",
-  );
+  const localized = localizeQuestion(q, medium);
+  const optionsList = getLocalizedOptions(localized);
 
   return (
     <div className="space-y-4">
@@ -692,13 +893,13 @@ function ReviewMode({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
         <div className="md:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 sm:space-y-6">
           <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
-            {reviewIndex + 1}. {q.question_text}
+            {reviewIndex + 1}. {localized.question_text}
           </h2>
 
-          {q.image_url && (
+          {localized.image_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={q.image_url}
+              src={localized.image_url}
               alt="Question illustration"
               className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
             />
@@ -706,7 +907,7 @@ function ReviewMode({
 
           <div className="space-y-2">
             {optionsList.map((opt, idx) => {
-              const isCorrect = q.correct_option === idx;
+              const isCorrect = localized.correct_option === idx;
               return (
                 <div
                   key={idx}
@@ -736,13 +937,13 @@ function ReviewMode({
             })}
           </div>
 
-          {q.explanation && (
+          {localized.explanation && (
             <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-xl">
               <p className="font-bold text-amber-950 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-600" /> Explanation
               </p>
               <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
-                {q.explanation}
+                {localized.explanation}
               </p>
             </div>
           )}

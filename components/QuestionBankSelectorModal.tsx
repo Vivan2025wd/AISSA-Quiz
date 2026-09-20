@@ -33,20 +33,27 @@ interface QuestionBankSelectorModalProps {
   initialSelectedIds: string[];
   onConfirmSelection: (selectedIds: string[]) => void;
   quizSubject?: string;
+  /** 
+   * Pass `undefined` for common quizzes (Physics/Chemistry), or
+   * `"Bio Science"` for Biology. The modal handles the mapping.
+   */
   quizStream?: string;
   maxLimit?: number;
 }
 
-const streams = [
-  "All",
-  "Bio Science",
-  "Physical Science",
-  "Maths",
-  "Commerce",
-  "Arts",
-  "Technology",
-];
+// "Common" is a virtual option meaning stream IS NULL — used by
+// Physics and Chemistry questions that belong to every science stream.
+// "All" means no filter at all.
+const streams = ["All", "Common", "Bio Science"];
 const subjects = ["All", "Physics", "Chemistry", "Biology"];
+
+// Initial stream filter based on the quiz's own stream.
+//   • undefined quizStream  → common (Physics / Chemistry) → "Common"
+//   • "Bio Science"         → "Bio Science"
+function initialStreamFilter(quizStream: string | undefined): string {
+  if (quizStream === undefined) return "Common";
+  return quizStream;
+}
 
 export default function QuestionBankSelectorModal({
   isOpen,
@@ -63,17 +70,16 @@ export default function QuestionBankSelectorModal({
 
   // Filters
   const [selectedSubject, setSelectedSubject] = useState(quizSubject || "All");
-  const [selectedStream, setSelectedStream] = useState(quizStream || "All");
+  const [selectedStream, setSelectedStream] = useState<string>(
+    initialStreamFilter(quizStream),
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
 
   // ============================================================
-  // FIX: Only reset state on the closed → open TRANSITION.
-  // Previously the effect depended on initialSelectedIds, and
-  // since the parent passes a fresh array (e.g. questions.map(...))
-  // on every render, the effect fired mid-session and snapped the
-  // subject/stream filters back to the quiz defaults — wiping the
-  // user's filter changes and hiding their selection.
+  // Only reset state on the closed → open TRANSITION.
+  // (Parent passes a fresh `initialSelectedIds` array each render,
+  // so depending on it here would clobber filters mid-session.)
   // ============================================================
   const wasOpenRef = useRef(false);
 
@@ -84,16 +90,16 @@ export default function QuestionBankSelectorModal({
     if (justOpened) {
       setSelectedIds(initialSelectedIds);
       setSelectedSubject(quizSubject || "All");
-      setSelectedStream(quizStream || "All");
+      setSelectedStream(initialStreamFilter(quizStream));
       setSearchQuery("");
       setSelectedTopic("");
     }
-    // Intentionally depending ONLY on isOpen — see comment above.
+    // Intentionally depending ONLY on isOpen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // ============================================================
-  // Load questions whenever subject/stream filters change (or on open)
+  // Load questions whenever subject / stream filters change
   // ============================================================
   const loadBankQuestions = useCallback(async () => {
     setLoading(true);
@@ -108,7 +114,10 @@ export default function QuestionBankSelectorModal({
     if (selectedSubject && selectedSubject !== "All") {
       query = query.eq("subject", selectedSubject);
     }
-    if (selectedStream && selectedStream !== "All") {
+
+    if (selectedStream === "Common") {
+      query = query.is("stream", null);
+    } else if (selectedStream && selectedStream !== "All") {
       query = query.eq("stream", selectedStream);
     }
 
@@ -255,7 +264,7 @@ export default function QuestionBankSelectorModal({
           </div>
         </div>
 
-        {/* ─── Filter Controls (FIXED LAYOUT) ──────────────────── */}
+        {/* ─── Filter Controls ─────────────────────────────────── */}
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <Filter className="w-3.5 h-3.5 text-gray-500" />
@@ -273,7 +282,7 @@ export default function QuestionBankSelectorModal({
                 placeholder="Search question text..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs  text-gray-700  outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -309,9 +318,17 @@ export default function QuestionBankSelectorModal({
               placeholder="Filter by topic..."
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+
+          {/* Hint about common streams */}
+          {selectedStream === "Common" && (
+            <p className="text-[11px] text-emerald-700 font-semibold mt-2 flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5" />
+              Physics සහ Chemistry ප්‍රශ්න — හැම science stream එකකටම පොදුයි.
+            </p>
+          )}
         </div>
 
         {/* ─── Question List ────────────────────────────────────── */}
@@ -333,9 +350,7 @@ export default function QuestionBankSelectorModal({
               return (
                 <div
                   key={q.id}
-                  onClick={() =>
-                    !disabledBecauseLimit && toggleSelect(q.id)
-                  }
+                  onClick={() => !disabledBecauseLimit && toggleSelect(q.id)}
                   className={`p-4 rounded-xl border transition cursor-pointer flex items-start gap-4 ${
                     isSelected
                       ? "bg-blue-50/70 border-blue-500 ring-1 ring-blue-500/30"
@@ -362,11 +377,16 @@ export default function QuestionBankSelectorModal({
                           {q.subject}
                         </span>
                       )}
-                      {q.stream && (
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded">
-                          {q.stream}
-                        </span>
-                      )}
+                      {/* Stream badge — "Common" for null stream */}
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                          q.stream
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {q.stream ?? "Common"}
+                      </span>
                       {q.topic && (
                         <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-[10px] font-semibold rounded">
                           {q.topic}

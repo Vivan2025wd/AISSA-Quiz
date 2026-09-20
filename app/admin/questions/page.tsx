@@ -16,8 +16,13 @@ import { supabase } from "@/lib/supabaseClient";
 import QuestionEntryForm from "@/components/QuestionEntryForm";
 import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionEditModal";
 
-const subjects = ["All", "Physics", "Chemistry", "Biology"];
-const streams = ["All", "Bio Science", "Physical Science", "Maths", "Commerce", "Arts", "Technology"];
+// ------------------------------------------------------------
+// Filters
+//   • "Common" = Physics / Chemistry (stream IS NULL in DB)
+//   • "Bio Science" = Biology only
+// ------------------------------------------------------------
+const subjectFilters = ["All", "Physics", "Chemistry", "Biology"];
+const streamFilters = ["All", "Common", "Bio Science"];
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
@@ -30,7 +35,8 @@ export default function QuestionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Editing state
-  const [editingQuestion, setEditingQuestion] = useState<EditableQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] =
+    useState<EditableQuestion | null>(null);
 
   const loadQuestions = useCallback(async () => {
     setLoading(true);
@@ -38,14 +44,18 @@ export default function QuestionsPage() {
     let query = supabase
       .from("questions")
       .select(
-        "id, quiz_id, subject, stream, topic, question_text, image_url, option_1, option_2, option_3, option_4, option_5, correct_option, explanation"
+        "id, quiz_id, subject, stream, topic, question_text, image_url, option_1, option_2, option_3, option_4, option_5, correct_option, explanation",
       )
       .order("created_at", { ascending: false });
 
     if (filterSubject !== "All") {
       query = query.eq("subject", filterSubject);
     }
-    if (filterStream !== "All") {
+
+    // Stream filter: "Common" means stream IS NULL
+    if (filterStream === "Common") {
+      query = query.is("stream", null);
+    } else if (filterStream !== "All") {
       query = query.eq("stream", filterStream);
     }
 
@@ -63,7 +73,12 @@ export default function QuestionsPage() {
   }, [loadQuestions]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("මෙම ප්‍රශ්නය Question Bank එකෙන් සම්පූර්ණයෙන්ම ඉවත් කිරීමට තහවුරු කරන්න?")) return;
+    if (
+      !confirm(
+        "මෙම ප්‍රශ්නය Question Bank එකෙන් සම්පූර්ණයෙන්ම ඉවත් කිරීමට තහවුරු කරන්න?",
+      )
+    )
+      return;
 
     const { error } = await supabase.from("questions").delete().eq("id", id);
     if (error) {
@@ -136,7 +151,7 @@ export default function QuestionsPage() {
             onChange={(e) => setFilterSubject(e.target.value)}
             className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition-all"
           >
-            {subjects.map((s) => (
+            {subjectFilters.map((s) => (
               <option key={s} value={s}>
                 Subject: {s}
               </option>
@@ -150,7 +165,7 @@ export default function QuestionsPage() {
             onChange={(e) => setFilterStream(e.target.value)}
             className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500 transition-all"
           >
-            {streams.map((st) => (
+            {streamFilters.map((st) => (
               <option key={st} value={st}>
                 Stream: {st}
               </option>
@@ -165,7 +180,9 @@ export default function QuestionsPage() {
           <h2 className="text-lg font-bold text-gray-900">
             ප්‍රශ්න ලැයිස්තුව ({filteredQuestions.length})
           </h2>
-          <span className="text-xs text-gray-400">Total in Bank: {questions.length}</span>
+          <span className="text-xs text-gray-400">
+            Total in Bank: {questions.length}
+          </span>
         </div>
 
         {loading ? (
@@ -186,7 +203,8 @@ export default function QuestionsPage() {
                 q.option_4,
                 q.option_5,
               ].filter(
-                (opt): opt is string => opt !== null && opt !== undefined && opt.trim() !== ""
+                (opt): opt is string =>
+                  opt !== null && opt !== undefined && opt.trim() !== "",
               );
 
               return (
@@ -205,11 +223,16 @@ export default function QuestionsPage() {
                             {q.subject}
                           </span>
                         )}
-                        {q.stream && (
-                          <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-semibold rounded-md border border-purple-200">
-                            {q.stream}
-                          </span>
-                        )}
+                        {/* Stream badge — "Common" (emerald) if NULL, purple if Bio Science */}
+                        <span
+                          className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${
+                            q.stream
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          }`}
+                        >
+                          {q.stream ?? "Common"}
+                        </span>
                         {q.topic && (
                           <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-xs font-semibold rounded-md">
                             {q.topic}

@@ -20,6 +20,7 @@ import {
   Calendar,
   Hash,
   RefreshCw,
+  Languages,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import SchoolAutocomplete from "@/components/SchoolAutocomplete";
@@ -39,10 +40,17 @@ const sriLankanDistricts = [
 ];
 
 const streams = [
-  "Biological Science","Physical Science","Maths","Commerce","Arts","Technology",
+  "Biological Science","Maths",
 ];
 
 type IdMode = "has-aissa" | "no-aissa";
+type Medium  = "sinhala" | "english" | "tamil";
+
+const MEDIUM_OPTIONS: { value: Medium; label: string; short: string }[] = [
+  { value: "sinhala", label: "සිංහල",  short: "SI" },
+  { value: "english", label: "English", short: "EN" },
+  { value: "tamil",   label: "தமிழ்",  short: "TA" },
+];
 
 export default function StudentRegisterPage() {
   const router = useRouter();
@@ -56,6 +64,7 @@ export default function StudentRegisterPage() {
     district: sriLankanDistricts[0],
     school: "",
     stream: streams[0],
+    medium: "sinhala" as Medium,   // ← NEW
     aissaIdInput: "",
     aissaDistrict: "AWC" as AissaDistrictCode,
     schoolYear: String(new Date().getFullYear()),
@@ -272,6 +281,7 @@ export default function StudentRegisterPage() {
           district: formData.district,
           school: formData.school,
           stream: formData.stream,
+          medium: formData.medium,           // ← NEW
           ais_id: finalAisId,
           aissa_district: effectiveAissaDistrict,
           is_aissa_member: isAissaMember,
@@ -507,6 +517,41 @@ export default function StudentRegisterPage() {
               </select>
             </div>
 
+            {/* ---------- Medium (NEW) ---------- */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <Languages className="w-4 h-4 text-blue-600" />
+                මාධ්‍යය (Medium)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {MEDIUM_OPTIONS.map((opt) => {
+                  const isActive = formData.medium === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, medium: opt.value }))
+                      }
+                      disabled={isSubmitting}
+                      className={`py-3 rounded-xl text-sm font-bold transition border flex items-center justify-center gap-2 ${
+                        isActive
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                          : "bg-gray-50 text-gray-700 border-gray-300 hover:border-blue-400"
+                      } disabled:opacity-60`}
+                    >
+                      {isActive && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-gray-500 mt-1.5">
+                * ඔබ ක්විස් එක කරන භාෂාව — ප්‍රශ්න මේ භාෂාවෙන්ම පෙන්වයි.
+                හැම විෂයකටම මේ මාධ්‍යයෙන්ම ප්‍රශ්න ලැබෙනවා.
+              </p>
+            </div>
+
             {/* ============================================================ */}
             {/* AISSA ID / Non-AISSA BLOCK                                   */}
             {/* ============================================================ */}
@@ -569,7 +614,6 @@ export default function StudentRegisterPage() {
 
                 {/* School Year + Student Number */}
                 <div className="grid grid-cols-2 gap-3">
-                  {/* School Year */}
                   <div>
                     <label className="block text-[11px] font-bold text-indigo-900 uppercase mb-1.5">
                       පාසල් වර්ෂය
@@ -594,7 +638,6 @@ export default function StudentRegisterPage() {
                     </p>
                   </div>
 
-                  {/* Student Number — auto */}
                   <div>
                     <label className="flex items-center justify-between text-[11px] font-bold text-indigo-900 uppercase mb-1.5">
                       <span>පාසල් අංකය</span>
@@ -641,7 +684,6 @@ export default function StudentRegisterPage() {
                   </div>
                 </div>
 
-                {/* AISSA District */}
                 <div>
                   <label className="block text-[11px] font-bold text-indigo-900 uppercase mb-1.5">
                     AISSA කලාපය
@@ -661,7 +703,6 @@ export default function StudentRegisterPage() {
                   </select>
                 </div>
 
-                {/* Live preview */}
                 <div className="p-3 bg-white border border-indigo-200 rounded-xl">
                   <p className="text-[10px] uppercase font-bold text-indigo-500 tracking-wider">
                     Auto-Generated Quiz ID

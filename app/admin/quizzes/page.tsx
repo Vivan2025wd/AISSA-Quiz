@@ -15,19 +15,29 @@ import {
   X,
   Eye,
   FileQuestion,
+  Globe2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionEditModal";
 import QuestionBankSelectorModal from "@/components/QuestionBankSelectorModal";
 
-const streams = ["Bio Science", "Physical Science", "Maths", "Commerce", "Arts", "Technology"];
+// ------------------------------------------------------------
+// Solution A — Physics & Chemistry are common across all science
+// streams; only Biology is Bio-Science-specific. So we no longer
+// ask the admin to pick a stream — it's derived from the subject.
+// ------------------------------------------------------------
+const BIO_STREAM = "Bio Science";
+
+function derivedStreamForSubject(subject: string): string | null {
+  return subject === "Biology" ? BIO_STREAM : null;
+}
 
 interface Quiz {
   id: string;
   title: string;
   description?: string;
   subject: string;
-  stream?: string;
+  stream?: string | null;
   scheduled_at?: string;
   duration_minutes: number;
   total_questions?: number;
@@ -52,7 +62,6 @@ export default function AdminQuizzesPage() {
   const [editingQuestion, setEditingQuestion] = useState<EditableQuestion | null>(null);
 
   const [subject, setSubject] = useState("Physics");
-  const [stream, setStream] = useState(streams[0]);
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("2026-09-20");
@@ -66,6 +75,9 @@ export default function AdminQuizzesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // Auto-derived from the chosen subject
+  const derivedStream = derivedStreamForSubject(subject);
 
   useEffect(() => {
     fetchQuizzes();
@@ -208,7 +220,7 @@ export default function AdminQuizzesPage() {
           title: topic,
           description: description,
           subject: subject,
-          stream: stream,
+          stream: derivedStream,        // ← null for Physics/Chemistry, "Bio Science" for Biology
           scheduled_at: scheduledAt,
           duration_minutes: parseInt(duration, 10),
           total_questions: selectedQuestionIds.length,
@@ -259,7 +271,6 @@ export default function AdminQuizzesPage() {
             </p>
           </div>
 
-          {/* Actions — grid on mobile, row on tablet+ */}
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
             <Link
               href="/admin/questions"
@@ -312,6 +323,7 @@ export default function AdminQuizzesPage() {
             )}
 
             <form onSubmit={handleSchedule} className="space-y-5 sm:space-y-6">
+              {/* ---- Subject + auto stream indicator ---- */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
@@ -332,25 +344,31 @@ export default function AdminQuizzesPage() {
                   </select>
                 </div>
 
+                {/* Stream — auto-derived, read-only */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-                    Stream
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
+                    <Globe2 className="w-3.5 h-3.5" /> Stream (Auto)
                   </label>
-                  <select
-                    value={stream}
-                    onChange={(e) => {
-                      setStream(e.target.value);
-                      setSelectedQuestionIds([]);
-                    }}
-                    disabled={isSubmitting}
-                    className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                  <div
+                    className={`w-full p-3 rounded-xl font-medium text-sm border ${
+                      derivedStream === null
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                        : "bg-purple-50 border-purple-200 text-purple-800"
+                    }`}
                   >
-                    {streams.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    {derivedStream === null ? (
+                      <span className="font-bold">
+                        Common — All Science Streams
+                      </span>
+                    ) : (
+                      <span className="font-bold">Bio Science only</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    {derivedStream === null
+                      ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
+                      : "* Biology Bio Science stream එකට විතරයි."}
+                  </p>
                 </div>
               </div>
 
@@ -383,7 +401,7 @@ export default function AdminQuizzesPage() {
                 />
               </div>
 
-              {/* Date / time / duration — single column on mobile */}
+              {/* Date / time / duration */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="flex items-center gap-1 text-xs font-bold text-gray-700 uppercase mb-2">
@@ -516,89 +534,102 @@ export default function AdminQuizzesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              {quizzes.map((quiz) => (
-                <div
-                  key={quiz.id}
-                  className="p-4 sm:p-5 border border-gray-200 rounded-xl bg-gray-50/50 hover:bg-white hover:border-blue-300 transition flex flex-col justify-between gap-3 sm:gap-4"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <span className="px-2.5 py-1 bg-blue-100 text-blue-700 font-bold text-[11px] rounded-lg uppercase">
-                        {quiz.subject}
-                      </span>
-                      <button
-                        onClick={() => toggleQuizStatus(quiz.id, quiz.is_live)}
-                        className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition whitespace-nowrap ${
-                          quiz.is_live
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {quiz.is_live ? "Live" : "Draft"}
-                      </button>
-                    </div>
-
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-                      {quiz.title}
-                    </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm mt-1 line-clamp-2">
-                      {quiz.description || "No description provided."}
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 mt-3 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" /> {quiz.duration_minutes} Mins
-                      </span>
-                      {quiz.stream && <span>{quiz.stream}</span>}
-                      {quiz.scheduled_at && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(quiz.scheduled_at).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                          })}
+              {quizzes.map((quiz) => {
+                const isCommon = !quiz.stream;
+                return (
+                  <div
+                    key={quiz.id}
+                    className="p-4 sm:p-5 border border-gray-200 rounded-xl bg-gray-50/50 hover:bg-white hover:border-blue-300 transition flex flex-col justify-between gap-3 sm:gap-4"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <span className="px-2.5 py-1 bg-blue-100 text-blue-700 font-bold text-[11px] rounded-lg uppercase">
+                          {quiz.subject}
                         </span>
-                      )}
-                      <span className="font-bold text-blue-600">
-                        {quiz.total_questions ?? 0} / 20 Qs
-                      </span>
-                    </div>
-                  </div>
+                        <button
+                          onClick={() => toggleQuizStatus(quiz.id, quiz.is_live)}
+                          className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition whitespace-nowrap ${
+                            quiz.is_live
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {quiz.is_live ? "Live" : "Draft"}
+                        </button>
+                      </div>
 
-                  {/* Actions — stack on very small screens */}
-                  <div className="pt-3 border-t border-gray-200 flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                        {quiz.title}
+                      </h3>
+                      <p className="text-gray-500 text-xs sm:text-sm mt-1 line-clamp-2">
+                        {quiz.description || "No description provided."}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 mt-3 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" /> {quiz.duration_minutes} Mins
+                        </span>
+
+                        {/* Stream badge: "Common" (green) or actual stream (purple) */}
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${
+                            isCommon
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {isCommon ? "Common" : quiz.stream}
+                        </span>
+
+                        {quiz.scheduled_at && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(quiz.scheduled_at).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                            })}
+                          </span>
+                        )}
+                        <span className="font-bold text-blue-600">
+                          {quiz.total_questions ?? 0} / 20 Qs
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-200 flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={() => openQuestionsModal(quiz)}
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View ({quiz.total_questions ?? 0})
+                        </button>
+
+                        <Link
+                          href={`/admin/quizzes/${quiz.id}/questions`}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" /> Manage
+                        </Link>
+                      </div>
+
                       <button
-                        onClick={() => openQuestionsModal(quiz)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                        onClick={() => deleteQuiz(quiz.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition self-end sm:self-auto"
+                        title="Delete Quiz"
                       >
-                        <Eye className="w-3.5 h-3.5" /> View ({quiz.total_questions ?? 0})
+                        <Trash2 className="w-4 h-4" />
                       </button>
-
-                      <Link
-                        href={`/admin/quizzes/${quiz.id}/questions`}
-                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                      >
-                        <HelpCircle className="w-3.5 h-3.5" /> Manage
-                      </Link>
                     </div>
-
-                    <button
-                      onClick={() => deleteQuiz(quiz.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition self-end sm:self-auto"
-                      title="Delete Quiz"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* ============ Quick preview modal (mobile-optimized) ============ */}
+      {/* ============ Quick preview modal ============ */}
       {viewingQuiz && (
         <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
           <div className="relative w-full sm:max-w-4xl bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-gray-200 overflow-hidden max-h-[92vh] sm:my-8 flex flex-col">
@@ -608,7 +639,8 @@ export default function AdminQuizzesPage() {
                   {viewingQuiz.title}
                 </h3>
                 <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
-                  {viewingQuiz.subject} • {quizQuestions.length} / 20 ප්‍රශ්න
+                  {viewingQuiz.subject} •{" "}
+                  {viewingQuiz.stream ?? "Common"} • {quizQuestions.length} / 20 ප්‍රශ්න
                 </p>
               </div>
               <button
@@ -722,7 +754,7 @@ export default function AdminQuizzesPage() {
         initialSelectedIds={selectedQuestionIds}
         onConfirmSelection={(ids) => setSelectedQuestionIds(ids)}
         quizSubject={subject}
-        quizStream={stream}
+        quizStream={derivedStream ?? undefined}
         maxLimit={20}
       />
 

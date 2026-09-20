@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState} from "react";
-import { X, Save, Loader2, Sparkles, Image as ImageIcon, CheckCircle2 } from "lucide-react";
+import React, { useState } from "react";
+import {
+  X,
+  Save,
+  Loader2,
+  Sparkles,
+  Image as ImageIcon,
+  CheckCircle2,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export type EditableQuestion = {
@@ -9,16 +16,36 @@ export type EditableQuestion = {
   quiz_id?: string | null;
   subject?: string | null;
   stream?: string | null;
-  question_text: string;
   topic: string | null;
   correct_option: number;
+  image_url: string | null;
+
+  // ---- Sinhala (base columns — existing) ----
+  question_text: string;
   option_1: string;
   option_2: string;
   option_3: string;
   option_4: string;
   option_5: string | null;
-  image_url: string | null;
   explanation: string | null;
+
+  // ---- English (new, required) ----
+  question_text_en?: string | null;
+  option_1_en?: string | null;
+  option_2_en?: string | null;
+  option_3_en?: string | null;
+  option_4_en?: string | null;
+  option_5_en?: string | null;
+  explanation_en?: string | null;
+
+  // ---- Tamil (new, optional) ----
+  question_text_ta?: string | null;
+  option_1_ta?: string | null;
+  option_2_ta?: string | null;
+  option_3_ta?: string | null;
+  option_4_ta?: string | null;
+  option_5_ta?: string | null;
+  explanation_ta?: string | null;
 };
 
 interface QuestionEditModalProps {
@@ -28,23 +55,64 @@ interface QuestionEditModalProps {
   onSaved: () => void;
 }
 
-const streams = ["Bio Science", "Physical Science", "Maths", "Commerce", "Arts", "Technology"];
+const subjects = ["Physics", "Chemistry", "Biology"];
+const BIO_STREAM = "Bio Science";
+
+/**
+ * Physics and Chemistry are common across all science streams
+ * (stream = null in the DB). Biology is Bio-Science-only.
+ */
+function derivedStreamForSubject(subject: string): string | null {
+  return subject === "Biology" ? BIO_STREAM : null;
+}
+
+type Language = "si" | "en" | "ta";
+
+interface LanguageContent {
+  questionText: string;
+  options: [string, string, string, string, string];
+  explanation: string;
+}
 
 const getInitialFormState = (question: EditableQuestion | null) => ({
   subject: question?.subject ?? "Physics",
-  stream: question?.stream ?? streams[0],
   topic: question?.topic ?? "",
-  questionText: question?.question_text ?? "",
   imageUrl: question?.image_url ?? "",
-  options: [
-    question?.option_1 ?? "",
-    question?.option_2 ?? "",
-    question?.option_3 ?? "",
-    question?.option_4 ?? "",
-    question?.option_5 ?? "",
-  ],
   correctAnswer: question?.correct_option ?? 0,
-  explanation: question?.explanation ?? "",
+
+  si: {
+    questionText: question?.question_text ?? "",
+    options: [
+      question?.option_1 ?? "",
+      question?.option_2 ?? "",
+      question?.option_3 ?? "",
+      question?.option_4 ?? "",
+      question?.option_5 ?? "",
+    ] as LanguageContent["options"],
+    explanation: question?.explanation ?? "",
+  },
+  en: {
+    questionText: question?.question_text_en ?? "",
+    options: [
+      question?.option_1_en ?? "",
+      question?.option_2_en ?? "",
+      question?.option_3_en ?? "",
+      question?.option_4_en ?? "",
+      question?.option_5_en ?? "",
+    ] as LanguageContent["options"],
+    explanation: question?.explanation_en ?? "",
+  },
+  ta: {
+    questionText: question?.question_text_ta ?? "",
+    options: [
+      question?.option_1_ta ?? "",
+      question?.option_2_ta ?? "",
+      question?.option_3_ta ?? "",
+      question?.option_4_ta ?? "",
+      question?.option_5_ta ?? "",
+    ] as LanguageContent["options"],
+    explanation: question?.explanation_ta ?? "",
+  },
 });
 
 function QuestionEditorForm({
@@ -57,42 +125,90 @@ function QuestionEditorForm({
   onSaved: () => void;
 }) {
   const initialState = getInitialFormState(question);
-  const [subject, setSubject] = useState(initialState.subject);
-  const [stream, setStream] = useState(initialState.stream);
-  const [topic, setTopic] = useState(initialState.topic);
-  const [questionText, setQuestionText] = useState(initialState.questionText);
-  const [imageUrl, setImageUrl] = useState(initialState.imageUrl);
-  const [options, setOptions] = useState(initialState.options);
-  const [correctAnswer, setCorrectAnswer] = useState(initialState.correctAnswer);
-  const [explanation, setExplanation] = useState(initialState.explanation);
 
+  const [subject, setSubject] = useState(initialState.subject);
+  const [topic, setTopic] = useState(initialState.topic);
+  const [imageUrl, setImageUrl] = useState(initialState.imageUrl);
+  const [correctAnswer, setCorrectAnswer] = useState(initialState.correctAnswer);
+
+  const [si, setSi] = useState<LanguageContent>(initialState.si);
+  const [en, setEn] = useState<LanguageContent>(initialState.en);
+  const [ta, setTa] = useState<LanguageContent>(initialState.ta);
+
+  const [activeLang, setActiveLang] = useState<Language>("si");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const hasOption5 = options[4].trim() !== "";
+  // Auto-derived from subject — no more user-editable stream
+  const derivedStream = derivedStreamForSubject(subject);
 
-  const handleOptionChange = (index: number, value: string) => {
-    const updated = [...options];
+  const getContent = (lang: Language): LanguageContent =>
+    lang === "si" ? si : lang === "en" ? en : ta;
+
+  const setContent = (lang: Language, patch: Partial<LanguageContent>) => {
+    const setter = lang === "si" ? setSi : lang === "en" ? setEn : setTa;
+    setter((prev) => ({ ...prev, ...patch }));
+  };
+
+  const hasOption5 = si.options[4].trim() !== "";
+
+  const handleOptionChange = (lang: Language, index: number, value: string) => {
+    const content = getContent(lang);
+    const updated = [...content.options] as LanguageContent["options"];
     updated[index] = value;
+
     if (index === 4 && value.trim() === "" && correctAnswer === 4) {
       setCorrectAnswer(0);
     }
-    setOptions(updated);
+    setContent(lang, { options: updated });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!questionText.trim()) {
-      setError("ප්‍රශ්න විස්තරය (Question Text) හිස් විය නොහැක.");
+    // ---- Sinhala validation ----
+    if (!si.questionText.trim()) {
+      setError("සිංහල ප්‍රශ්නය අවශ්‍යයි.");
+      setActiveLang("si");
       return;
     }
-
     for (let i = 0; i < 4; i++) {
-      if (!options[i].trim()) {
-        setError(`විකල්පය ${i + 1} හිස් තැබිය නොහැක.`);
+      if (!si.options[i].trim()) {
+        setError(`සිංහල විකල්පය ${i + 1} අවශ්‍යයි.`);
+        setActiveLang("si");
         return;
+      }
+    }
+
+    // ---- English validation ----
+    if (!en.questionText.trim()) {
+      setError("English question text is required.");
+      setActiveLang("en");
+      return;
+    }
+    for (let i = 0; i < 4; i++) {
+      if (!en.options[i].trim()) {
+        setError(`English option ${i + 1} is required.`);
+        setActiveLang("en");
+        return;
+      }
+    }
+
+    // ---- Tamil validation (optional, but if started, must be complete) ----
+    const taStarted = ta.questionText.trim() || ta.options.some((o) => o.trim());
+    if (taStarted) {
+      if (!ta.questionText.trim()) {
+        setError("Tamil question text is required if Tamil option is filled.");
+        setActiveLang("ta");
+        return;
+      }
+      for (let i = 0; i < 4; i++) {
+        if (!ta.options[i].trim()) {
+          setError(`Tamil option ${i + 1} is required.`);
+          setActiveLang("ta");
+          return;
+        }
       }
     }
 
@@ -106,18 +222,38 @@ function QuestionEditorForm({
     const { error: updateError } = await supabase
       .from("questions")
       .update({
-        subject: subject,
-        stream: stream,
-        question_text: questionText.trim(),
+        subject,
+        stream: derivedStream, // null for Physics/Chemistry, "Bio Science" for Biology
         topic: topic.trim() || null,
         image_url: imageUrl.trim() || null,
-        option_1: options[0].trim(),
-        option_2: options[1].trim(),
-        option_3: options[2].trim(),
-        option_4: options[3].trim(),
-        option_5: hasOption5 ? options[4].trim() : null,
         correct_option: correctAnswer,
-        explanation: explanation.trim() || null,
+
+        // Sinhala (base columns)
+        question_text: si.questionText.trim(),
+        option_1: si.options[0].trim(),
+        option_2: si.options[1].trim(),
+        option_3: si.options[2].trim(),
+        option_4: si.options[3].trim(),
+        option_5: si.options[4].trim() || null,
+        explanation: si.explanation.trim() || null,
+
+        // English
+        question_text_en: en.questionText.trim(),
+        option_1_en: en.options[0].trim(),
+        option_2_en: en.options[1].trim(),
+        option_3_en: en.options[2].trim(),
+        option_4_en: en.options[3].trim(),
+        option_5_en: en.options[4].trim() || null,
+        explanation_en: en.explanation.trim() || null,
+
+        // Tamil (nullable if not started)
+        question_text_ta: taStarted ? ta.questionText.trim() : null,
+        option_1_ta: taStarted ? ta.options[0].trim() : null,
+        option_2_ta: taStarted ? ta.options[1].trim() : null,
+        option_3_ta: taStarted ? ta.options[2].trim() : null,
+        option_4_ta: taStarted ? ta.options[3].trim() : null,
+        option_5_ta: taStarted ? (ta.options[4].trim() || null) : null,
+        explanation_ta: taStarted ? (ta.explanation.trim() || null) : null,
       })
       .eq("id", question.id);
 
@@ -132,14 +268,26 @@ function QuestionEditorForm({
     onClose();
   };
 
+  const tabs: { key: Language; label: string; required: boolean }[] = [
+    { key: "si", label: "සිංහල", required: true },
+    { key: "en", label: "English", required: true },
+    { key: "ta", label: "தமிழ்", required: false },
+  ];
+
+  const current = getContent(activeLang);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
       <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 flex flex-col max-h-[90vh]">
-        {/* Modal Header */}
+        {/* ---- Modal Header ---- */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">ප්‍රශ්නය සංස්කරණය (Edit Question)</h3>
-            <p className="text-xs text-gray-500">Question Bank එකේ ඇති ප්‍රශ්නය අවශ්‍ය පරිදි වෙනස් කරන්න.</p>
+            <h3 className="text-lg font-bold text-gray-900">
+              ප්‍රශ්නය සංස්කරණය (Edit Question)
+            </h3>
+            <p className="text-xs text-gray-500">
+              භාෂා 3කින්ම ප්‍රශ්නය සංස්කරණය කරන්න · සිංහල සහ English අනිවාර්යයි
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -150,7 +298,7 @@ function QuestionEditorForm({
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* ---- Modal Body ---- */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
@@ -158,35 +306,46 @@ function QuestionEditorForm({
             </div>
           )}
 
+          {/* Metadata row — Subject + auto-derived Stream */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">විෂය (Subject)</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                විෂය (Subject)
+              </label>
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={isSubmitting}
                 className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                <option value="Physics">Physics</option>
-                <option value="Chemistry">Chemistry</option>
-                <option value="Biology">Biology</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Stream</label>
-              <select
-                value={stream}
-                onChange={(e) => setStream(e.target.value)}
-                disabled={isSubmitting}
-                className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                {streams.map((s) => (
+                {subjects.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                Stream (Auto)
+              </label>
+              <div
+                className={`w-full p-3 rounded-xl font-medium text-sm border ${
+                  derivedStream === null
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-purple-50 border-purple-200 text-purple-800"
+                }`}
+              >
+                {derivedStream === null
+                  ? "Common — All Science Streams"
+                  : "Bio Science only"}
+              </div>
+              <p className="text-[11px] text-gray-500 mt-1">
+                {derivedStream === null
+                  ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
+                  : "* Biology Bio Science stream එකට විතරයි."}
+              </p>
             </div>
           </div>
 
@@ -204,24 +363,10 @@ function QuestionEditorForm({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-              ප්‍රශ්නය (Question Text)
-            </label>
-            <textarea
-              rows={4}
-              placeholder="ප්‍රශ්නය මෙතන සටහන් කරන්න..."
-              value={questionText}
-              onChange={(e) => setQuestionText(e.target.value)}
-              required
-              disabled={isSubmitting}
-              className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-            />
-          </div>
-
+          {/* Diagram URL (language-independent) */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
-              <ImageIcon className="w-4 h-4 text-gray-500" /> ප්‍රස්ථාරය / රූපසටහන (Diagram URL - Optional)
+              <ImageIcon className="w-4 h-4 text-gray-500" /> රූපසටහන (Diagram URL - Optional)
             </label>
             <input
               type="text"
@@ -247,58 +392,140 @@ function QuestionEditorForm({
             )}
           </div>
 
-          {/* Options with Radio Selection for Correct Answer */}
-          <div className="space-y-3 pt-2">
-            <label className="block text-xs font-bold text-gray-700 uppercase">
-              පිළිතුරු විකල්ප සහ නිවැරදි පිළිතුර තෝරන්න
-            </label>
+          {/* ---- LANGUAGE TABS ---- */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-gray-700 uppercase">
+                භාෂාව අනුව ප්‍රශ්නය (Question by Language)
+              </label>
+              <span className="text-[11px] text-gray-500">
+                * සිංහල සහ English අනිවාර්යයි · தமிழ் optional
+              </span>
+            </div>
 
-            {options.map((option, idx) => {
-              const isOptionalFifth = idx === 4;
-              return (
-                <div key={idx} className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="editCorrectAnswer"
-                    checked={correctAnswer === idx}
-                    onChange={() => setCorrectAnswer(idx)}
-                    disabled={isSubmitting || (isOptionalFifth && !hasOption5)}
-                    className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-30"
-                  />
-                  <span className="w-7 font-bold text-gray-700 text-sm">({idx + 1})</span>
-                  <input
-                    type="text"
-                    placeholder={isOptionalFifth ? "විකල්පය 5 (Optional — හිස්ව තැබිය හැක)" : `විකල්පය ${idx + 1}`}
-                    value={option}
-                    onChange={(e) => handleOptionChange(idx, e.target.value)}
-                    required={!isOptionalFifth}
-                    disabled={isSubmitting}
-                    className="flex-1 p-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-                  />
-                </div>
-              );
-            })}
-            <p className="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> නිවැරදි පිළිතුර ඉදිරියෙන් ඇති Radio Button එක Select කරන්න.
-            </p>
+            <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-xl">
+              {tabs.map((t) => {
+                const content = getContent(t.key);
+                const filled = content.questionText.trim().length > 0;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActiveLang(t.key)}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      activeLang === t.key
+                        ? "bg-white text-blue-700 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {t.label}
+                    {t.required && <span className="text-red-500">*</span>}
+                    {filled && activeLang !== t.key && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Content for active tab */}
+            <div className="mt-4 space-y-4 p-4 bg-gray-50/60 border border-gray-200 rounded-xl">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                  ප්‍රශ්නය ({tabs.find((t) => t.key === activeLang)?.label})
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="ප්‍රශ්නය මෙතන සටහන් කරන්න..."
+                  value={current.questionText}
+                  onChange={(e) =>
+                    setContent(activeLang, { questionText: e.target.value })
+                  }
+                  required={activeLang !== "ta"}
+                  disabled={isSubmitting}
+                  className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase">
+                  පිළිතුරු විකල්ප (Options) —{" "}
+                  {tabs.find((t) => t.key === activeLang)?.label}
+                </label>
+                {current.options.map((opt, idx) => {
+                  const isOptionalFifth = idx === 4;
+                  return (
+                    <div key={idx} className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="editCorrectAnswer"
+                        checked={correctAnswer === idx && activeLang === "si"}
+                        onChange={() =>
+                          activeLang === "si" && setCorrectAnswer(idx)
+                        }
+                        disabled={
+                          isSubmitting ||
+                          (isOptionalFifth && !hasOption5) ||
+                          activeLang !== "si"
+                        }
+                        className={`w-5 h-5 text-blue-600 focus:ring-blue-500 ${
+                          activeLang === "si"
+                            ? "cursor-pointer"
+                            : "opacity-30 cursor-not-allowed"
+                        }`}
+                        title={
+                          activeLang === "si"
+                            ? "නිවැරදි පිළිතුර තෝරන්න"
+                            : "Correct answer is selected in the Sinhala tab"
+                        }
+                      />
+                      <span className="w-7 font-bold text-gray-700 text-sm">
+                        ({idx + 1})
+                      </span>
+                      <input
+                        type="text"
+                        placeholder={
+                          isOptionalFifth
+                            ? "විකල්පය 5 (Optional — හිස්ව තැබිය හැක)"
+                            : `විකල්පය ${idx + 1}`
+                        }
+                        value={opt}
+                        onChange={(e) =>
+                          handleOptionChange(activeLang, idx, e.target.value)
+                        }
+                        required={!isOptionalFifth && activeLang !== "ta"}
+                        disabled={isSubmitting}
+                        className="flex-1 p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                      />
+                    </div>
+                  );
+                })}
+                <p className="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  නිවැරදි පිළිතුර තෝරන්නේ සිංහල tab එකේ — එය සියලු භාෂා වලට apply වේ.
+                </p>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  විස්තරාත්මක විසඳීම — Optional
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="විසඳන ආකාරය..."
+                  value={current.explanation}
+                  onChange={(e) =>
+                    setContent(activeLang, { explanation: e.target.value })
+                  }
+                  disabled={isSubmitting}
+                  className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Explanation */}
-          <div className="pt-2">
-            <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
-              <Sparkles className="w-4 h-4 text-amber-500" /> විස්තරාත්මක විසඳීම (Solution Explanation - Optional)
-            </label>
-            <textarea
-              rows={3}
-              placeholder="මෙම ප්‍රශ්නය විසඳන ආකාරය සහ නිවැරදි පිළිතුරට පැමිණෙන ආකාරය..."
-              value={explanation}
-              onChange={(e) => setExplanation(e.target.value)}
-              disabled={isSubmitting}
-              className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-            />
-          </div>
-
-          {/* Modal Footer / Actions */}
+          {/* ---- Footer ---- */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
@@ -327,13 +554,9 @@ function QuestionEditorForm({
   );
 }
 
-// The actual exported component page.tsx imports. It owns the
-// isOpen / null-question guard so callers can render it
-// unconditionally (as page.tsx does) without worrying about a
-// null `question`. `key={question.id}` forces QuestionEditorForm
-// to remount — and therefore reset its internal useState fields —
-// whenever the admin switches which question they're editing,
-// instead of the form carrying over the previous question's values.
+// The actual exported component. `key={question.id}` forces the
+// inner form to remount when the admin switches questions,
+// resetting all three language states.
 export function QuestionEditModal({
   isOpen,
   question,

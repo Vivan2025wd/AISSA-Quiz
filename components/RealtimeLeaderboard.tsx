@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Trophy, Medal } from "lucide-react";
+import { Trophy, Medal, Loader2 } from "lucide-react";
 
+// ------------------------------------------------------------
+// Types
+// ------------------------------------------------------------
 interface LeaderboardEntry {
   id: string;
   score: number;
@@ -26,6 +29,7 @@ interface ProfileRow {
   id: string;
   full_name: string | null;
   school: string | null;
+  is_admin: boolean | null;
 }
 
 export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
@@ -38,16 +42,25 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
     // admin performance page — avoids PostgREST's nested-select
     // inference returning the embedded row as an array (which
     // leaves entry.profiles undefined and blanks the UI).
+    //
+    // Admin accounts are ALSO filtered out client-side, so this
+    // leaderboard matches the RPC-based ones (which already
+    // exclude is_admin = true).
     // ------------------------------------------------------------
     const fetchLeaderboard = async () => {
-      // 1. Fetch raw results for this quiz (score desc, time asc)
+      setLoading(true);
+
+      // 1. Fetch raw results for this quiz (score desc, time asc).
+      //    We pull 40 rows, not 10, because some of the top 40 may
+      //    belong to admins and get filtered in step 3 — after
+      //    filtering we want a clean top 10 of real students.
       const { data: resultsData, error: resultsError } = await supabase
         .from("quiz_results")
         .select("id, student_id, score, total_marks, time_spent_seconds")
         .eq("quiz_id", quizId)
         .order("score", { ascending: false })
         .order("time_spent_seconds", { ascending: true })
-        .limit(10);
+        .limit(40);
 
       if (resultsError) {
         console.error("Realtime leaderboard results error:", resultsError);
@@ -64,12 +77,13 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
 
       const results = resultsData as ResultRow[];
 
-      // 2. Fetch the profiles for the students in that top-10
+      // 2. Fetch profiles for the students in that list — including
+      //    is_admin so we can filter them out below.
       const studentIds = Array.from(new Set(results.map((r) => r.student_id)));
 
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, school")
+        .select("id, full_name, school, is_admin")
         .in("id", studentIds);
 
       if (profilesError) {
@@ -81,18 +95,26 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
         profileMap.set(p.id, p),
       );
 
-      // 3. Merge
-      const merged: LeaderboardEntry[] = results.map((r) => {
+      // 3. Merge + exclude admins + cap at 10
+      const merged: LeaderboardEntry[] = [];
+      for (const r of results) {
         const p = profileMap.get(r.student_id);
-        return {
+
+        // Skip admins entirely — they should never appear on a
+        // student-facing leaderboard.
+        if (p?.is_admin === true) continue;
+
+        merged.push({
           id: r.id,
           score: r.score ?? 0,
           total_marks: r.total_marks ?? 0,
           time_spent_seconds: r.time_spent_seconds ?? 0,
           student_name: p?.full_name || "Unknown Student",
           school: p?.school || "—",
-        };
-      });
+        });
+
+        if (merged.length >= 10) break;
+      }
 
       setLeaderboard(merged);
       setLoading(false);
@@ -139,8 +161,8 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
       </div>
 
       {loading ? (
-        <div className="text-center text-xs text-gray-400 py-6">
-          Loading leaderboard...
+        <div className="text-center text-xs text-gray-400 py-6 flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading leaderboard...
         </div>
       ) : leaderboard.length === 0 ? (
         <div className="text-center text-xs text-gray-400 py-6">

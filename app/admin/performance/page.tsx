@@ -419,9 +419,9 @@ export default function AdminPerformancePage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
               <table className="w-full text-left border-collapse text-sm">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_#e5e7eb]">
                   <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold uppercase text-xs">
                     <th className="py-4 px-6">Student</th>
                     <th className="py-4 px-6">AISSA ID</th>
