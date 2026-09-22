@@ -40,7 +40,9 @@ const sriLankanDistricts = [
 ];
 
 const streams = [
-  "Biological Science","Maths",
+  "Select Stream",
+  "Biological Science",
+  "Maths",
 ];
 
 type IdMode = "has-aissa" | "no-aissa";
