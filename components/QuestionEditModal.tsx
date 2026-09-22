@@ -7,6 +7,7 @@ import {
   Loader2,
   Sparkles,
   CheckCircle2,
+  Edit3,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import ImageUploadField from "@/components/ImageUploadField";
@@ -277,246 +278,283 @@ function QuestionEditorForm({
   const current = getContent(activeLang);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden my-8 flex flex-col max-h-[90vh]">
-        {/* ---- Modal Header ---- */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              ප්‍රශ්නය සංස්කරණය (Edit Question)
-            </h3>
-            <p className="text-xs text-gray-500">
-              භාෂා 3කින්ම ප්‍රශ්නය සංස්කරණය කරන්න · සිංහල සහ English අනිවාර්යයි
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
-            title="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-emerald-950/60 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden my-4 sm:my-8 flex flex-col max-h-[94vh]">
 
-        {/* ---- Modal Body ---- */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
-              {error}
-            </div>
-          )}
-
-          {/* Metadata row — Subject + auto-derived Stream */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-                විෂය (Subject)
-              </label>
-              <select
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                disabled={isSubmitting}
-                className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                {subjects.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-                Stream (Auto)
-              </label>
-              <div
-                className={`w-full p-3 rounded-xl font-medium text-sm border ${
-                  derivedStream === null
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : "bg-purple-50 border-purple-200 text-purple-800"
-                }`}
-              >
-                {derivedStream === null
-                  ? "Common — All Science Streams"
-                  : "Bio Science only"}
-              </div>
-              <p className="text-[11px] text-gray-500 mt-1">
-                {derivedStream === null
-                  ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
-                  : "* Biology Bio Science stream එකට විතරයි."}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-              පාඩම / මාතෘකාව (Topic - Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="උදා: තාපය (Thermal Physics)"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              disabled={isSubmitting}
-              className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-            />
-          </div>
-
-          {/* Diagram URL (language-independent) */}
-          <ImageUploadField
-            value={imageUrl}
-            onChange={setImageUrl}
-            disabled={isSubmitting}
+        {/* ═══════════════ HEADER BANNER ═══════════════ */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
+          {/* dot grid */}
+          <div
+            className="absolute inset-0 opacity-[0.08] pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, white 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
           />
+          {/* glows */}
+          <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
 
-          {/* ---- LANGUAGE TABS ---- */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold text-gray-700 uppercase">
-                භාෂාව අනුව ප්‍රශ්නය (Question by Language)
-              </label>
-              <span className="text-[11px] text-gray-500">
-                * සිංහල සහ English අනිවාර්යයි · தமிழ் optional
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-xl">
-              {tabs.map((t) => {
-                const content = getContent(t.key);
-                const filled = content.questionText.trim().length > 0;
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setActiveLang(t.key)}
-                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                      activeLang === t.key
-                        ? "bg-white text-blue-700 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {t.label}
-                    {t.required && <span className="text-red-500">*</span>}
-                    {filled && activeLang !== t.key && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Content for active tab */}
-            <div className="mt-4 space-y-4 p-4 bg-gray-50/60 border border-gray-200 rounded-xl">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-                  ප්‍රශ්නය ({tabs.find((t) => t.key === activeLang)?.label})
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="ප්‍රශ්නය මෙතන සටහන් කරන්න..."
-                  value={current.questionText}
-                  onChange={(e) =>
-                    setContent(activeLang, { questionText: e.target.value })
-                  }
-                  required={activeLang !== "ta"}
-                  disabled={isSubmitting}
-                  className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-                />
+          <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              {/* Logo */}
+              <div className="shrink-0 hidden sm:block">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
+                  <div className="relative w-11 h-11 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg flex items-center justify-center">
+                    <Edit3 className="w-5 h-5 text-amber-300" />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase">
-                  පිළිතුරු විකල්ප (Options) —{" "}
-                  {tabs.find((t) => t.key === activeLang)?.label}
-                </label>
-                {current.options.map((opt, idx) => {
-                  const isOptionalFifth = idx === 4;
-                  return (
-                    <div key={idx} className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="editCorrectAnswer"
-                        checked={correctAnswer === idx && activeLang === "si"}
-                        onChange={() =>
-                          activeLang === "si" && setCorrectAnswer(idx)
-                        }
-                        disabled={
-                          isSubmitting ||
-                          (isOptionalFifth && !hasOption5) ||
-                          activeLang !== "si"
-                        }
-                        className={`w-5 h-5 text-blue-600 focus:ring-blue-500 ${
-                          activeLang === "si"
-                            ? "cursor-pointer"
-                            : "opacity-30 cursor-not-allowed"
-                        }`}
-                        title={
-                          activeLang === "si"
-                            ? "නිවැරදි පිළිතුර තෝරන්න"
-                            : "Correct answer is selected in the Sinhala tab"
-                        }
-                      />
-                      <span className="w-7 font-bold text-gray-700 text-sm">
-                        ({idx + 1})
-                      </span>
-                      <input
-                        type="text"
-                        placeholder={
-                          isOptionalFifth
-                            ? "විකල්පය 5 (Optional — හිස්ව තැබිය හැක)"
-                            : `විකල්පය ${idx + 1}`
-                        }
-                        value={opt}
-                        onChange={(e) =>
-                          handleOptionChange(activeLang, idx, e.target.value)
-                        }
-                        required={!isOptionalFifth && activeLang !== "ta"}
-                        disabled={isSubmitting}
-                        className="flex-1 p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-                      />
-                    </div>
-                  );
-                })}
-                <p className="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  නිවැරදි පිළිතුර තෝරන්නේ සිංහල tab එකේ — එය සියලු භාෂා වලට apply වේ.
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
+                  <span className="break-words">ප්‍රශ්නය සංස්කරණය කරන්න</span>
+                </h3>
+                <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
+                  භාෂා 3කින්ම ප්‍රශ්නය සංස්කරණය කරන්න · සිංහල සහ English අනිවාර්යයි
                 </p>
               </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition shrink-0"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* ═══════════════ FORM (scrollable body + fixed footer) ═══════════════ */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 min-h-0"
+        >
+          {/* Scrollable body */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Metadata row — Subject + auto-derived Stream */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                  විෂය (Subject)
+                </label>
+                <select
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                >
+                  {subjects.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  විස්තරාත්මක විසඳීම — Optional
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                  Stream (Auto)
                 </label>
-                <textarea
-                  rows={2}
-                  placeholder="විසඳන ආකාරය..."
-                  value={current.explanation}
-                  onChange={(e) =>
-                    setContent(activeLang, { explanation: e.target.value })
-                  }
-                  disabled={isSubmitting}
-                  className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-                />
+                <div
+                  className={`w-full p-3 rounded-xl font-medium text-sm border ${
+                    derivedStream === null
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-purple-50 border-purple-200 text-purple-800"
+                  }`}
+                >
+                  {derivedStream === null
+                    ? "Common — All Science Streams"
+                    : "Bio Science only"}
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  {derivedStream === null
+                    ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
+                    : "* Biology Bio Science stream එකට විතරයි."}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                පාඩම / මාතෘකාව (Topic - Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="උදා: තාපය (Thermal Physics)"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                disabled={isSubmitting}
+                className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+              />
+            </div>
+
+            {/* Diagram URL (language-independent) */}
+            <ImageUploadField
+              value={imageUrl}
+              onChange={setImageUrl}
+              disabled={isSubmitting}
+            />
+
+            {/* ═══ LANGUAGE TABS ═══ */}
+            <div>
+              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                <label className="block text-xs font-bold text-gray-700 uppercase">
+                  භාෂාව අනුව ප්‍රශ්නය
+                </label>
+                <span className="text-[11px] text-gray-500">
+                  * සිංහල සහ English අනිවාර්යයි · தமிழ் optional
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
+                {tabs.map((t) => {
+                  const content = getContent(t.key);
+                  const filled = content.questionText.trim().length > 0;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setActiveLang(t.key)}
+                      className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        activeLang === t.key
+                          ? "bg-white text-emerald-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {t.label}
+                      {t.required && <span className="text-red-500">*</span>}
+                      {filled && activeLang !== t.key && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Content for active tab */}
+              <div className="mt-4 space-y-4 p-4 bg-emerald-50/40 border border-emerald-100/60 rounded-xl">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                    ප්‍රශ්නය ({tabs.find((t) => t.key === activeLang)?.label})
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="ප්‍රශ්නය මෙතන සටහන් කරන්න..."
+                    value={current.questionText}
+                    onChange={(e) =>
+                      setContent(activeLang, { questionText: e.target.value })
+                    }
+                    required={activeLang !== "ta"}
+                    disabled={isSubmitting}
+                    className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase">
+                    පිළිතුරු විකල්ප (Options) —{" "}
+                    {tabs.find((t) => t.key === activeLang)?.label}
+                  </label>
+                  {current.options.map((opt, idx) => {
+                    const isOptionalFifth = idx === 4;
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="editCorrectAnswer"
+                          checked={correctAnswer === idx && activeLang === "si"}
+                          onChange={() =>
+                            activeLang === "si" && setCorrectAnswer(idx)
+                          }
+                          disabled={
+                            isSubmitting ||
+                            (isOptionalFifth && !hasOption5) ||
+                            activeLang !== "si"
+                          }
+                          className={`w-5 h-5 text-emerald-600 focus:ring-emerald-500 ${
+                            activeLang === "si"
+                              ? "cursor-pointer"
+                              : "opacity-30 cursor-not-allowed"
+                          }`}
+                          title={
+                            activeLang === "si"
+                              ? "නිවැරදි පිළිතුර තෝරන්න"
+                              : "Correct answer is selected in the Sinhala tab"
+                          }
+                        />
+                        <span className="w-7 font-bold text-gray-700 text-sm">
+                          ({idx + 1})
+                        </span>
+                        <input
+                          type="text"
+                          placeholder={
+                            isOptionalFifth
+                              ? "විකල්පය 5 (Optional — හිස්ව තැබිය හැක)"
+                              : `විකල්පය ${idx + 1}`
+                          }
+                          value={opt}
+                          onChange={(e) =>
+                            handleOptionChange(activeLang, idx, e.target.value)
+                          }
+                          required={!isOptionalFifth && activeLang !== "ta"}
+                          disabled={isSubmitting}
+                          className="flex-1 p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                        />
+                      </div>
+                    );
+                  })}
+                  <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    නිවැරදි පිළිතුර තෝරන්නේ සිංහල tab එකේ — එය සියලු භාෂා වලට apply වේ.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    විස්තරාත්මක විසඳීම — Optional
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="විසඳන ආකාරය..."
+                    value={current.explanation}
+                    onChange={(e) =>
+                      setContent(activeLang, { explanation: e.target.value })
+                    }
+                    disabled={isSubmitting}
+                    className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ---- Footer ---- */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          {/* ═══ FOOTER (fixed at bottom) ═══ */}
+          <div className="shrink-0 px-4 sm:px-6 py-4 border-t border-emerald-100 bg-emerald-50/60 backdrop-blur-sm flex items-center justify-end gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm transition disabled:opacity-60 text-sm"
+              className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-sm"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

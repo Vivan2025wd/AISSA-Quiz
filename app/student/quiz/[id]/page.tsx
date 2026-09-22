@@ -13,6 +13,7 @@ import {
   Hourglass,
   Sparkles,
   Trophy,
+  GraduationCap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -87,10 +88,21 @@ type StudentResult = {
 };
 
 // ------------------------------------------------------------
+// Subject colors (matches dashboard/leaderboard)
+// ------------------------------------------------------------
+function subjectBadgeStyle(subject: string | null | undefined): string {
+  const s = (subject ?? "").toLowerCase();
+  if (s.includes("physics"))
+    return "bg-blue-500/20 text-blue-100 border-blue-300/30";
+  if (s.includes("chemistry"))
+    return "bg-purple-500/20 text-purple-100 border-purple-300/30";
+  if (s.includes("biology"))
+    return "bg-emerald-500/20 text-emerald-100 border-emerald-300/30";
+  return "bg-white/15 text-white border-white/20";
+}
+
+// ------------------------------------------------------------
 // Stream → Subject rules
-//   Bio Science       → Physics · Chemistry · Biology
-//   Physical / Maths  → Physics · Chemistry  (NO Biology)
-//   Unknown           → all three (safe fallback)
 // ------------------------------------------------------------
 function isSubjectBlockedForStream(
   quizSubject: string | null | undefined,
@@ -100,7 +112,6 @@ function isSubjectBlockedForStream(
   const subj = quizSubject.toLowerCase();
   const s = studentStream.toLowerCase();
 
-  // Maths / Physical Science students cannot access Biology.
   if ((s.includes("physical") || s.includes("maths")) && subj.includes("biology")) {
     return true;
   }
@@ -110,12 +121,6 @@ function isSubjectBlockedForStream(
 // ------------------------------------------------------------
 // Localization helpers
 // ------------------------------------------------------------
-
-/**
- * Pick a value from the three language variants, with fallback
- * to Sinhala (the base column). A "missing" translation is
- * either null/undefined OR an empty/whitespace string.
- */
 function pickByMedium<T>(
   medium: Medium,
   si: T,
@@ -130,10 +135,6 @@ function pickByMedium<T>(
   return si;
 }
 
-/**
- * Return a "view" of the question in the student's chosen medium.
- * correct_option is language-independent, so it is passed through.
- */
 function localizeQuestion(q: Question, medium: Medium) {
   return {
     question_text: pickByMedium(medium, q.question_text, q.question_text_en, q.question_text_ta),
@@ -150,11 +151,6 @@ function localizeQuestion(q: Question, medium: Medium) {
 
 type LocalizedQuestion = ReturnType<typeof localizeQuestion>;
 
-/**
- * Strip blank trailing options (option_5 is optional) and return
- * a renderable list. Since we already localized, this operates on
- * the localized strings directly.
- */
 function getLocalizedOptions(lq: LocalizedQuestion): string[] {
   return [
     lq.option_1,
@@ -181,11 +177,8 @@ export default function StudentQuizPage() {
   const [loadingQuiz, setLoadingQuiz] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Student's chosen medium — defaults to Sinhala until the profile loads.
   const [medium, setMedium] = useState<Medium>("sinhala");
-  // Student's stream — used for subject-access guard.
   const [studentStream, setStudentStream] = useState<string | null>(null);
-  // True when this student's stream cannot access this quiz's subject.
   const [streamBlocked, setStreamBlocked] = useState(false);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -208,7 +201,6 @@ export default function StudentQuizPage() {
       setLoadingQuiz(true);
       setLoadError(null);
 
-      // ---- 1. Get auth user + their medium + stream ----
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -231,7 +223,6 @@ export default function StudentQuizPage() {
         }
       }
 
-      // ---- 2. Fetch quiz ----
       const { data: quizData, error: quizError } = await supabase
         .from("quizzes")
         .select("id, title, subject, stream, duration_minutes, scheduled_at")
@@ -246,9 +237,6 @@ export default function StudentQuizPage() {
         return;
       }
 
-      // ---- 2b. Stream guard ----
-      // Block Maths / Physical Science students from a Biology quiz
-      // even when they hit the URL directly.
       if (isSubjectBlockedForStream(quizData.subject, localStream)) {
         if (!cancelled) {
           setQuiz(quizData as Quiz);
@@ -261,7 +249,6 @@ export default function StudentQuizPage() {
       setQuiz(quizData as Quiz);
       setTimeLeft((quizData.duration_minutes || 30) * 60);
 
-      // ---- 3. Fetch questions (via junction, with legacy fallback) ----
       let loaded: Question[] = [];
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
@@ -285,7 +272,6 @@ export default function StudentQuizPage() {
       if (cancelled) return;
       setQuestions(loaded.slice(0, 20));
 
-      // ---- 4. Fetch existing result (if any) ----
       if (user) {
         const { data: resultData } = await supabase
           .from("quiz_results")
@@ -320,9 +306,6 @@ export default function StudentQuizPage() {
     [quiz],
   );
 
-  // ------------------------------------------------------------
-  // Scoring — uses correct_option which is language-independent
-  // ------------------------------------------------------------
   const calculateScore = useCallback(() => {
     let correct = 0;
     questions.forEach((q, idx) => {
@@ -331,9 +314,6 @@ export default function StudentQuizPage() {
     return correct;
   }, [questions, selectedAnswers]);
 
-  // ------------------------------------------------------------
-  // Submission
-  // ------------------------------------------------------------
   const submitQuizResult = useCallback(
     async (finalScore: number, totalMarks: number, timeSpent: number) => {
       setIsSubmitting(true);
@@ -427,36 +407,40 @@ export default function StudentQuizPage() {
   // ============================================================
   if (loadingQuiz) {
     return (
-      <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2 text-sm">
-        <Loader2 className="w-5 h-5 animate-spin" /> Loading Quiz...
-      </div>
+      <ThemedShell>
+        <div className="flex items-center justify-center gap-2 text-gray-500 text-sm py-16">
+          <Loader2 className="w-5 h-5 animate-spin text-emerald-600" /> Loading Quiz...
+        </div>
+      </ThemedShell>
     );
   }
 
   if (loadError || !quiz) {
     return (
-      <div className="p-6 max-w-md mx-auto text-center space-y-3">
-        <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
-        <p className="text-red-600 font-medium text-sm">
-          {loadError ?? "Quiz not found!"}
-        </p>
-        <button
-          onClick={() => router.push("/student/dashboard")}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Back to Dashboard
-        </button>
-      </div>
+      <ThemedShell>
+        <div className="max-w-md mx-auto text-center space-y-3 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm p-8">
+          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
+          <p className="text-red-600 font-medium text-sm">
+            {loadError ?? "Quiz not found!"}
+          </p>
+          <button
+            onClick={() => router.push("/student/dashboard")}
+            className="text-sm text-emerald-600 hover:underline"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+      </ThemedShell>
     );
   }
 
   // ============================================================
-  // STREAM BLOCKED — Maths / Physical student opening Biology
+  // STREAM BLOCKED
   // ============================================================
   if (streamBlocked) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200 text-center space-y-4">
+      <ThemedShell>
+        <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
           <div className="inline-flex p-3 bg-amber-50 text-amber-600 rounded-2xl">
             <AlertTriangle className="w-10 h-10" />
           </div>
@@ -469,7 +453,7 @@ export default function StudentQuizPage() {
               <strong className="text-gray-800">Biology</strong> විෂය Bio
               Science stream එකට විතරයි.
             </p>
-            <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-gray-500">
+            <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-gray-500 flex-wrap">
               <span className="px-2 py-1 bg-gray-100 rounded-md">
                 ඔබේ stream: {studentStream || "—"}
               </span>
@@ -480,30 +464,32 @@ export default function StudentQuizPage() {
           </div>
           <button
             onClick={() => router.push("/student/dashboard")}
-            className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2"
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Dashboard
           </button>
         </div>
-      </div>
+      </ThemedShell>
     );
   }
 
   if (questions.length === 0) {
     return (
-      <div className="p-6 max-w-md mx-auto text-center space-y-3">
-        <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
-        <h2 className="text-base font-bold text-gray-800">{quiz.title}</h2>
-        <p className="text-gray-500 text-sm">
-          මෙම Quiz එකට තවම ප්‍රශ්න එකතු කර නැත.
-        </p>
-        <button
-          onClick={() => router.push("/student/dashboard")}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Back to Dashboard
-        </button>
-      </div>
+      <ThemedShell>
+        <div className="max-w-md mx-auto text-center space-y-3 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm p-8">
+          <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
+          <h2 className="text-base font-bold text-gray-800">{quiz.title}</h2>
+          <p className="text-gray-500 text-sm">
+            මෙම Quiz එකට තවම ප්‍රශ්න එකතු කර නැත.
+          </p>
+          <button
+            onClick={() => router.push("/student/dashboard")}
+            className="text-sm text-emerald-600 hover:underline"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+      </ThemedShell>
     );
   }
 
@@ -518,7 +504,7 @@ export default function StudentQuizPage() {
     const startsIn = ms != null && ms > 0 ? formatCountdown(ms) : null;
     return (
       <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
-        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-amber-200 text-center space-y-4">
+        <div className="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
           <Hourglass className="w-10 h-10 sm:w-12 sm:h-12 text-amber-500 mx-auto" />
           <h2 className="text-base sm:text-xl font-bold text-gray-900">
             මෙම Quiz එක තවම ආරම්භ වී නැත
@@ -541,7 +527,7 @@ export default function StudentQuizPage() {
           )}
           <button
             onClick={() => router.push("/student/dashboard")}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-emerald-600 hover:underline"
           >
             ← Back to Dashboard
           </button>
@@ -551,7 +537,7 @@ export default function StudentQuizPage() {
   }
 
   // ============================================================
-  // EXPIRED — Review mode (also localized)
+  // EXPIRED — Review mode
   // ============================================================
   if (windowStatus === "expired") {
     return (
@@ -581,7 +567,7 @@ export default function StudentQuizPage() {
   return (
     <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
       {/* Timer bar */}
-      <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between gap-3">
+      <div className="bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-xl shadow-sm border border-white/70 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs sm:text-sm text-gray-500 truncate">
             {quiz.stream ? `${quiz.stream} • ` : ""}ප්‍රශ්නය{" "}
@@ -598,7 +584,7 @@ export default function StudentQuizPage() {
           className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-base sm:text-lg font-bold shrink-0 ${
             timeLeft < 300
               ? "bg-red-50 text-red-600 border border-red-200"
-              : "bg-blue-50 text-blue-700"
+              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
           }`}
         >
           <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -613,8 +599,8 @@ export default function StudentQuizPage() {
       )}
 
       {isSubmitted ? (
-        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-200 text-center space-y-3">
-          <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto" />
+        <div className="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-sm border border-white/70 text-center space-y-3">
+          <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             Quiz එක සම්පූර්ණ කර ඇත
           </h2>
@@ -630,11 +616,11 @@ export default function StudentQuizPage() {
       ) : (
         <>
           {/* -------- Mobile palette -------- */}
-          <div className="md:hidden bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-2">
+          <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
             <div className="flex items-center justify-between text-xs text-gray-600">
               <span className="font-semibold">ප්‍රශ්න</span>
               <span className="text-[11px]">
-                <span className="text-green-700 font-bold">
+                <span className="text-emerald-700 font-bold">
                   {Object.keys(selectedAnswers).length}
                 </span>{" "}
                 / {questions.length}
@@ -650,9 +636,9 @@ export default function StudentQuizPage() {
                     onClick={() => setCurrentQuestionIndex(idx)}
                     className={`w-full aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition ${
                       isCurrent
-                        ? "ring-2 ring-blue-600 bg-blue-600 text-white"
+                        ? "ring-2 ring-emerald-600 bg-emerald-600 text-white"
                         : isAnswered
-                          ? "bg-green-100 text-green-800 border border-green-300"
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                           : "bg-gray-100 text-gray-600"
                     }`}
                   >
@@ -665,7 +651,7 @@ export default function StudentQuizPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
             {/* -------- Question panel -------- */}
-            <div className="md:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 sm:space-y-6">
+            <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-4 sm:space-y-6">
               <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
                 {currentQuestionIndex + 1}. {localized.question_text}
               </h2>
@@ -690,8 +676,8 @@ export default function StudentQuizPage() {
                       onClick={() => handleSelectOption(idx)}
                       className={`w-full text-left p-3.5 sm:p-4 rounded-lg border transition-all duration-150 text-sm sm:text-base ${
                         isSelected
-                          ? "border-blue-600 bg-blue-50 text-blue-900 font-medium ring-2 ring-blue-500/20"
-                          : "border-gray-200 hover:bg-gray-50 text-gray-700"
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-900 font-medium ring-2 ring-emerald-500/20"
+                          : "border-gray-200 bg-white/50 hover:bg-emerald-50/40 text-gray-700"
                       }`}
                     >
                       {option}
@@ -705,7 +691,7 @@ export default function StudentQuizPage() {
                 <button
                   disabled={currentQuestionIndex === 0}
                   onClick={() => setCurrentQuestionIndex((p) => p - 1)}
-                  className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm bg-white/50 transition"
                 >
                   <ArrowLeft className="w-4 h-4" /> <span className="hidden xs:inline">පෙර</span>
                 </button>
@@ -713,7 +699,7 @@ export default function StudentQuizPage() {
                 {currentQuestionIndex < questions.length - 1 ? (
                   <button
                     onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm"
+                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition text-sm shadow-sm"
                   >
                     ඊළඟ <ArrowRight className="w-4 h-4" />
                   </button>
@@ -721,7 +707,7 @@ export default function StudentQuizPage() {
                   <button
                     disabled={isSubmitted || isSubmitting}
                     onClick={handleManualSubmit}
-                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition disabled:opacity-50 text-sm"
+                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition disabled:opacity-50 text-sm shadow-sm"
                   >
                     {isSubmitting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -735,7 +721,7 @@ export default function StudentQuizPage() {
             </div>
 
             {/* -------- Desktop palette -------- */}
-            <div className="hidden md:block bg-white p-5 rounded-xl shadow-sm border border-gray-200 h-fit space-y-4">
+            <div className="hidden md:block bg-white/80 backdrop-blur-md p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
               <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
                 Question Navigation
               </h3>
@@ -749,9 +735,9 @@ export default function StudentQuizPage() {
                       onClick={() => setCurrentQuestionIndex(idx)}
                       className={`w-10 h-10 rounded-lg text-sm font-semibold flex items-center justify-center transition ${
                         isCurrent
-                          ? "ring-2 ring-blue-600 ring-offset-2 bg-blue-600 text-white"
+                          ? "ring-2 ring-emerald-600 ring-offset-2 bg-emerald-600 text-white"
                           : isAnswered
-                            ? "bg-green-100 text-green-800 border border-green-300"
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -762,7 +748,7 @@ export default function StudentQuizPage() {
               </div>
               <div className="pt-3 border-t text-xs space-y-2 text-gray-500">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-green-100 border border-green-300 rounded" />
+                  <span className="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded" />
                   පිළිතුරු සපයා ඇත
                 </div>
                 <div className="flex items-center gap-2">
@@ -778,7 +764,23 @@ export default function StudentQuizPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Shell
+// Themed page wrapper (gradient + aurora blobs) — for pre-quiz states
+// ---------------------------------------------------------------------------
+function ThemedShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+      <div className="relative p-3 sm:p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shell with banner header
 // ---------------------------------------------------------------------------
 function QuizShell({
   title,
@@ -792,24 +794,76 @@ function QuizShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-        <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200">
-          <h1 className="text-base sm:text-xl font-bold text-gray-800 leading-snug wrap-break-word">
-            {subject} - {title}
-          </h1>
-          {stream && (
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{stream}</p>
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+      {/* Aurora blobs */}
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+
+      <div className="relative p-3 sm:p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+          {/* Banner */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+            {/* dot grid */}
+            <div
+              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, white 1px, transparent 1px)",
+                backgroundSize: "22px 22px",
+              }}
+            />
+            {/* glows */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
+            {/* rings */}
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-[18px] border-white/5" />
+            {/* shine */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]" />
+
+            <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+              {/* Logo */}
+              <div className="shrink-0">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
+                  <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
+                    <GraduationCap className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Title */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border ${subjectBadgeStyle(
+                      subject,
+                    )}`}
+                  >
+                    {subject}
+                  </span>
+                  {stream && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
+                      {stream}
+                    </span>
+                  )}
+                </div>
+                <h1 className="text-base sm:text-xl md:text-2xl font-extrabold leading-snug tracking-tight break-words">
+                  {title}
+                </h1>
+              </div>
+            </div>
+          </div>
+
+          {children}
         </div>
-        {children}
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Review mode — also localized by medium
+// Review mode
 // ---------------------------------------------------------------------------
 function ReviewMode({
   questions,
@@ -834,9 +888,9 @@ function ReviewMode({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-indigo-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+      <div className="bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-xl shadow-sm border border-emerald-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
             <Eye className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
@@ -869,7 +923,7 @@ function ReviewMode({
       </div>
 
       {/* Mobile palette */}
-      <div className="md:hidden bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-2">
+      <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
         <div className="grid grid-cols-6 xs:grid-cols-8 sm:grid-cols-10 gap-1.5">
           {questions.map((_, idx) => {
             const isCurrent = reviewIndex === idx;
@@ -879,7 +933,7 @@ function ReviewMode({
                 onClick={() => setReviewIndex(idx)}
                 className={`w-full aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition ${
                   isCurrent
-                    ? "ring-2 ring-blue-600 bg-blue-600 text-white"
+                    ? "ring-2 ring-emerald-600 bg-emerald-600 text-white"
                     : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                 }`}
               >
@@ -891,26 +945,26 @@ function ReviewMode({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
-        <div className="md:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 sm:space-y-6">
+        <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-4 sm:space-y-6">
           <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
             {reviewIndex + 1}. {localized.question_text}
           </h2>
 
           {localized.image_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-                <img
-                    src={localized.image_url}
-                    alt="Question illustration"
-                    loading="lazy"
-                    decoding="async"
-                    className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
-                    onError={(e) => {
-                    const el = e.target as HTMLImageElement;
-                    el.onerror = null;
-                    el.style.display = "none";   // hide broken image
-                    }}
-                />
-          )} 
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={localized.image_url}
+              alt="Question illustration"
+              loading="lazy"
+              decoding="async"
+              className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
+              onError={(e) => {
+                const el = e.target as HTMLImageElement;
+                el.onerror = null;
+                el.style.display = "none";
+              }}
+            />
+          )}
 
           <div className="space-y-2">
             {optionsList.map((opt, idx) => {
@@ -921,7 +975,7 @@ function ReviewMode({
                   className={`p-3 sm:p-3.5 rounded-lg border flex items-start gap-2.5 sm:gap-3 text-sm ${
                     isCorrect
                       ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
-                      : "bg-white border-gray-200 text-gray-700"
+                      : "bg-white/60 border-gray-200 text-gray-700"
                   }`}
                 >
                   <span
@@ -933,7 +987,7 @@ function ReviewMode({
                   >
                     {isCorrect ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
                   </span>
-                  <span className="flex-1 wrap-break-word">{opt}</span>
+                  <span className="flex-1 break-words">{opt}</span>
                   {isCorrect && (
                     <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
                       Correct
@@ -959,7 +1013,7 @@ function ReviewMode({
             <button
               disabled={reviewIndex === 0}
               onClick={() => setReviewIndex(reviewIndex - 1)}
-              className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm bg-white/50 transition"
             >
               <ArrowLeft className="w-4 h-4" /> <span className="hidden xs:inline">පෙර</span>
             </button>
@@ -967,14 +1021,14 @@ function ReviewMode({
             {reviewIndex < questions.length - 1 ? (
               <button
                 onClick={() => setReviewIndex(reviewIndex + 1)}
-                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm"
+                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition text-sm shadow-sm"
               >
                 ඊළඟ <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={onBack}
-                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition text-sm"
+                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition text-sm shadow-sm"
               >
                 Dashboard <ArrowRight className="w-4 h-4" />
               </button>
@@ -983,7 +1037,7 @@ function ReviewMode({
         </div>
 
         {/* Desktop palette */}
-        <div className="hidden md:block bg-white p-5 rounded-xl shadow-sm border border-gray-200 h-fit space-y-4">
+        <div className="hidden md:block bg-white/80 backdrop-blur-md p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
           <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
             ප්‍රශ්න ලැයිස්තුව
           </h3>
@@ -996,7 +1050,7 @@ function ReviewMode({
                   onClick={() => setReviewIndex(idx)}
                   className={`w-10 h-10 rounded-lg text-sm font-semibold flex items-center justify-center transition ${
                     isCurrent
-                      ? "ring-2 ring-blue-600 ring-offset-2 bg-blue-600 text-white"
+                      ? "ring-2 ring-emerald-600 ring-offset-2 bg-emerald-600 text-white"
                       : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
                   }`}
                 >
@@ -1007,7 +1061,7 @@ function ReviewMode({
           </div>
           <button
             onClick={onBack}
-            className="w-full text-xs font-semibold text-gray-500 hover:text-blue-600 pt-2"
+            className="w-full text-xs font-semibold text-gray-500 hover:text-emerald-600 pt-2 transition"
           >
             ← Dashboard
           </button>

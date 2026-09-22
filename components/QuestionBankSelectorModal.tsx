@@ -8,6 +8,8 @@ import {
   Loader2,
   AlertTriangle,
   Filter,
+  GraduationCap,
+  FileQuestion,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -33,23 +35,13 @@ interface QuestionBankSelectorModalProps {
   initialSelectedIds: string[];
   onConfirmSelection: (selectedIds: string[]) => void;
   quizSubject?: string;
-  /** 
-   * Pass `undefined` for common quizzes (Physics/Chemistry), or
-   * `"Bio Science"` for Biology. The modal handles the mapping.
-   */
   quizStream?: string;
   maxLimit?: number;
 }
 
-// "Common" is a virtual option meaning stream IS NULL — used by
-// Physics and Chemistry questions that belong to every science stream.
-// "All" means no filter at all.
 const streams = ["All", "Common", "Bio Science"];
 const subjects = ["All", "Physics", "Chemistry", "Biology"];
 
-// Initial stream filter based on the quiz's own stream.
-//   • undefined quizStream  → common (Physics / Chemistry) → "Common"
-//   • "Bio Science"         → "Bio Science"
 function initialStreamFilter(quizStream: string | undefined): string {
   if (quizStream === undefined) return "Common";
   return quizStream;
@@ -68,7 +60,6 @@ export default function QuestionBankSelectorModal({
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
 
-  // Filters
   const [selectedSubject, setSelectedSubject] = useState(quizSubject || "All");
   const [selectedStream, setSelectedStream] = useState<string>(
     initialStreamFilter(quizStream),
@@ -76,11 +67,6 @@ export default function QuestionBankSelectorModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
 
-  // ============================================================
-  // Only reset state on the closed → open TRANSITION.
-  // (Parent passes a fresh `initialSelectedIds` array each render,
-  // so depending on it here would clobber filters mid-session.)
-  // ============================================================
   const wasOpenRef = useRef(false);
 
   useEffect(() => {
@@ -94,13 +80,9 @@ export default function QuestionBankSelectorModal({
       setSearchQuery("");
       setSelectedTopic("");
     }
-    // Intentionally depending ONLY on isOpen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // ============================================================
-  // Load questions whenever subject / stream filters change
-  // ============================================================
   const loadBankQuestions = useCallback(async () => {
     setLoading(true);
 
@@ -140,9 +122,6 @@ export default function QuestionBankSelectorModal({
 
   if (!isOpen) return null;
 
-  // ============================================================
-  // Client-side search + topic filtering
-  // ============================================================
   const filteredQuestions = questions.filter((q) => {
     if (searchQuery.trim()) {
       const s = searchQuery.toLowerCase();
@@ -197,38 +176,73 @@ export default function QuestionBankSelectorModal({
   const remaining = maxLimit - selectedIds.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden my-6 flex flex-col max-h-[92vh]">
-        {/* ─── Header ──────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-slate-900 text-white shrink-0">
-          <div>
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              Question Bank එකෙන් ප්‍රශ්න තෝරන්න
-            </h3>
-            <p className="text-xs text-slate-300">
-              Quiz එකට අදාළ ප්‍රශ්න Question Bank එකෙන් Checkbox මඟින් තෝරන්න.
-            </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-emerald-950/60 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden my-4 sm:my-6 flex flex-col max-h-[94vh]">
+
+        {/* ═══════════════ HEADER BANNER ═══════════════ */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
+          {/* dot grid */}
+          <div
+            className="absolute inset-0 opacity-[0.08] pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, white 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
+          />
+          {/* glows */}
+          <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
+
+          <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              {/* Logo */}
+              <div className="shrink-0 hidden sm:block">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
+                  <div className="relative w-11 h-11 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg flex items-center justify-center">
+                    <FileQuestion className="w-5 h-5 text-amber-300" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-extrabold flex items-center gap-2 leading-tight">
+                  <GraduationCap className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
+                  <span className="break-words">
+                    Question Bank එකෙන් ප්‍රශ්න තෝරන්න
+                  </span>
+                </h3>
+                <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
+                  Quiz එකට අදාළ ප්‍රශ්න Question Bank එකෙන් Checkbox මඟින් තෝරන්න.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition shrink-0"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        {/* ─── Counter & Limit Banner ──────────────────────────── */}
+        {/* ═══════════════ COUNTER & LIMIT BANNER ═══════════════ */}
         <div
-          className={`px-6 py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 ${
+          className={`px-4 sm:px-6 py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 ${
             isAtLimit
               ? "bg-amber-50 border-amber-200"
-              : "bg-blue-50 border-blue-100"
+              : "bg-emerald-50/70 border-emerald-100"
           }`}
         >
           <div className="flex items-center gap-3 flex-wrap">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-extrabold tabular-nums ${
-                isAtLimit ? "bg-amber-600 text-white" : "bg-blue-600 text-white"
+              className={`px-3 py-1 rounded-full text-xs font-extrabold tabular-nums shadow-sm ${
+                isAtLimit
+                  ? "bg-amber-600 text-white"
+                  : "bg-emerald-600 text-white"
               }`}
             >
               තෝරාගත් ප්‍රශ්න: {selectedIds.length} / {maxLimit}
@@ -249,7 +263,7 @@ export default function QuestionBankSelectorModal({
             <button
               onClick={handleSelectAllFiltered}
               disabled={isAtLimit || filteredQuestions.length === 0}
-              className="text-xs font-semibold px-2.5 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+              className="text-xs font-semibold px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700 disabled:opacity-50 transition"
             >
               Select All Shown (
               {Math.min(filteredQuestions.length, remaining)})
@@ -257,18 +271,18 @@ export default function QuestionBankSelectorModal({
             <button
               onClick={handleClearSelection}
               disabled={selectedIds.length === 0}
-              className="text-xs font-semibold px-2.5 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-red-600 disabled:opacity-50"
+              className="text-xs font-semibold px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-300 text-red-600 disabled:opacity-50 transition"
             >
               Clear
             </button>
           </div>
         </div>
 
-        {/* ─── Filter Controls ─────────────────────────────────── */}
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
+        {/* ═══════════════ FILTER CONTROLS ═══════════════ */}
+        <div className="px-4 sm:px-6 py-3 bg-emerald-50/40 border-b border-emerald-100/60 shrink-0">
           <div className="flex items-center gap-2 mb-2">
-            <Filter className="w-3.5 h-3.5 text-gray-500" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+            <Filter className="w-3.5 h-3.5 text-emerald-700" />
+            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
               Filter Questions
             </span>
           </div>
@@ -282,7 +296,7 @@ export default function QuestionBankSelectorModal({
                 placeholder="Search question text..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition"
               />
             </div>
 
@@ -290,7 +304,7 @@ export default function QuestionBankSelectorModal({
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 cursor-pointer transition"
             >
               {subjects.map((s) => (
                 <option key={s} value={s}>
@@ -303,7 +317,7 @@ export default function QuestionBankSelectorModal({
             <select
               value={selectedStream}
               onChange={(e) => setSelectedStream(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 cursor-pointer transition"
             >
               {streams.map((st) => (
                 <option key={st} value={st}>
@@ -318,7 +332,7 @@ export default function QuestionBankSelectorModal({
               placeholder="Filter by topic..."
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition"
             />
           </div>
 
@@ -331,127 +345,133 @@ export default function QuestionBankSelectorModal({
           )}
         </div>
 
-        {/* ─── Question List ────────────────────────────────────── */}
-        <div className="p-6 overflow-y-auto space-y-3 flex-1">
-          {loading ? (
-            <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" /> Question Bank එකෙන්
-              ප්‍රශ්න ලෝඩ් වෙමින්...
-            </div>
-          ) : filteredQuestions.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
-              මෙම Filter වලට ගැලපෙන ප්‍රශ්න Question Bank එකේ නැත.
-            </div>
-          ) : (
-            filteredQuestions.map((q, idx) => {
-              const isSelected = selectedIds.includes(q.id);
-              const disabledBecauseLimit = !isSelected && isAtLimit;
+        {/* ═══════════════ QUESTION LIST (scrollable) ═══════════════ */}
+        <div className="relative flex-1 min-h-0">
+          <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-3">
+            {loading ? (
+              <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />{" "}
+                Question Bank එකෙන් ප්‍රශ්න ලෝඩ් වෙමින්...
+              </div>
+            ) : filteredQuestions.length === 0 ? (
+              <div className="p-12 text-center text-gray-400">
+                මෙම Filter වලට ගැලපෙන ප්‍රශ්න Question Bank එකේ නැත.
+              </div>
+            ) : (
+              filteredQuestions.map((q, idx) => {
+                const isSelected = selectedIds.includes(q.id);
+                const disabledBecauseLimit = !isSelected && isAtLimit;
 
-              return (
-                <div
-                  key={q.id}
-                  onClick={() => !disabledBecauseLimit && toggleSelect(q.id)}
-                  className={`p-4 rounded-xl border transition cursor-pointer flex items-start gap-4 ${
-                    isSelected
-                      ? "bg-blue-50/70 border-blue-500 ring-1 ring-blue-500/30"
-                      : disabledBecauseLimit
-                        ? "bg-gray-100/60 border-gray-200 opacity-60 cursor-not-allowed"
-                        : "bg-white border-gray-200 hover:border-blue-300 hover:bg-gray-50/50"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    disabled={disabledBecauseLimit}
-                    onChange={() => toggleSelect(q.id)}
-                    className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
-                  />
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() => !disabledBecauseLimit && toggleSelect(q.id)}
+                    className={`p-4 rounded-xl border transition cursor-pointer flex items-start gap-4 ${
+                      isSelected
+                        ? "bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500/30 shadow-sm"
+                        : disabledBecauseLimit
+                          ? "bg-gray-100/60 border-gray-200 opacity-60 cursor-not-allowed"
+                          : "bg-white border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      disabled={disabledBecauseLimit}
+                      onChange={() => toggleSelect(q.id)}
+                      className="mt-1 w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                    />
 
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-gray-500">
-                        #{idx + 1}
-                      </span>
-                      {q.subject && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded">
-                          {q.subject}
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-gray-500">
+                          #{idx + 1}
                         </span>
-                      )}
-                      {/* Stream badge — "Common" for null stream */}
-                      <span
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                          q.stream
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
-                      >
-                        {q.stream ?? "Common"}
-                      </span>
-                      {q.topic && (
-                        <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-[10px] font-semibold rounded">
-                          {q.topic}
+                        {q.subject && (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                            {q.subject}
+                          </span>
+                        )}
+                        {/* Stream badge — "Common" for null stream */}
+                        <span
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                            q.stream
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-teal-100 text-teal-800"
+                          }`}
+                        >
+                          {q.stream ?? "Common"}
                         </span>
-                      )}
-                      {disabledBecauseLimit && (
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
-                          Limit reached ({maxLimit}/{maxLimit})
-                        </span>
-                      )}
-                    </div>
+                        {q.topic && (
+                          <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-[10px] font-semibold rounded">
+                            {q.topic}
+                          </span>
+                        )}
+                        {disabledBecauseLimit && (
+                          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
+                            Limit reached ({maxLimit}/{maxLimit})
+                          </span>
+                        )}
+                      </div>
 
-                    <p className="text-sm font-semibold text-gray-900 leading-snug">
-                      {q.question_text}
-                    </p>
+                      <p className="text-sm font-semibold text-gray-900 leading-snug break-words">
+                        {q.question_text}
+                      </p>
 
-                    {/* Compact options view */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-xs">
-                      {[q.option_1, q.option_2, q.option_3, q.option_4, q.option_5]
-                        .filter((o): o is string => Boolean(o && o.trim()))
-                        .map((opt, oIdx) => (
-                          <div
-                            key={oIdx}
-                            className={`px-2 py-1 rounded text-[11px] truncate ${
-                              q.correct_option === oIdx
-                                ? "bg-emerald-100 text-emerald-900 font-bold"
-                                : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            ({oIdx + 1}) {opt} {q.correct_option === oIdx && "✓"}
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-xs">
+                        {[q.option_1, q.option_2, q.option_3, q.option_4, q.option_5]
+                          .filter((o): o is string => Boolean(o && o.trim()))
+                          .map((opt, oIdx) => (
+                            <div
+                              key={oIdx}
+                              className={`px-2 py-1 rounded text-[11px] truncate ${
+                                q.correct_option === oIdx
+                                  ? "bg-emerald-100 text-emerald-900 font-bold"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              ({oIdx + 1}) {opt} {q.correct_option === oIdx && "✓"}
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </div>
+
+          {/* Bottom fade — indicates more content below */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
         </div>
 
-        {/* ─── Footer ───────────────────────────────────────────── */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
-          <span className="text-xs text-gray-500 font-medium">
+        {/* ═══════════════ FOOTER ═══════════════ */}
+        <div className="px-4 sm:px-6 py-4 border-t border-emerald-100 bg-emerald-50/60 backdrop-blur-sm flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-3 shrink-0">
+          <span className="text-xs text-gray-600 font-medium text-center sm:text-left">
             තෝරාගත් ප්‍රශ්න ගණන:{" "}
-            <strong className="text-gray-900 tabular-nums">
+            <strong className="text-emerald-700 tabular-nums">
               {selectedIds.length}
             </strong>{" "}
             / {maxLimit}
           </span>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl text-xs transition"
+              className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs transition"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleConfirm}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm"
+              className="flex-1 sm:flex-none px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md"
             >
-              <Check className="w-4 h-4" /> තෝරාගත් ප්‍රශ්න ({selectedIds.length}) Quiz
-              එකට එකතු කරන්න
+              <Check className="w-4 h-4" />
+              <span className="truncate">
+                තෝරාගත් ප්‍රශ්න ({selectedIds.length}) එකතු කරන්න
+              </span>
             </button>
           </div>
         </div>

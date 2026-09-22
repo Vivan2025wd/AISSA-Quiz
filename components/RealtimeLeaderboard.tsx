@@ -16,7 +16,6 @@ interface LeaderboardEntry {
   school: string;
 }
 
-// Flat shapes returned by our split queries (no nested select)
 interface ResultRow {
   id: string;
   student_id: string;
@@ -37,23 +36,9 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ------------------------------------------------------------
-    // Flat-query + client-side join. Same pattern as the fixed
-    // admin performance page — avoids PostgREST's nested-select
-    // inference returning the embedded row as an array (which
-    // leaves entry.profiles undefined and blanks the UI).
-    //
-    // Admin accounts are ALSO filtered out client-side, so this
-    // leaderboard matches the RPC-based ones (which already
-    // exclude is_admin = true).
-    // ------------------------------------------------------------
     const fetchLeaderboard = async () => {
       setLoading(true);
 
-      // 1. Fetch raw results for this quiz (score desc, time asc).
-      //    We pull 40 rows, not 10, because some of the top 40 may
-      //    belong to admins and get filtered in step 3 — after
-      //    filtering we want a clean top 10 of real students.
       const { data: resultsData, error: resultsError } = await supabase
         .from("quiz_results")
         .select("id, student_id, score, total_marks, time_spent_seconds")
@@ -77,8 +62,6 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
 
       const results = resultsData as ResultRow[];
 
-      // 2. Fetch profiles for the students in that list — including
-      //    is_admin so we can filter them out below.
       const studentIds = Array.from(new Set(results.map((r) => r.student_id)));
 
       const { data: profilesData, error: profilesError } = await supabase
@@ -95,13 +78,10 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
         profileMap.set(p.id, p),
       );
 
-      // 3. Merge + exclude admins + cap at 10
       const merged: LeaderboardEntry[] = [];
       for (const r of results) {
         const p = profileMap.get(r.student_id);
 
-        // Skip admins entirely — they should never appear on a
-        // student-facing leaderboard.
         if (p?.is_admin === true) continue;
 
         merged.push({
@@ -122,11 +102,6 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
 
     void fetchLeaderboard();
 
-    // ------------------------------------------------------------
-    // Realtime subscription — refetch on any new submission for
-    // this quiz. (quiz_results is in the supabase_realtime
-    // publication per the master schema.)
-    // ------------------------------------------------------------
     const channel = supabase
       .channel(`realtime-quiz-results-${quizId}`)
       .on(
@@ -149,77 +124,131 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
   }, [quizId]);
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-500" /> Real-time Leaderboard
-        </h2>
-        <span className="flex h-2.5 w-2.5 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-        </span>
-      </div>
+    <div className="relative overflow-hidden bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-white/70">
+      {/* ═══════════ HEADER ═══════════ */}
+      <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white px-5 py-4">
+        {/* dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, white 1px, transparent 1px)",
+            backgroundSize: "18px 18px",
+          }}
+        />
+        {/* glows */}
+        <div className="pointer-events-none absolute -top-16 -right-12 w-48 h-48 bg-emerald-300/30 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-10 w-40 h-40 bg-teal-300/25 rounded-full blur-3xl" />
 
-      {loading ? (
-        <div className="text-center text-xs text-gray-400 py-6 flex items-center justify-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" /> Loading leaderboard...
-        </div>
-      ) : leaderboard.length === 0 ? (
-        <div className="text-center text-xs text-gray-400 py-6">
-          තවම කිසිවෙක් මෙම Quiz එකට සහභාගී වී නැත.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {leaderboard.map((entry, index) => (
-            <div
-              key={entry.id}
-              className={`flex items-center justify-between p-3 rounded-xl border ${
-                index === 0
-                  ? "bg-yellow-50 border-yellow-200"
-                  : index === 1
-                    ? "bg-gray-50 border-gray-200"
-                    : index === 2
-                      ? "bg-amber-50 border-amber-200"
-                      : "bg-white border-gray-100"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-6 font-bold text-gray-500 text-sm">
-                  {index < 3 ? (
-                    <Medal
-                      className={`w-5 h-5 ${
-                        index === 0
-                          ? "text-yellow-500"
-                          : index === 1
-                            ? "text-gray-400"
-                            : "text-amber-600"
-                      }`}
-                    />
-                  ) : (
-                    `#${index + 1}`
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-bold text-gray-800 text-sm truncate">
-                    {entry.student_name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {entry.school}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-extrabold text-blue-600 text-sm">
-                  {entry.score}/{entry.total_marks}
-                </p>
-                <p className="text-[10px] text-gray-400">
-                  {entry.time_spent_seconds}s
-                </p>
+        <div className="relative flex items-center justify-between gap-3">
+          <h2 className="text-base sm:text-lg font-extrabold flex items-center gap-2 leading-tight">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 bg-amber-300/40 blur-md rounded-lg" />
+              <div className="relative w-8 h-8 bg-white/15 backdrop-blur-md rounded-lg border border-white/25 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-amber-300" />
               </div>
             </div>
-          ))}
+            <span className="wrap-break-word">Real-time Leaderboard</span>
+          </h2>
+
+          {/* Live indicator */}
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 shrink-0">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-300"></span>
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              Live
+            </span>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* ═══════════ BODY ═══════════ */}
+      <div className="p-4 sm:p-5">
+        {loading ? (
+          <div className="text-center text-xs text-gray-500 py-8 flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />{" "}
+            Loading leaderboard...
+          </div>
+        ) : leaderboard.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="inline-flex p-3 bg-emerald-50 text-emerald-600 rounded-2xl mb-2">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <p className="text-xs text-gray-500">
+              තවම කිසිවෙක් මෙම Quiz එකට සහභාගී වී නැත.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {leaderboard.map((entry, index) => {
+              const isFirst = index === 0;
+              const isSecond = index === 1;
+              const isThird = index === 2;
+
+              return (
+                <div
+                  key={entry.id}
+                  className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition ${
+                    isFirst
+                      ? "bg-linear-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-sm"
+                      : isSecond
+                        ? "bg-linear-to-r from-gray-50 to-slate-50 border-gray-300 shadow-sm"
+                        : isThird
+                          ? "bg-linear-to-r from-orange-50 to-amber-50 border-orange-300 shadow-sm"
+                          : "bg-white/60 border-gray-200 hover:bg-emerald-50/40 hover:border-emerald-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Rank badge */}
+                    <span className="w-8 shrink-0 flex items-center justify-center">
+                      {index < 3 ? (
+                        <Medal
+                          className={`w-5 h-5 ${
+                            isFirst
+                              ? "text-yellow-500"
+                              : isSecond
+                                ? "text-gray-400"
+                                : "text-amber-600"
+                          }`}
+                        />
+                      ) : (
+                        <span className="font-bold text-emerald-700 text-sm">
+                          #{index + 1}
+                        </span>
+                      )}
+                    </span>
+
+                    {/* Name + School */}
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-900 text-sm truncate">
+                        {entry.student_name}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {entry.school}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Score */}
+                  <div className="text-right shrink-0">
+                    <p className="font-extrabold text-emerald-700 text-sm">
+                      {entry.score}
+                      <span className="text-gray-400 font-semibold">
+                        /{entry.total_marks}
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-mono">
+                      {entry.time_spent_seconds}s
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

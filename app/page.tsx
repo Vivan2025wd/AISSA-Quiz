@@ -51,7 +51,7 @@ export default function HomePage() {
       return (
         <Link
           href="/admin/dashboard"
-          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition"
+          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition"
         >
           <BarChart3 className="w-4 h-4" /> Go to Admin Panel
         </Link>
@@ -63,7 +63,7 @@ export default function HomePage() {
     return (
       <Link
         href="/auth/login"
-        className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-600 font-medium transition"
+        className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-600 font-medium transition"
       >
         <ShieldCheck className="w-4 h-4" /> Admin Access Portal
       </Link>
@@ -71,9 +71,18 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4 sm:p-6 text-center">
-      <div className="w-full max-w-2xl bg-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-sm border border-gray-200 space-y-5 sm:space-y-6">
-        <div className="inline-flex p-3 sm:p-4 bg-blue-50 text-blue-600 rounded-2xl">
+    // 1. Modern Soft Gradient & Blob Background
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col justify-center items-center p-4 sm:p-6 text-center relative overflow-hidden">
+      
+      {/* Decorative floating blobs for a modern "Aurora" effect */}
+      <div className="absolute top-[-10%] left-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute top-[20%] right-[10%] w-60 h-60 bg-green-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+
+      {/* 2. Glassmorphism Card */}
+      <div className="relative w-full max-w-2xl bg-white/80 backdrop-blur-md p-6 sm:p-8 md:p-10 rounded-3xl shadow-xl border border-white/60 space-y-5 sm:space-y-6">
+        
+        <div className="inline-flex p-3 sm:p-4 bg-emerald-50 text-emerald-600 rounded-2xl shadow-sm">
           <GraduationCap className="w-10 h-10 sm:w-12 sm:h-12" />
         </div>
 
@@ -81,7 +90,7 @@ export default function HomePage() {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
             All Island School Science Association
           </h1>
-          <p className="text-blue-600 font-semibold text-xs sm:text-sm tracking-wide uppercase">
+          <p className="text-emerald-600 font-semibold text-xs sm:text-sm tracking-wide uppercase">
             AISSA Quiz Platform
           </p>
         </div>
@@ -96,13 +105,13 @@ export default function HomePage() {
               <>
                 <Link
                   href="/student/dashboard"
-                  className="px-5 sm:px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="px-5 sm:px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   <LayoutDashboard className="w-5 h-5" /> Dashboard
                 </Link>
                 <Link
                   href="/student/leaderboard"
-                  className="px-5 sm:px-6 py-3.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="px-5 sm:px-6 py-3.5 border border-gray-200 bg-white/50 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   <Trophy className="w-5 h-5 text-yellow-500" /> Leaderboard
                 </Link>
@@ -111,13 +120,13 @@ export default function HomePage() {
               <>
                 <Link
                   href="/auth/register"
-                  className="px-5 sm:px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="px-5 sm:px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   <UserPlus className="w-5 h-5" /> Register
                 </Link>
                 <Link
                   href="/auth/login"
-                  className="px-5 sm:px-6 py-3.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="px-5 sm:px-6 py-3.5 border border-gray-200 bg-white/50 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   <LogIn className="w-5 h-5" /> Login
                 </Link>
@@ -126,7 +135,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="pt-5 sm:pt-6 border-t border-gray-100 mt-4 sm:mt-6 min-h-10 flex items-center justify-center">
+        <div className="pt-5 sm:pt-6 border-t border-gray-100/50 mt-4 sm:mt-6 min-h-10 flex items-center justify-center">
           {renderAdminCTA()}
         </div>
       </div>

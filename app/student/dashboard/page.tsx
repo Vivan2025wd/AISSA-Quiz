@@ -21,6 +21,7 @@ import {
   Dna,
   Award,
   RefreshCw,
+  GraduationCap,
 } from "lucide-react";
 import {
   getQuizWindowStatus,
@@ -106,9 +107,6 @@ type QuizRow = {
 
 // ------------------------------------------------------------
 // Stream → Subject rules
-//   Bio Science       → Physics · Chemistry · Biology
-//   Physical / Maths  → Physics · Chemistry  (NO Biology)
-//   Unknown           → all three (safe fallback)
 // ------------------------------------------------------------
 function allowedSubjectsForStream(
   stream: string | null | undefined,
@@ -198,10 +196,6 @@ function subjectTabClass(k: SubjectKey, isActive: boolean): string {
   return `${base} bg-slate-800 text-white shadow-sm`;
 }
 
-// ------------------------------------------------------------
-// Whether a student with the given stream is allowed to see
-// a quiz with the given subject. Unknown subjects → allowed.
-// ------------------------------------------------------------
 function canStudentSeeQuiz(
   studentStream: string | null | undefined,
   quizSubject: string | null | undefined,
@@ -238,7 +232,6 @@ export default function StudentDashboard() {
   const load = useCallback(async () => {
     setDebugWarning(null);
 
-    // ---- 1. Auth ----
     const {
       data: { user },
       error: authError,
@@ -251,7 +244,6 @@ export default function StudentDashboard() {
       return;
     }
 
-    // ---- 2. Profile ----
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("id, full_name, school, stream, medium, is_admin")
@@ -278,7 +270,6 @@ export default function StudentDashboard() {
       );
     }
 
-    // ---- 3. Overall stats RPC ----
     const { data: statsData, error: statsError } = await supabase.rpc(
       "get_student_stats",
       { p_student_id: user.id },
@@ -291,7 +282,6 @@ export default function StudentDashboard() {
       setStats(statsData[0]);
     }
 
-    // ---- 4. Per-subject stats + rank RPC ----
     const { data: subjectStatsData, error: subjectStatsError } = await supabase.rpc(
       "get_student_subject_stats",
       { p_student_id: user.id },
@@ -308,7 +298,6 @@ export default function StudentDashboard() {
       setSubjectStats(map);
     }
 
-    // ---- 5. Past results — flat query + client join ----
     const { data: resultsRaw, error: resultsError } = await supabase
       .from("quiz_results")
       .select("id, quiz_id, score, total_marks, time_spent_seconds, submitted_at")
@@ -358,7 +347,6 @@ export default function StudentDashboard() {
       setPastQuizzes([]);
     }
 
-    // ---- 6. Live quizzes ----
     const { data: quizData } = await supabase
       .from("quizzes")
       .select(
@@ -385,7 +373,6 @@ export default function StudentDashboard() {
   // ------------------------------------------------------------
   // Derived
   // ------------------------------------------------------------
-  // Subjects this student is allowed to see, based on their stream.
   const allowedSubjects = useMemo<RealSubjectKey[]>(
     () => allowedSubjectsForStream(profile?.stream),
     [profile?.stream],
@@ -413,7 +400,6 @@ export default function StudentDashboard() {
     return { bySubject: acc };
   }, [pastQuizzes, subjectStats]);
 
-  // "Best Subject" — highest avg% among ALLOWED subjects only.
   const bestSubject = useMemo<{
     key: RealSubjectKey;
     avgPct: number;
@@ -448,20 +434,22 @@ export default function StudentDashboard() {
   // ------------------------------------------------------------
   if (loading) {
     return (
-      <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2 text-sm">
-        <RefreshCw className="w-4 h-4 animate-spin" /> Loading Dashboard...
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center gap-2 text-gray-500 text-sm">
+        <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" /> Loading Dashboard...
       </div>
     );
   }
 
   if (guardError) {
     return (
-      <div className="p-6 max-w-md mx-auto text-center space-y-3">
-        <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
-        <p className="text-red-600 font-medium">{guardError}</p>
-        <Link href="/auth/login" className="text-sm text-blue-600 hover:underline">
-          ← නැවත Login වෙත
-        </Link>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-6 text-center space-y-3">
+          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
+          <p className="text-red-600 font-medium">{guardError}</p>
+          <Link href="/auth/login" className="text-sm text-emerald-600 hover:underline">
+            ← නැවත Login වෙත
+          </Link>
+        </div>
       </div>
     );
   }
@@ -470,7 +458,6 @@ export default function StudentDashboard() {
   const averageScoreText =
     typeof stats?.average_score === "number" ? `${stats.average_score}%` : "N/A";
 
-  // Active / upcoming quizzes — FILTERED BY STREAM.
   const activeQuizzes: Quiz[] = [];
   const upcomingQuizzes: Quiz[] = [];
   for (const q of quizzes) {
@@ -481,7 +468,6 @@ export default function StudentDashboard() {
     else if (status === "upcoming") upcomingQuizzes.push(q);
   }
 
-  // Subject tabs — "All" + allowed subjects only.
   const subjectTabs: { key: SubjectKey; label: string; count: number }[] = [
     { key: "all", label: "All", count: pastQuizzes.length },
     ...allowedSubjects.map((k) => ({
@@ -491,292 +477,427 @@ export default function StudentDashboard() {
     })),
   ];
 
-  // Summary shown in the past-results section header.
   const currentSubjectStats: SubjectStats | null =
     selectedSubject === "all"
       ? null
       : subjectStats[selectedSubject] ?? null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-5 sm:space-y-8">
-        {/* ============ Welcome Banner ============ */}
-        <div className="bg-linear-to-r from-blue-700 to-indigo-800 text-white p-5 sm:p-6 md:p-8 rounded-2xl shadow-md flex flex-col gap-4">
-          <div>
-            <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wide">
-              AISSA Quiz Engine
-            </span>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold mt-2 leading-tight">
-              ආයුබෝවන්, {profile?.full_name || "Student"}! 👋
-            </h1>
-            <div className="text-blue-100 text-xs sm:text-sm mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="wrap-break-word">
-                {profile?.school || "—"} • {profile?.stream || "Bio Science"}
-              </span>
-              {profile?.medium && (
-                <span
-                  className="inline-flex items-center px-2 py-0.5 bg-white/20 rounded-md text-[10px] sm:text-[11px] font-bold uppercase tracking-wide"
-                  title={mediumFullLabel(profile.medium)}
-                >
-                  {mediumLabel(profile.medium)}
+    // ============ Modern green/white background ============
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+      {/* Aurora blobs (fixed → stay in place while scrolling) */}
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div
+        className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl"
+        style={{ animationDelay: "2s" }}
+      />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+
+      <div className="relative p-3 sm:p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-5 sm:space-y-8">
+          {/* ============ Welcome Banner ============ */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+            {/* --- Decorative layers --- */}
+            {/* dot grid pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, white 1px, transparent 1px)",
+                backgroundSize: "22px 22px",
+              }}
+            />
+            {/* soft radial glows */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
+            {/* decorative rings */}
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-[18px] border-white/5" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
+            {/* diagonal shine */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]" />
+
+            {/* --- Content --- */}
+            <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              {/* Logo */}
+              <div className="shrink-0">
+                <div className="relative">
+                  {/* glow behind logo */}
+                  <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
+                    {/*
+                      👉 Real logo එකක් තියෙනවා නම් පහත img එකේ src එක update කරන්න.
+                      නැත්නම් GraduationCap icon එක fallback විදිහට පෙන්වයි.
+                    */}
+                    {/* <img
+                      src="/aissa-logo.png"
+                      alt="AISSA Logo"
+                      className="w-full h-full object-contain p-1.5"
+                    /> */}
+                    <GraduationCap className="w-9 h-9 sm:w-11 sm:h-11 text-white drop-shadow" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Text content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
+                    <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse" />
+                    AISSA Quiz Engine
+                  </span>
+                </div>
+
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold mt-2.5 leading-tight tracking-tight">
+                  ආයුබෝවන්, {profile?.full_name || "Student"}! 👋
+                </h1>
+
+                <div className="text-emerald-50/90 text-xs sm:text-sm mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                  <span className="inline-flex items-center gap-1.5 break-words">
+                    <span className="w-1.5 h-1.5 bg-emerald-300/80 rounded-full" />
+                    {profile?.school || "—"}
+                  </span>
+                  <span className="text-white/30">|</span>
+                  <span>{profile?.stream || "Bio Science"}</span>
+                  {profile?.medium && (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 bg-white/15 backdrop-blur-sm rounded-md text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-white/15"
+                      title={mediumFullLabel(profile.medium)}
+                    >
+                      {mediumLabel(profile.medium)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <Link
+                href="/student/leaderboard"
+                className="relative self-stretch sm:self-auto sm:shrink-0 px-4 sm:px-5 py-3 bg-white text-emerald-900 font-bold rounded-xl hover:bg-emerald-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm group"
+              >
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 group-hover:rotate-12 transition-transform" />
+                Leaderboard
+                <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
+          </div>
+
+          {debugWarning && (
+            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{debugWarning}</span>
+            </div>
+          )}
+
+          {/* ============ Stats — 4 cards ============ */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard
+              icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />}
+              color="blue"
+              label="සම්පූර්ණ කළ Quizzes"
+              value={String(stats?.quizzes_completed ?? 0)}
+            />
+            <StatCard
+              icon={<Target className="w-5 h-5 sm:w-6 sm:h-6" />}
+              color="emerald"
+              label="මුළු ලකුණු"
+              value={String(stats?.total_score ?? 0)}
+            />
+            <StatCard
+              icon={<Timer className="w-5 h-5 sm:w-6 sm:h-6" />}
+              color="teal"
+              label="මුළු කාලය"
+              value={formatTotalTime(stats?.total_time_seconds)}
+            />
+            <BestSubjectCard best={bestSubject} />
+          </div>
+
+          {/* ============ Subject Mini Cards ============ */}
+          <div
+            className={`grid grid-cols-1 ${
+              allowedSubjects.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+            } gap-3 sm:gap-4`}
+          >
+            {allowedSubjects.map((key) => (
+              <SubjectMiniCard
+                key={key}
+                subjectKey={key}
+                stats={subjectStats[key] ?? null}
+              />
+            ))}
+          </div>
+
+          {/* ============ Average strip ============ */}
+          <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl border border-white/70 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500 font-medium">
+                  සාමාන්‍ය ලකුණු මට්ටම (All Subjects)
+                </p>
+                <p className="text-base font-bold text-gray-800">
+                  {hasAttempts ? averageScoreText : "—"}
+                </p>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 sm:text-right sm:max-w-xs leading-tight">
+              Subject ranking එක subject එකක් ඇතුළේ — මුළු ලකුණු එකතුව මත · සම ලකුණු විට වේගවත් කෙනා ඉහළට.
+            </p>
+          </div>
+
+          {/* ============ ACTIVE quizzes ============ */}
+          <section className="space-y-3 sm:space-y-4">
+            <div className="flex justify-between items-center gap-2">
+              <h2 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-emerald-600 shrink-0" /> Active Live Quizzes
+              </h2>
+              {activeQuizzes.length > 0 && (
+                <span className="text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
+                  {activeQuizzes.length} සක්‍රියයි
                 </span>
               )}
             </div>
-          </div>
-          <Link
-            href="/student/leaderboard"
-            className="self-start px-4 sm:px-5 py-2.5 bg-white text-blue-900 font-bold rounded-xl hover:bg-blue-50 transition shadow-sm flex items-center gap-2 text-xs sm:text-sm"
-          >
-            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" /> Leaderboard
-          </Link>
-        </div>
-
-        {debugWarning && (
-          <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{debugWarning}</span>
-          </div>
-        )}
-
-        {/* ============ Stats — 4 cards ============ */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard
-            icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />}
-            color="blue"
-            label="සම්පූර්ණ කළ Quizzes"
-            value={String(stats?.quizzes_completed ?? 0)}
-          />
-          <StatCard
-            icon={<Target className="w-5 h-5 sm:w-6 sm:h-6" />}
-            color="emerald"
-            label="මුළු ලකුණු"
-            value={String(stats?.total_score ?? 0)}
-          />
-          <StatCard
-            icon={<Timer className="w-5 h-5 sm:w-6 sm:h-6" />}
-            color="indigo"
-            label="මුළු කාලය"
-            value={formatTotalTime(stats?.total_time_seconds)}
-          />
-          <BestSubjectCard best={bestSubject} />
-        </div>
-
-        {/* ============ Subject Mini Cards — allowed subjects only ============ */}
-        <div
-          className={`grid grid-cols-1 ${
-            allowedSubjects.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
-          } gap-3 sm:gap-4`}
-        >
-          {allowedSubjects.map((key) => (
-            <SubjectMiniCard
-              key={key}
-              subjectKey={key}
-              stats={subjectStats[key] ?? null}
-            />
-          ))}
-        </div>
-
-        {/* ============ Average strip ============ */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-green-50 text-green-600 rounded-lg shrink-0">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 font-medium">
-                සාමාන්‍ය ලකුණු මට්ටම (All Subjects)
-              </p>
-              <p className="text-base font-bold text-gray-800">
-                {hasAttempts ? averageScoreText : "—"}
-              </p>
-            </div>
-          </div>
-          <p className="text-[11px] text-gray-400 sm:text-right sm:max-w-xs leading-tight">
-            Subject ranking එක subject එකක් ඇතුළේ — මුළු ලකුණු එකතුව මත · සම ලකුණු විට වේගවත් කෙනා ඉහළට.
-          </p>
-        </div>
-
-        {/* ============ ACTIVE quizzes ============ */}
-        <section className="space-y-3 sm:space-y-4">
-          <div className="flex justify-between items-center gap-2">
-            <h2 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-600 shrink-0" /> Active Live Quizzes
-            </h2>
-            {activeQuizzes.length > 0 && (
-              <span className="text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
-                {activeQuizzes.length} සක්‍රියයි
-              </span>
-            )}
-          </div>
-          {activeQuizzes.length === 0 ? (
-            <div className="p-5 sm:p-6 bg-white rounded-xl text-center text-gray-500 border border-gray-200 text-sm">
-              දැන් කිසිම Live Quiz එකක් නොමැත.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              {activeQuizzes.map((quiz) => (
-                <ActiveQuizCard key={quiz.id} quiz={quiz} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ============ UPCOMING ============ */}
-        {upcomingQuizzes.length > 0 && (
-          <section className="space-y-3 sm:space-y-4">
-            <h2 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-              <Hourglass className="w-5 h-5 text-amber-600 shrink-0" /> ඉදිරි Quizzes
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              {upcomingQuizzes.map((quiz) => (
-                <UpcomingQuizCard key={quiz.id} quiz={quiz} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ============ PAST quizzes — subject-wise ============ */}
-        <section className="space-y-3 sm:space-y-4 pt-2">
-          <h2 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" /> පසුගිය ප්‍රතිඵල
-          </h2>
-
-          {pastQuizzes.length === 0 ? (
-            <div className="p-6 sm:p-8 bg-white rounded-xl text-center text-gray-400 text-sm border border-gray-200">
-              තවම Quiz කිසිවක් සම්පූර්ණ කර නැත.
-            </div>
-          ) : (
-            <>
-              {/* Subject tabs — allowed subjects only */}
-              <div className="bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm flex gap-1 overflow-x-auto">
-                {subjectTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setSelectedSubject(tab.key)}
-                    className={subjectTabClass(tab.key, selectedSubject === tab.key)}
-                  >
-                    {subjectIcon(tab.key)}
-                    <span>{tab.label}</span>
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
-                        selectedSubject === tab.key
-                          ? "bg-white/25 text-white"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  </button>
+            {activeQuizzes.length === 0 ? (
+              <div className="p-5 sm:p-6 bg-white/80 backdrop-blur-md rounded-xl text-center text-gray-500 border border-white/70 shadow-sm text-sm">
+                දැන් කිසිම Live Quiz එකක් නොමැත.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                {activeQuizzes.map((quiz) => (
+                  <ActiveQuizCard key={quiz.id} quiz={quiz} />
                 ))}
               </div>
+            )}
+          </section>
 
-              {/* Summary strip */}
-              <div className="bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm">
-                {selectedSubject === "all" ? (
-                  <>
-                    <span className="font-bold text-gray-900">All Subjects</span>
-                    <span className="text-gray-500">
-                      <strong className="text-gray-800">{pastQuizzes.length}</strong>{" "}
-                      quiz{pastQuizzes.length === 1 ? "" : "zes"} completed
-                    </span>
-                    <span className="text-gray-500">
-                      Average:{" "}
-                      <strong className="text-emerald-700">
-                        {hasAttempts ? averageScoreText : "—"}
-                      </strong>
-                    </span>
-                  </>
-                ) : currentSubjectStats ? (
-                  <>
-                    <span className="font-bold text-gray-900 flex items-center gap-1.5">
-                      {subjectIcon(selectedSubject)}
-                      {subjectLabel(selectedSubject as RealSubjectKey)}
-                    </span>
-                    <span className="text-gray-500">
-                      Rank:{" "}
-                      <strong className="text-indigo-700">
-                        #{currentSubjectStats.subject_rank}
-                      </strong>
-                    </span>
-                    <span className="text-gray-500">
-                      Marks:{" "}
-                      <strong className="text-blue-700">
-                        {currentSubjectStats.total_score}/
-                        {currentSubjectStats.total_marks}
-                      </strong>
-                    </span>
-                    <span className="text-gray-500">
-                      Average:{" "}
-                      <strong className="text-emerald-700">
-                        {currentSubjectStats.average_score != null
-                          ? `${currentSubjectStats.average_score}%`
-                          : "—"}
-                      </strong>
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-bold text-gray-900 flex items-center gap-1.5">
-                      {subjectIcon(selectedSubject)}
-                      {subjectLabel(selectedSubject as RealSubjectKey)}
-                    </span>
-                    <span className="text-gray-400 text-xs">
-                      තවම මෙම subject එකට ප්‍රතිඵල නොමැත.
-                    </span>
-                  </>
-                )}
+          {/* ============ UPCOMING ============ */}
+          {upcomingQuizzes.length > 0 && (
+            <section className="space-y-3 sm:space-y-4">
+              <h2 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Hourglass className="w-5 h-5 text-amber-600 shrink-0" /> ඉදිරි Quizzes
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                {upcomingQuizzes.map((quiz) => (
+                  <UpcomingQuizCard key={quiz.id} quiz={quiz} />
+                ))}
               </div>
+            </section>
+          )}
 
-              {/* Results */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                {visiblePastQuizzes.length === 0 ? (
-                  <div className="p-6 sm:p-8 text-center text-gray-400 text-sm">
-                    මෙම subject එකට තවම ප්‍රතිඵල නොමැත.
-                  </div>
-                ) : (
-                  <>
-                    {/* Desktop table */}
-                     {/* Desktop table */}
-                    <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[60vh]">
-                      <table className="w-full text-left text-sm text-gray-600">
-                        <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_#e5e7eb] text-gray-700 font-semibold uppercase text-xs">
-                          <tr>
-                            <th className="p-4">Subject & Topic</th>
-                            <th className="p-4">දිනය</th>
-                            <th className="p-4">ලකුණු</th>
-                            <th className="p-4">%</th>
-                            <th className="p-4">කාලය</th>
-                            <th className="p-4 text-right">Answers</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
+          {/* ============ PAST quizzes ============ */}
+          <section className="space-y-3 sm:space-y-4 pt-2">
+            <h2 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> පසුගිය ප්‍රතිඵල
+            </h2>
+
+            {pastQuizzes.length === 0 ? (
+              <div className="p-6 sm:p-8 bg-white/80 backdrop-blur-md rounded-xl text-center text-gray-400 text-sm border border-white/70 shadow-sm">
+                තවම Quiz කිසිවක් සම්පූර්ණ කර නැත.
+              </div>
+            ) : (
+              <>
+                <div className="bg-white/80 backdrop-blur-md p-1.5 rounded-xl border border-white/70 shadow-sm flex gap-1 overflow-x-auto">
+                  {subjectTabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setSelectedSubject(tab.key)}
+                      className={subjectTabClass(tab.key, selectedSubject === tab.key)}
+                    >
+                      {subjectIcon(tab.key)}
+                      <span>{tab.label}</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                          selectedSubject === tab.key
+                            ? "bg-white/25 text-white"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Summary strip */}
+                <div className="bg-white/80 backdrop-blur-md px-4 py-3 rounded-xl border border-white/70 shadow-sm flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm">
+                  {selectedSubject === "all" ? (
+                    <>
+                      <span className="font-bold text-gray-900">All Subjects</span>
+                      <span className="text-gray-500">
+                        <strong className="text-gray-800">{pastQuizzes.length}</strong>{" "}
+                        quiz{pastQuizzes.length === 1 ? "" : "zes"} completed
+                      </span>
+                      <span className="text-gray-500">
+                        Average:{" "}
+                        <strong className="text-emerald-700">
+                          {hasAttempts ? averageScoreText : "—"}
+                        </strong>
+                      </span>
+                    </>
+                  ) : currentSubjectStats ? (
+                    <>
+                      <span className="font-bold text-gray-900 flex items-center gap-1.5">
+                        {subjectIcon(selectedSubject)}
+                        {subjectLabel(selectedSubject as RealSubjectKey)}
+                      </span>
+                      <span className="text-gray-500">
+                        Rank:{" "}
+                        <strong className="text-teal-700">
+                          #{currentSubjectStats.subject_rank}
+                        </strong>
+                      </span>
+                      <span className="text-gray-500">
+                        Marks:{" "}
+                        <strong className="text-blue-700">
+                          {currentSubjectStats.total_score}/
+                          {currentSubjectStats.total_marks}
+                        </strong>
+                      </span>
+                      <span className="text-gray-500">
+                        Average:{" "}
+                        <strong className="text-emerald-700">
+                          {currentSubjectStats.average_score != null
+                            ? `${currentSubjectStats.average_score}%`
+                            : "—"}
+                        </strong>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-bold text-gray-900 flex items-center gap-1.5">
+                        {subjectIcon(selectedSubject)}
+                        {subjectLabel(selectedSubject as RealSubjectKey)}
+                      </span>
+                      <span className="text-gray-400 text-xs">
+                        තවම මෙම subject එකට ප්‍රතිඵල නොමැත.
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* ============ Results (internal scroll) ============ */}
+                <div className="bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm overflow-hidden">
+                  {visiblePastQuizzes.length === 0 ? (
+                    <div className="p-6 sm:p-8 text-center text-gray-400 text-sm">
+                      මෙම subject එකට තවම ප්‍රතිඵල නොමැත.
+                    </div>
+                  ) : (
+                    <>
+                      {/* ===== Desktop table — internal scroll ===== */}
+                      <div className="hidden md:block relative">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[500px] lg:max-h-[560px]">
+                          <table className="w-full text-left text-sm text-gray-600">
+                            <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0] text-emerald-900 font-semibold uppercase text-xs">
+                              <tr>
+                                <th className="p-4">Subject & Topic</th>
+                                <th className="p-4">දිනය</th>
+                                <th className="p-4">ලකුණු</th>
+                                <th className="p-4">%</th>
+                                <th className="p-4">කාලය</th>
+                                <th className="p-4 text-right">Answers</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {visiblePastQuizzes.map((pq) => {
+                                const pct =
+                                  pq.total_marks > 0
+                                    ? Math.round((pq.score / pq.total_marks) * 100)
+                                    : 0;
+                                return (
+                                  <tr key={pq.id} className="hover:bg-emerald-50/40 transition">
+                                    <td className="p-4 font-medium text-gray-900">
+                                      <span
+                                        className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mb-1 ${subjectStyle(
+                                          pq.quizzes?.subject,
+                                        )}`}
+                                      >
+                                        {pq.quizzes?.subject ?? "—"}
+                                      </span>
+                                      <span className="block">
+                                        {pq.quizzes?.title ?? "Untitled quiz"}
+                                      </span>
+                                    </td>
+                                    <td className="p-4">{formatDate(pq.submitted_at)}</td>
+                                    <td className="p-4 font-bold text-emerald-600">
+                                      {pq.score}/{pq.total_marks}
+                                    </td>
+                                    <td className="p-4">
+                                      <span
+                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                          pct >= 75
+                                            ? "bg-emerald-100 text-emerald-800"
+                                            : pct >= 50
+                                              ? "bg-blue-100 text-blue-800"
+                                              : pct >= 35
+                                                ? "bg-amber-100 text-amber-800"
+                                                : "bg-red-100 text-red-800"
+                                        }`}
+                                      >
+                                        {pct}%
+                                      </span>
+                                    </td>
+                                    <td className="p-4">
+                                      {formatDuration(pq.time_spent_seconds)}
+                                    </td>
+                                    <td className="p-4 text-right">
+                                      <Link
+                                        href={`/student/quiz/${pq.quiz_id}`}
+                                        className="text-xs font-bold text-emerald-600 hover:underline"
+                                      >
+                                        Review →
+                                      </Link>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* bottom fade shadow — indicates more content below */}
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                      </div>
+
+                      {/* ===== Mobile cards — internal scroll ===== */}
+                      <div className="md:hidden relative">
+                        <div className="divide-y divide-gray-100 overflow-y-auto max-h-[70vh]">
                           {visiblePastQuizzes.map((pq) => {
                             const pct =
                               pq.total_marks > 0
                                 ? Math.round((pq.score / pq.total_marks) * 100)
                                 : 0;
                             return (
-                              <tr key={pq.id} className="hover:bg-gray-50">
-                                <td className="p-4 font-medium text-gray-900">
-                                  <span
-                                    className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mb-1 ${subjectStyle(
-                                      pq.quizzes?.subject,
-                                    )}`}
-                                  >
-                                    {pq.quizzes?.subject ?? "—"}
+                              <div key={pq.id} className="p-4 space-y-2.5">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <span
+                                      className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mb-1 ${subjectStyle(
+                                        pq.quizzes?.subject,
+                                      )}`}
+                                    >
+                                      {pq.quizzes?.subject ?? "—"}
+                                    </span>
+                                    <span className="block text-sm font-semibold text-gray-900 leading-snug">
+                                      {pq.quizzes?.title ?? "Untitled quiz"}
+                                    </span>
+                                  </div>
+                                  <span className="text-sm font-extrabold text-emerald-600 whitespace-nowrap shrink-0">
+                                    {pq.score}/{pq.total_marks}
                                   </span>
-                                  <span className="block">
-                                    {pq.quizzes?.title ?? "Untitled quiz"}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {formatDate(pq.submitted_at)}
                                   </span>
-                                </td>
-                                <td className="p-4">{formatDate(pq.submitted_at)}</td>
-                                <td className="p-4 font-bold text-green-600">
-                                  {pq.score}/{pq.total_marks}
-                                </td>
-                                <td className="p-4">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDuration(pq.time_spent_seconds)}
+                                  </span>
                                   <span
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                       pct >= 75
                                         ? "bg-emerald-100 text-emerald-800"
                                         : pct >= 50
@@ -788,90 +909,37 @@ export default function StudentDashboard() {
                                   >
                                     {pct}%
                                   </span>
-                                </td>
-                                <td className="p-4">
-                                  {formatDuration(pq.time_spent_seconds)}
-                                </td>
-                                <td className="p-4 text-right">
-                                  <Link
-                                    href={`/student/quiz/${pq.quiz_id}`}
-                                    className="text-xs font-bold text-blue-600 hover:underline"
-                                  >
-                                    Review →
-                                  </Link>
-                                </td>
-                              </tr>
+                                </div>
+                                <Link
+                                  href={`/student/quiz/${pq.quiz_id}`}
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:underline"
+                                >
+                                  Review Answers <ArrowRight className="w-3 h-3" />
+                                </Link>
+                              </div>
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </div>
+                        </div>
 
-                    {/* Mobile cards */}
-                    <div className="md:hidden divide-y divide-gray-100">
-                      {visiblePastQuizzes.map((pq) => {
-                        const pct =
-                          pq.total_marks > 0
-                            ? Math.round((pq.score / pq.total_marks) * 100)
-                            : 0;
-                        return (
-                          <div key={pq.id} className="p-4 space-y-2.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <span
-                                  className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mb-1 ${subjectStyle(
-                                    pq.quizzes?.subject,
-                                  )}`}
-                                >
-                                  {pq.quizzes?.subject ?? "—"}
-                                </span>
-                                <span className="block text-sm font-semibold text-gray-900 leading-snug">
-                                  {pq.quizzes?.title ?? "Untitled quiz"}
-                                </span>
-                              </div>
-                              <span className="text-sm font-extrabold text-green-600 whitespace-nowrap shrink-0">
-                                {pq.score}/{pq.total_marks}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {formatDate(pq.submitted_at)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatDuration(pq.time_spent_seconds)}
-                              </span>
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  pct >= 75
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : pct >= 50
-                                      ? "bg-blue-100 text-blue-800"
-                                      : pct >= 35
-                                        ? "bg-amber-100 text-amber-800"
-                                        : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {pct}%
-                              </span>
-                            </div>
-                            <Link
-                              href={`/student/quiz/${pq.quiz_id}`}
-                              className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
-                            >
-                              Review Answers <ArrowRight className="w-3 h-3" />
-                            </Link>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-            </>
-          )}
-        </section>
+                        {/* bottom fade shadow for mobile */}
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                      </div>
+
+                      {/* ===== Footer hint — total count ===== */}
+                      <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 text-[11px] text-gray-500 text-center">
+                        ප්‍රතිඵල{" "}
+                        <strong className="text-gray-700">
+                          {visiblePastQuizzes.length}
+                        </strong>
+                        ක් පෙන්වයි · scroll කරලා බලන්න
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );
@@ -888,18 +956,18 @@ function StatCard({
   value,
 }: {
   icon: React.ReactNode;
-  color: "blue" | "emerald" | "indigo" | "amber";
+  color: "blue" | "emerald" | "teal" | "amber";
   label: string;
   value: string;
 }) {
   const colorMap: Record<typeof color, string> = {
     blue: "bg-blue-50 text-blue-600",
     emerald: "bg-emerald-50 text-emerald-600",
-    indigo: "bg-indigo-50 text-indigo-600",
+    teal: "bg-teal-50 text-teal-600",
     amber: "bg-amber-50 text-amber-600",
   };
   return (
-    <div className="bg-white p-3 sm:p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 sm:gap-4">
+    <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 shadow-sm flex items-center gap-2 sm:gap-4 hover:shadow-md transition">
       <div className={`p-2 sm:p-3 rounded-lg shrink-0 ${colorMap[color]}`}>
         {icon}
       </div>
@@ -942,7 +1010,7 @@ function BestSubjectCard({
     : null;
 
   return (
-    <div className="bg-white p-3 sm:p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 sm:gap-4">
+    <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 shadow-sm flex items-center gap-2 sm:gap-4 hover:shadow-md transition">
       <div
         className={`p-2 sm:p-3 rounded-lg shrink-0 ${
           theme ? theme.icon : "bg-amber-50 text-amber-600"
@@ -982,21 +1050,21 @@ function SubjectMiniCard({
 }) {
   const theme = {
     physics: {
-      wrap: "border-blue-200",
+      wrap: "border-blue-200/70",
       icon: "bg-blue-50 text-blue-600",
       label: "text-blue-800",
       rank: "text-blue-700",
       score: "text-blue-900",
     },
     chemistry: {
-      wrap: "border-purple-200",
+      wrap: "border-purple-200/70",
       icon: "bg-purple-50 text-purple-600",
       label: "text-purple-800",
       rank: "text-purple-700",
       score: "text-purple-900",
     },
     biology: {
-      wrap: "border-emerald-200",
+      wrap: "border-emerald-200/70",
       icon: "bg-emerald-50 text-emerald-600",
       label: "text-emerald-800",
       rank: "text-emerald-700",
@@ -1008,7 +1076,7 @@ function SubjectMiniCard({
 
   return (
     <div
-      className={`bg-white p-3 sm:p-4 rounded-xl border ${theme.wrap} shadow-sm space-y-2.5`}
+      className={`bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-xl border ${theme.wrap} shadow-sm space-y-2.5 hover:shadow-md transition`}
     >
       <div className="flex items-center gap-2">
         <div className={`p-1.5 rounded-md ${theme.icon}`}>
@@ -1024,7 +1092,7 @@ function SubjectMiniCard({
       {hasStats ? (
         <>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-50 rounded-lg p-2">
+            <div className="bg-gray-50/80 rounded-lg p-2">
               <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">
                 Rank
               </p>
@@ -1032,7 +1100,7 @@ function SubjectMiniCard({
                 #{stats.subject_rank}
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-2">
+            <div className="bg-gray-50/80 rounded-lg p-2">
               <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">
                 Total Marks
               </p>
@@ -1069,7 +1137,7 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
   const endsIn = msLeft != null ? formatCountdown(msLeft) : null;
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-xl border border-emerald-200 shadow-sm space-y-3 sm:space-y-4 hover:shadow-md transition">
+    <div className="bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-emerald-200/70 shadow-sm space-y-3 sm:space-y-4 hover:shadow-md transition">
       <div className="flex justify-between items-start gap-2">
         <span
           className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-md border ${subjectStyle(
@@ -1099,7 +1167,7 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
       )}
       <Link
         href={`/student/quiz/${quiz.id}`}
-        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg flex justify-center items-center gap-2 transition text-sm"
+        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg flex justify-center items-center gap-2 transition text-sm shadow-sm"
       >
         Quiz එක ආරම්භ කරන්න <ArrowRight className="w-4 h-4" />
       </Link>
@@ -1120,7 +1188,7 @@ function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
     : null;
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-xl border border-amber-200 shadow-sm space-y-3 sm:space-y-4 opacity-90">
+    <div className="bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-amber-200/70 shadow-sm space-y-3 sm:space-y-4 opacity-90">
       <div className="flex justify-between items-start gap-2">
         <span
           className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-md border ${subjectStyle(
@@ -1149,7 +1217,7 @@ function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
       <button
         type="button"
         disabled
-        className="w-full py-2.5 bg-gray-200 text-gray-500 font-semibold rounded-lg flex justify-center items-center gap-2 cursor-not-allowed text-sm"
+        className="w-full py-2.5 bg-gray-200/80 text-gray-500 font-semibold rounded-lg flex justify-center items-center gap-2 cursor-not-allowed text-sm"
       >
         <Hourglass className="w-4 h-4" /> තවම ආරම්භ වී නැත
       </button>

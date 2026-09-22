@@ -33,7 +33,7 @@ function NavLinks({
   onNavigate: () => void;
 }) {
   return (
-    <nav className="p-4 space-y-1 flex-1">
+    <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = pathname.startsWith(item.href);
@@ -42,14 +42,21 @@ function NavLinks({
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition ${
+            className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
               isActive
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                ? "bg-white text-emerald-900 shadow-md shadow-emerald-950/30"
+                : "text-emerald-50/80 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <Icon className="w-4 h-4" />
-            {item.name}
+            <Icon
+              className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                isActive ? "text-emerald-700" : ""
+              }`}
+            />
+            <span className="truncate">{item.name}</span>
+            {isActive && (
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+            )}
           </Link>
         );
       })}
@@ -59,20 +66,51 @@ function NavLinks({
 
 function SidebarFooter({ onLogout }: { onLogout: () => void }) {
   return (
-    <div className="p-4 border-t border-slate-800 space-y-2">
+    <div className="p-3 border-t border-emerald-950/50 space-y-1.5">
       <Link
         href="/student/dashboard"
-        className="flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-slate-100 transition py-1"
+        className="flex items-center gap-2 text-xs font-semibold text-emerald-100/80 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg transition"
       >
-        <ArrowLeft className="w-4 h-4" /> Student Portal එකට
+        <ArrowLeft className="w-3.5 h-3.5" /> Student Portal
       </Link>
       <button
         type="button"
         onClick={onLogout}
-        className="w-full flex items-center gap-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-slate-800 px-3 py-2 rounded-lg transition"
+        className="w-full flex items-center gap-2 text-xs font-semibold text-red-300 hover:text-red-200 hover:bg-red-500/15 px-3 py-2 rounded-lg transition"
       >
-        <LogOut className="w-4 h-4" /> Logout
+        <LogOut className="w-3.5 h-3.5" /> Logout
       </button>
+    </div>
+  );
+}
+
+// Shared sidebar brand block
+function SidebarBrand({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={`relative overflow-hidden border-b border-emerald-950/50 ${
+        compact ? "p-4" : "p-5"
+      }`}
+    >
+      {/* subtle glow */}
+      <div className="pointer-events-none absolute -top-12 -right-12 w-32 h-32 bg-amber-300/10 rounded-full blur-2xl" />
+
+      <div className="relative flex items-center gap-3">
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
+          <div className="relative w-11 h-11 bg-white/10 backdrop-blur-md rounded-xl border border-white/15 flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-amber-300" />
+          </div>
+        </div>
+        <div className="min-w-0">
+          <h1 className="font-extrabold text-white text-sm tracking-wide leading-none">
+            AISSA Admin
+          </h1>
+          <p className="text-[10px] text-emerald-200/70 mt-1 tracking-wide uppercase font-semibold">
+            Control Panel
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -105,17 +143,24 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-linear-to-brrom-emerald-50 via-white to-teal-50 flex flex-col md:flex-row relative">
       {/* ============ MOBILE TOP BAR ============ */}
-      <header className="md:hidden sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 flex items-center justify-between px-4 py-3 shrink-0">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-blue-400" />
-          <span className="font-extrabold text-sm tracking-wide">AISSA Admin</span>
+      <header className="md:hidden sticky top-0 z-30 bg-linear-to-r from-emerald-700 via-emerald-800 to-teal-900 text-white border-b border-emerald-950/50 flex items-center justify-between px-4 py-3 shrink-0 shadow-lg shadow-emerald-950/20">
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <div className="absolute inset-0 bg-amber-300/30 blur-md rounded-lg" />
+            <div className="relative w-8 h-8 bg-white/10 backdrop-blur-md rounded-lg border border-white/15 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-amber-300" />
+            </div>
+          </div>
+          <span className="font-extrabold text-sm tracking-wide">
+            AISSA Admin
+          </span>
         </div>
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="p-2 -mr-2 rounded-lg hover:bg-slate-800 transition"
+          className="p-2 -mr-2 rounded-lg hover:bg-white/10 transition"
           aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
@@ -123,18 +168,8 @@ export default function AdminLayout({
       </header>
 
       {/* ============ DESKTOP SIDEBAR ============ */}
-      <aside className="hidden md:flex md:w-64 bg-slate-900 text-slate-200 border-r border-slate-800 flex-col shrink-0">
-        <div className="p-5 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-blue-400" />
-            <div>
-              <h1 className="font-extrabold text-white text-base tracking-wide">
-                AISSA Admin
-              </h1>
-              <p className="text-[10px] text-slate-400">Control Panel</p>
-            </div>
-          </div>
-        </div>
+      <aside className="hidden md:flex md:w-60 bg-linear-to-brom-emerald-800 via-emerald-900 to-teal-950 text-emerald-50 border-r border-emerald-950/50 flex-col shrink-0 shadow-xl shadow-emerald-950/10">
+        <SidebarBrand />
         <NavLinks pathname={pathname} onNavigate={() => setDrawerOpen(false)} />
         <SidebarFooter onLogout={handleLogout} />
       </aside>
@@ -145,24 +180,18 @@ export default function AdminLayout({
           {/* Backdrop */}
           <div
             onClick={() => setDrawerOpen(false)}
-            className="md:hidden fixed inset-0 z-40 bg-slate-900/70 backdrop-blur-sm"
+            className="md:hidden fixed inset-0 z-40 bg-emerald-950/60 backdrop-blur-sm"
             aria-hidden
           />
           {/* Drawer panel */}
-          <aside className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-slate-900 text-slate-200 border-r border-slate-800 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-blue-400" />
-                <div>
-                  <h1 className="font-extrabold text-white text-base tracking-wide">
-                    AISSA Admin
-                  </h1>
-                  <p className="text-[10px] text-slate-400">Control Panel</p>
-                </div>
+          <aside className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-linear-to-b from-emerald-800 via-emerald-900 to-teal-950 text-emerald-50 border-r border-emerald-950/50 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="border-b border-emerald-950/50 flex items-center justify-between pr-2">
+              <div className="flex-1">
+                <SidebarBrand compact />
               </div>
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="p-2 -mr-1 rounded-lg hover:bg-slate-800 transition"
+                className="p-2 rounded-lg hover:bg-white/10 transition shrink-0"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
@@ -175,8 +204,14 @@ export default function AdminLayout({
       )}
 
       {/* ============ MAIN CONTENT ============ */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-        <AdminGuard>{children}</AdminGuard>
+      <main className="flex-1 overflow-y-auto relative">
+        {/* Aurora blobs for the content area */}
+        <div className="pointer-events-none fixed top-[-15%] left-[15%] w-80 h-80 sm:w-md-sm:h-112merald-200/40 rounded-full filter blur-3xl" />
+        <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/40 rounded-full filter blur-3xl" />
+
+        <div className="relative p-3 sm:p-4 md:p-6">
+          <AdminGuard>{children}</AdminGuard>
+        </div>
       </main>
     </div>
   );
