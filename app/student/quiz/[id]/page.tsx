@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  XCircle,
   Loader2,
   AlertTriangle,
   Eye,
@@ -87,8 +88,11 @@ type StudentResult = {
   submitted_at: string;
 };
 
+// key = question_id, value = selected_option (null = unanswered)
+type MyAnswersMap = Record<string, number | null>;
+
 // ------------------------------------------------------------
-// Subject colors (matches dashboard/leaderboard)
+// Subject colors
 // ------------------------------------------------------------
 function subjectBadgeStyle(subject: string | null | undefined): string {
   const s = (subject ?? "").toLowerCase();
@@ -174,6 +178,7 @@ export default function StudentQuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [myResult, setMyResult] = useState<StudentResult | null>(null);
+  const [myAnswers, setMyAnswers] = useState<MyAnswersMap>({});
   const [loadingQuiz, setLoadingQuiz] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -191,7 +196,7 @@ export default function StudentQuizPage() {
   const [reviewIndex, setReviewIndex] = useState(0);
 
   // ------------------------------------------------------------
-  // Load quiz, questions, result, user medium, user stream
+  // Load quiz, questions, result, my answers, user medium, stream
   // ------------------------------------------------------------
   useEffect(() => {
     if (!quizId) return;
@@ -249,6 +254,7 @@ export default function StudentQuizPage() {
       setQuiz(quizData as Quiz);
       setTimeLeft((quizData.duration_minutes || 30) * 60);
 
+      // Load questions — prefer quiz_questions join, fallback to direct
       let loaded: Question[] = [];
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
@@ -272,6 +278,7 @@ export default function StudentQuizPage() {
       if (cancelled) return;
       setQuestions(loaded.slice(0, 20));
 
+      // Load my previous result + my answers (if any)
       if (user) {
         const { data: resultData } = await supabase
           .from("quiz_results")
@@ -281,6 +288,20 @@ export default function StudentQuizPage() {
           .maybeSingle();
 
         if (!cancelled) setMyResult(resultData ?? null);
+
+        const { data: ansData } = await supabase
+          .from("quiz_answers")
+          .select("question_id, selected_option")
+          .eq("student_id", user.id)
+          .eq("quiz_id", quizId);
+
+        if (!cancelled && ansData) {
+          const map: MyAnswersMap = {};
+          for (const a of ansData as { question_id: string; selected_option: number | null }[]) {
+            map[a.question_id] = a.selected_option;
+          }
+          setMyAnswers(map);
+        }
       }
 
       setLoadingQuiz(false);
@@ -330,23 +351,60 @@ export default function StudentQuizPage() {
         return;
       }
 
-      const { error } = await supabase.from("quiz_results").insert([
-        {
-          student_id: user.id,
-          quiz_id: quizId,
-          score: finalScore,
-          total_marks: totalMarks,
-          time_spent_seconds: timeSpent,
-        },
-      ]);
+      // 1. Parent result row
+      const { data: resultRow, error: resultErr } = await supabase
+        .from("quiz_results")
+        .insert([
+          {
+            student_id: user.id,
+            quiz_id: quizId,
+            score: finalScore,
+            total_marks: totalMarks,
+            time_spent_seconds: timeSpent,
+          },
+        ])
+        .select("id")
+        .single();
 
-      setIsSubmitting(false);
-
-      if (error) {
-        setSubmitError("Result save කිරීමේදී දෝෂයක්: " + error.message);
+      if (resultErr || !resultRow) {
+        setIsSubmitting(false);
+        setSubmitError(
+          "Result save කිරීමේදී දෝෂයක්: " + (resultErr?.message ?? "unknown"),
+        );
         return;
       }
 
+      // 2. Per-question answer rows
+      const answerRows = questions.map((q, idx) => {
+        const sel = selectedAnswers[idx];
+        return {
+          result_id: resultRow.id,
+          student_id: user.id,
+          quiz_id: quizId,
+          question_id: q.id,
+          selected_option: sel === undefined ? null : sel,
+          is_correct: sel !== undefined && sel === q.correct_option,
+        };
+      });
+
+      if (answerRows.length > 0) {
+        const { error: answersErr } = await supabase
+          .from("quiz_answers")
+          .insert(answerRows);
+
+        if (answersErr) {
+          console.error("quiz_answers insert failed:", answersErr);
+          // Non-fatal — result was already saved.
+          setSubmitError(
+            "Answers save කිරීමේදී දෝෂයක් (result save විය): " +
+              answersErr.message,
+          );
+        }
+      }
+
+      setIsSubmitting(false);
+
+      // Refresh myResult + myAnswers
       const { data: resultData } = await supabase
         .from("quiz_results")
         .select("id, score, total_marks, time_spent_seconds, submitted_at")
@@ -355,9 +413,23 @@ export default function StudentQuizPage() {
         .maybeSingle();
       setMyResult(resultData ?? null);
 
+      const { data: ansData } = await supabase
+        .from("quiz_answers")
+        .select("question_id, selected_option")
+        .eq("student_id", user.id)
+        .eq("quiz_id", quizId);
+
+      if (ansData) {
+        const map: MyAnswersMap = {};
+        for (const a of ansData as { question_id: string; selected_option: number | null }[]) {
+          map[a.question_id] = a.selected_option;
+        }
+        setMyAnswers(map);
+      }
+
       router.push("/student/leaderboard");
     },
-    [quizId, router],
+    [quizId, router, questions, selectedAnswers],
   );
 
   const startingDuration = (quiz?.duration_minutes ?? 30) * 60;
@@ -547,6 +619,7 @@ export default function StudentQuizPage() {
           questions={questions}
           medium={medium}
           myResult={myResult}
+          myAnswers={myAnswers}
           reviewIndex={reviewIndex}
           setReviewIndex={setReviewIndex}
           onBack={() => router.push("/student/dashboard")}
@@ -620,7 +693,7 @@ export default function StudentQuizPage() {
             <div className="flex items-center justify-between text-xs text-gray-600">
               <span className="font-semibold">ප්‍රශ්න</span>
               <span className="text-[11px]">
-                <span className="text-emerald-700 font-bold">
+                <span className="text-blue-700 font-bold">
                   {Object.keys(selectedAnswers).length}
                 </span>{" "}
                 / {questions.length}
@@ -638,7 +711,7 @@ export default function StudentQuizPage() {
                       isCurrent
                         ? "ring-2 ring-emerald-600 bg-emerald-600 text-white"
                         : isAnswered
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          ? "bg-blue-100 text-blue-800 border border-blue-300"
                           : "bg-gray-100 text-gray-600"
                     }`}
                   >
@@ -737,7 +810,7 @@ export default function StudentQuizPage() {
                         isCurrent
                           ? "ring-2 ring-emerald-600 ring-offset-2 bg-emerald-600 text-white"
                           : isAnswered
-                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                            ? "bg-blue-100 text-blue-800 border border-blue-300"
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -748,7 +821,7 @@ export default function StudentQuizPage() {
               </div>
               <div className="pt-3 border-t text-xs space-y-2 text-gray-500">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded" />
+                  <span className="w-3 h-3 bg-blue-100 border border-blue-300 rounded" />
                   පිළිතුරු සපයා ඇත
                 </div>
                 <div className="flex items-center gap-2">
@@ -795,7 +868,6 @@ function QuizShell({
 }) {
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
-      {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
@@ -804,7 +876,6 @@ function QuizShell({
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
           {/* Banner */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
-            {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
               style={{
@@ -813,16 +884,12 @@ function QuizShell({
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18der-white/5" />
-            {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-trrom-transparent via-white/3 to-white/8" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
-              {/* Logo */}
               <div className="shrink-0">
                 <div className="relative">
                   <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
@@ -832,7 +899,6 @@ function QuizShell({
                 </div>
               </div>
 
-              {/* Title */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   <span
@@ -869,6 +935,7 @@ function ReviewMode({
   questions,
   medium,
   myResult,
+  myAnswers,
   reviewIndex,
   setReviewIndex,
   onBack,
@@ -877,6 +944,7 @@ function ReviewMode({
   questions: Question[];
   medium: Medium;
   myResult: StudentResult | null;
+  myAnswers: MyAnswersMap;
   reviewIndex: number;
   setReviewIndex: (i: number) => void;
   onBack: () => void;
@@ -884,6 +952,10 @@ function ReviewMode({
   const q = questions[reviewIndex];
   const localized = localizeQuestion(q, medium);
   const optionsList = getLocalizedOptions(localized);
+
+  // Student's pick for this question (null / undefined = unanswered)
+  const studentSel = myAnswers[q.id];
+  const studentAnswered = studentSel !== undefined && studentSel !== null;
 
   return (
     <div className="space-y-4">
@@ -922,19 +994,28 @@ function ReviewMode({
         )}
       </div>
 
-      {/* Mobile palette */}
+      {/* Mobile palette — reflects review colors */}
       <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
         <div className="grid grid-cols-6 xs:grid-cols-8 sm:grid-cols-10 gap-1.5">
-          {questions.map((_, idx) => {
+          {questions.map((question, idx) => {
             const isCurrent = reviewIndex === idx;
+            const sel = myAnswers[question.id];
+            const answered = sel !== undefined && sel !== null;
+            const correct = answered && sel === question.correct_option;
+            const wrong = answered && !correct;
+
+            let colorCls = "bg-gray-100 text-gray-600 border border-gray-200";
+            if (correct)
+              colorCls = "bg-emerald-100 text-emerald-800 border border-emerald-300";
+            else if (wrong)
+              colorCls = "bg-red-100 text-red-800 border border-red-300";
+
             return (
               <button
                 key={idx}
                 onClick={() => setReviewIndex(idx)}
                 className={`w-full aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition ${
-                  isCurrent
-                    ? "ring-2 ring-emerald-600 bg-emerald-600 text-white"
-                    : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  isCurrent ? "ring-2 ring-emerald-600 bg-emerald-600 text-white" : colorCls
                 }`}
               >
                 {idx + 1}
@@ -966,31 +1047,58 @@ function ReviewMode({
             />
           )}
 
+          {!studentAnswered && myResult && (
+            <div className="text-[11px] sm:text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-gray-400 shrink-0" />
+              ඔබ මෙම ප්‍රශ්නයට පිළිතුරු දී නැත.
+            </div>
+          )}
+
           <div className="space-y-2">
             {optionsList.map((opt, idx) => {
               const isCorrect = localized.correct_option === idx;
+              const studentPicked = studentAnswered && studentSel === idx;
+              const studentWrong = studentPicked && !isCorrect;
+
+              let cardCls =
+                "bg-white/60 border-gray-200 text-gray-700";
+              if (isCorrect)
+                cardCls =
+                  "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold";
+              else if (studentWrong)
+                cardCls =
+                  "bg-red-50 border-red-300 text-red-900 font-bold";
+
+              let badgeCls = "bg-gray-200 text-gray-700";
+              if (isCorrect) badgeCls = "bg-emerald-600 text-white";
+              else if (studentWrong) badgeCls = "bg-red-600 text-white";
+
               return (
                 <div
                   key={idx}
-                  className={`p-3 sm:p-3.5 rounded-lg border flex items-start gap-2.5 sm:gap-3 text-sm ${
-                    isCorrect
-                      ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
-                      : "bg-white/60 border-gray-200 text-gray-700"
-                  }`}
+                  className={`p-3 sm:p-3.5 rounded-lg border flex items-start gap-2.5 sm:gap-3 text-sm ${cardCls}`}
                 >
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5 ${
-                      isCorrect
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5 ${badgeCls}`}
                   >
-                    {isCorrect ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                    {isCorrect ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : studentWrong ? (
+                      <XCircle className="w-4 h-4" />
+                    ) : (
+                      idx + 1
+                    )}
                   </span>
                   <span className="flex-1 wrap-break-word">{opt}</span>
+
                   {isCorrect && (
                     <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
                       Correct
+                    </span>
+                  )}
+                  {studentWrong && (
+                    <span className="hidden sm:inline px-2 py-0.5 bg-red-200 text-red-900 text-[10px] font-bold rounded shrink-0">
+                      Your answer
                     </span>
                   )}
                 </div>
@@ -1036,14 +1144,25 @@ function ReviewMode({
           </div>
         </div>
 
-        {/* Desktop palette */}
+        {/* Desktop palette — reflects review colors */}
         <div className="hidden md:block bg-white/80 backdrop-blur-md p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
           <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
             ප්‍රශ්න ලැයිස්තුව
           </h3>
           <div className="grid grid-cols-4 gap-2">
-            {questions.map((_, idx) => {
+            {questions.map((question, idx) => {
               const isCurrent = reviewIndex === idx;
+              const sel = myAnswers[question.id];
+              const answered = sel !== undefined && sel !== null;
+              const correct = answered && sel === question.correct_option;
+              const wrong = answered && !correct;
+
+              let colorCls = "bg-gray-100 text-gray-600 border border-gray-200";
+              if (correct)
+                colorCls = "bg-emerald-100 text-emerald-800 border border-emerald-300";
+              else if (wrong)
+                colorCls = "bg-red-100 text-red-800 border border-red-300";
+
               return (
                 <button
                   key={idx}
@@ -1051,7 +1170,7 @@ function ReviewMode({
                   className={`w-10 h-10 rounded-lg text-sm font-semibold flex items-center justify-center transition ${
                     isCurrent
                       ? "ring-2 ring-emerald-600 ring-offset-2 bg-emerald-600 text-white"
-                      : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                      : colorCls
                   }`}
                 >
                   {idx + 1}
@@ -1059,6 +1178,22 @@ function ReviewMode({
               );
             })}
           </div>
+
+          <div className="pt-3 border-t text-xs space-y-2 text-gray-500">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded" />
+              නිවැරදි
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-red-100 border border-red-300 rounded" />
+              වැරදි
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-gray-100 border border-gray-200 rounded" />
+              නොකළ
+            </div>
+          </div>
+
           <button
             onClick={onBack}
             className="w-full text-xs font-semibold text-gray-500 hover:text-emerald-600 pt-2 transition"
