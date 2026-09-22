@@ -282,7 +282,7 @@ function QuestionEditorForm({
       <div className="relative w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden my-4 sm:my-8 flex flex-col max-h-[94vh]">
 
         {/* ═══════════════ HEADER BANNER ═══════════════ */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
+        <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
           {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -311,7 +311,7 @@ function QuestionEditorForm({
               <div className="min-w-0">
                 <h3 className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
                   <Edit3 className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
-                  <span className="break-words">ප්‍රශ්නය සංස්කරණය කරන්න</span>
+                  <span className="wrap-break-word">ප්‍රශ්නය සංස්කරණය කරන්න</span>
                 </h3>
                 <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
                   භාෂා 3කින්ම ප්‍රශ්නය සංස්කරණය කරන්න · සිංහල සහ English අනිවාර්යයි

@@ -156,7 +156,7 @@ export default function ManageQuizQuestionsPage() {
 
   if (loading && !quiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center gap-2 text-gray-500 text-sm">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center gap-2 text-gray-500 text-sm">
         Loading Quiz...
       </div>
     );
@@ -164,7 +164,7 @@ export default function ManageQuizQuestionsPage() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-white/70 text-center">
           <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
           <p className="text-red-600 font-medium text-sm">Quiz not found!</p>
@@ -184,17 +184,17 @@ export default function ManageQuizQuestionsPage() {
 
   return (
     // ============ Modern green/white background ============
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-5xl mx-auto space-y-5 sm:space-y-6">
 
           {/* ============ Header Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
             {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -208,9 +208,9 @@ export default function ManageQuizQuestionsPage() {
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
             {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-[18px] border-white/5" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
             {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 space-y-5">
               <div className="flex items-start gap-4">
@@ -241,9 +241,9 @@ export default function ManageQuizQuestionsPage() {
                   </div>
                   <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
                     <ListChecks className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300 shrink-0" />
-                    <span className="break-words">{quiz.title}</span>
+                    <span className="wrap-break-word">{quiz.title}</span>
                   </h1>
-                  <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1 break-words">
+                  <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1 wrap-break-word">
                     {quizLabel}
                   </p>
                 </div>
@@ -364,7 +364,7 @@ export default function ManageQuizQuestionsPage() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm sm:text-base font-medium text-gray-900 leading-relaxed pt-1 break-words">
+                              <p className="text-sm sm:text-base font-medium text-gray-900 leading-relaxed pt-1 wrap-break-word">
                                 {q.question_text}
                               </p>
                             </div>
@@ -417,7 +417,7 @@ export default function ManageQuizQuestionsPage() {
                                   >
                                     {optIdx + 1}
                                   </span>
-                                  <span className="flex-1 break-words">{opt}</span>
+                                  <span className="flex-1 wrap-break-word">{opt}</span>
                                   {isCorrect && (
                                     <span className="px-1.5 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded flex items-center gap-0.5 shrink-0">
                                       <Check className="w-3 h-3" />
@@ -433,7 +433,7 @@ export default function ManageQuizQuestionsPage() {
                               <span className="font-bold flex items-center gap-1 mb-0.5 text-amber-950">
                                 <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Solution:
                               </span>
-                              <span className="break-words">{q.explanation}</span>
+                              <span className="wrap-break-word">{q.explanation}</span>
                             </div>
                           )}
                         </div>
@@ -442,7 +442,7 @@ export default function ManageQuizQuestionsPage() {
                   </div>
 
                   {/* Bottom fade */}
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                 </div>
 
                 {/* Footer hint */}

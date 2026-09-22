@@ -275,7 +275,7 @@ export default function QuestionEntryForm(props: Props) {
       className="relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-md border border-white/70 shadow-xl"
     >
       {/* ═══════════════ HEADER BANNER ═══════════════ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white">
+      <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white">
         {/* dot grid */}
         <div
           className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -317,7 +317,7 @@ export default function QuestionEntryForm(props: Props) {
 
               <h3 className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
                 <FileQuestion className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
-                <span className="break-words">
+                <span className="wrap-break-word">
                   {isLocked
                     ? "Quiz එකට නව ප්‍රශ්නයක් එකතු කරන්න"
                     : "Question Bank එකට නව ප්‍රශ්නයක් එකතු කරන්න"}

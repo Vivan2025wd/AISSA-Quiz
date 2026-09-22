@@ -768,9 +768,9 @@ export default function StudentQuizPage() {
 // ---------------------------------------------------------------------------
 function ThemedShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl" />
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">{children}</div>
@@ -794,16 +794,16 @@ function QuizShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
           {/* Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
             {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -817,9 +817,9 @@ function QuizShell({
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
             {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-[18px] border-white/5" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18der-white/5" />
             {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-trrom-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
               {/* Logo */}
@@ -848,7 +848,7 @@ function QuizShell({
                     </span>
                   )}
                 </div>
-                <h1 className="text-base sm:text-xl md:text-2xl font-extrabold leading-snug tracking-tight break-words">
+                <h1 className="text-base sm:text-xl md:text-2xl font-extrabold leading-snug tracking-tight wrap-break-word">
                   {title}
                 </h1>
               </div>
@@ -987,7 +987,7 @@ function ReviewMode({
                   >
                     {isCorrect ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
                   </span>
-                  <span className="flex-1 break-words">{opt}</span>
+                  <span className="flex-1 wrap-break-word">{opt}</span>
                   {isCorrect && (
                     <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
                       Correct

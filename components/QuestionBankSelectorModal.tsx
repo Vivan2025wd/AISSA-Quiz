@@ -180,7 +180,7 @@ export default function QuestionBankSelectorModal({
       <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden my-4 sm:my-6 flex flex-col max-h-[94vh]">
 
         {/* ═══════════════ HEADER BANNER ═══════════════ */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
+        <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
           {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -209,7 +209,7 @@ export default function QuestionBankSelectorModal({
               <div className="min-w-0">
                 <h3 className="text-base sm:text-lg font-extrabold flex items-center gap-2 leading-tight">
                   <GraduationCap className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
-                  <span className="break-words">
+                  <span className="wrap-break-word">
                     Question Bank එකෙන් ප්‍රශ්න තෝරන්න
                   </span>
                 </h3>
@@ -414,7 +414,7 @@ export default function QuestionBankSelectorModal({
                         )}
                       </div>
 
-                      <p className="text-sm font-semibold text-gray-900 leading-snug break-words">
+                      <p className="text-sm font-semibold text-gray-900 leading-snug wrap-break-word">
                         {q.question_text}
                       </p>
 
@@ -442,7 +442,7 @@ export default function QuestionBankSelectorModal({
           </div>
 
           {/* Bottom fade — indicates more content below */}
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
         </div>
 
         {/* ═══════════════ FOOTER ═══════════════ */}

@@ -434,7 +434,7 @@ export default function StudentDashboard() {
   // ------------------------------------------------------------
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center gap-2 text-gray-500 text-sm">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center gap-2 text-gray-500 text-sm">
         <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" /> Loading Dashboard...
       </div>
     );
@@ -442,7 +442,7 @@ export default function StudentDashboard() {
 
   if (guardError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-6 text-center space-y-3">
           <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
           <p className="text-red-600 font-medium">{guardError}</p>
@@ -484,11 +484,11 @@ export default function StudentDashboard() {
 
   return (
     // ============ Modern green/white background ============
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs (fixed → stay in place while scrolling) */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div
-        className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl"
+        className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl"
         style={{ animationDelay: "2s" }}
       />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
@@ -496,7 +496,7 @@ export default function StudentDashboard() {
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-5 sm:space-y-8">
           {/* ============ Welcome Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
             {/* --- Decorative layers --- */}
             {/* dot grid pattern */}
             <div
@@ -511,10 +511,10 @@ export default function StudentDashboard() {
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
             {/* decorative rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-[18px] border-white/5" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
             {/* diagonal shine */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             {/* --- Content --- */}
             <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
@@ -552,7 +552,7 @@ export default function StudentDashboard() {
                 </h1>
 
                 <div className="text-emerald-50/90 text-xs sm:text-sm mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                  <span className="inline-flex items-center gap-1.5 break-words">
+                  <span className="inline-flex items-center gap-1.5 wrap-break-word">
                     <span className="w-1.5 h-1.5 bg-emerald-300/80 rounded-full" />
                     {profile?.school || "—"}
                   </span>
@@ -787,7 +787,7 @@ export default function StudentDashboard() {
                     <>
                       {/* ===== Desktop table — internal scroll ===== */}
                       <div className="hidden md:block relative">
-                        <div className="overflow-x-auto overflow-y-auto max-h-[500px] lg:max-h-[560px]">
+                        <div className="overflow-x-auto overflow-y-auto max-h-125 lg:max-h-140">
                           <table className="w-full text-left text-sm text-gray-600">
                             <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0] text-emerald-900 font-semibold uppercase text-xs">
                               <tr>
@@ -857,7 +857,7 @@ export default function StudentDashboard() {
                         </div>
 
                         {/* bottom fade shadow — indicates more content below */}
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                       </div>
 
                       {/* ===== Mobile cards — internal scroll ===== */}
@@ -922,7 +922,7 @@ export default function StudentDashboard() {
                         </div>
 
                         {/* bottom fade shadow for mobile */}
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                       </div>
 
                       {/* ===== Footer hint — total count ===== */}

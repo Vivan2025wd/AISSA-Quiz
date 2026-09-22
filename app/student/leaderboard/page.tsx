@@ -429,16 +429,16 @@ export default function LeaderboardPage() {
 
   return (
     // ============ Modern green/white background ============
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-[28rem] sm:h-[28rem] bg-teal-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
           {/* ============ Header Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
             {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -452,10 +452,10 @@ export default function LeaderboardPage() {
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
             {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-[18px] border-white/5" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
             {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08]" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
               {/* Logo */}
@@ -587,7 +587,7 @@ export default function LeaderboardPage() {
                                       </td>
                                       <td className="p-4">
                                         <div className="font-bold text-gray-900 flex items-center gap-2">
-                                          <span className="break-words">
+                                          <span className="wrap-break-word">
                                             {item.school}
                                           </span>
                                           {isMine && (
@@ -652,7 +652,7 @@ export default function LeaderboardPage() {
                               </tbody>
                             </table>
                           </div>
-                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                         </div>
 
                         {/* Mobile cards — max-h + scroll */}
@@ -681,7 +681,7 @@ export default function LeaderboardPage() {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-900 leading-snug break-words">
+                                        <h3 className="font-bold text-gray-900 leading-snug wrap-break-word">
                                           {item.school}
                                         </h3>
                                         {isMine && (
@@ -735,7 +735,7 @@ export default function LeaderboardPage() {
                               );
                             })}
                           </div>
-                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                         </div>
 
                         {/* Footer hint */}
@@ -904,7 +904,7 @@ export default function LeaderboardPage() {
                           </tbody>
                         </table>
                       </div>
-                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                     </div>
 
                     {/* Mobile cards */}
@@ -978,7 +978,7 @@ export default function LeaderboardPage() {
                           );
                         })}
                       </div>
-                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/95 via-white/60 to-transparent" />
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                     </div>
 
                     {/* Footer hint */}
@@ -1038,7 +1038,7 @@ export default function LeaderboardPage() {
 // ------------------------------------------------------------
 function YourRankRow({ item }: { item: IndividualRow }) {
   return (
-    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl shadow-sm p-4 sm:p-5">
+    <div className="bg-linear-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl shadow-sm p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
@@ -1093,7 +1093,7 @@ function YourRankRow({ item }: { item: IndividualRow }) {
 // ------------------------------------------------------------
 function YourSchoolRow({ item }: { item: SchoolRow }) {
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-sm p-4 sm:p-5">
+    <div className="bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-sm p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="shrink-0 w-12 h-12 rounded-xl bg-amber-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
@@ -1101,7 +1101,7 @@ function YourSchoolRow({ item }: { item: SchoolRow }) {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-snug break-words">
+              <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-snug wrap-break-word">
                 {item.school}
               </h3>
               <span className="text-[9px] font-bold uppercase bg-amber-600 text-white px-1.5 py-0.5 rounded shrink-0">
