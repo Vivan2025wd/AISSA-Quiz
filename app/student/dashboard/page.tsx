@@ -207,6 +207,38 @@ function canStudentSeeQuiz(
 }
 
 // ------------------------------------------------------------
+// 🔥 NEW: live countdown hook
+// Re-computes a countdown string every second, so the value
+// stays fresh WITHOUT the parent needing to re-render.
+// ------------------------------------------------------------
+function useLiveCountdown(
+  computeMs: () => number | null,
+  deps: React.DependencyList,
+): string | null {
+  const [display, setDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const update = () => {
+      if (cancelled) return;
+      const ms = computeMs();
+      setDisplay(ms != null && ms > 0 ? formatCountdown(ms) : null);
+    };
+
+    update();
+    const i = setInterval(update, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(i);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return display;
+}
+
+// ------------------------------------------------------------
 // Main component
 // ------------------------------------------------------------
 export default function StudentDashboard() {
@@ -223,9 +255,14 @@ export default function StudentDashboard() {
 
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("all");
 
+  // Parent re-render every 10s — used so quizzes actually MOVE
+  // from "upcoming" → "active" → "expired" without a manual refresh.
+  // (The per-second countdown text itself is handled inside the
+  // ActiveQuizCard / UpcomingQuizCard components, so we don't
+  // re-render the whole page every second.)
   const [, setTick] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 30_000);
+    const interval = setInterval(() => setTick((t) => t + 1), 10_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -483,9 +520,7 @@ export default function StudentDashboard() {
       : subjectStats[selectedSubject] ?? null;
 
   return (
-    // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
-      {/* Aurora blobs (fixed → stay in place while scrolling) */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div
         className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl"
@@ -497,8 +532,6 @@ export default function StudentDashboard() {
         <div className="max-w-6xl mx-auto space-y-5 sm:space-y-8">
           {/* ============ Welcome Banner ============ */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
-            {/* --- Decorative layers --- */}
-            {/* dot grid pattern */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
               style={{
@@ -507,38 +540,22 @@ export default function StudentDashboard() {
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* soft radial glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            {/* decorative rings */}
             <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
-            {/* diagonal shine */}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
-            {/* --- Content --- */}
             <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              {/* Logo */}
               <div className="shrink-0">
                 <div className="relative">
-                  {/* glow behind logo */}
                   <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
                   <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                    {/*
-                      👉 Real logo එකක් තියෙනවා නම් පහත img එකේ src එක update කරන්න.
-                      නැත්නම් GraduationCap icon එක fallback විදිහට පෙන්වයි.
-                    */}
-                    {/* <img
-                      src="/aissa-logo.png"
-                      alt="AISSA Logo"
-                      className="w-full h-full object-contain p-1.5"
-                    /> */}
                     <GraduationCap className="w-9 h-9 sm:w-11 sm:h-11 text-white drop-shadow" />
                   </div>
                 </div>
               </div>
 
-              {/* Text content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
@@ -569,7 +586,6 @@ export default function StudentDashboard() {
                 </div>
               </div>
 
-              {/* CTA */}
               <Link
                 href="/student/leaderboard"
                 className="relative self-stretch sm:self-auto sm:shrink-0 px-4 sm:px-5 py-3 bg-white text-emerald-900 font-bold rounded-xl hover:bg-emerald-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm group"
@@ -720,7 +736,6 @@ export default function StudentDashboard() {
                   ))}
                 </div>
 
-                {/* Summary strip */}
                 <div className="bg-white/80 backdrop-blur-md px-4 py-3 rounded-xl border border-white/70 shadow-sm flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm">
                   {selectedSubject === "all" ? (
                     <>
@@ -777,7 +792,6 @@ export default function StudentDashboard() {
                   )}
                 </div>
 
-                {/* ============ Results (internal scroll) ============ */}
                 <div className="bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm overflow-hidden">
                   {visiblePastQuizzes.length === 0 ? (
                     <div className="p-6 sm:p-8 text-center text-gray-400 text-sm">
@@ -785,7 +799,6 @@ export default function StudentDashboard() {
                     </div>
                   ) : (
                     <>
-                      {/* ===== Desktop table — internal scroll ===== */}
                       <div className="hidden md:block relative">
                         <div className="overflow-x-auto overflow-y-auto max-h-125 lg:max-h-140">
                           <table className="w-full text-left text-sm text-gray-600">
@@ -856,11 +869,9 @@ export default function StudentDashboard() {
                           </table>
                         </div>
 
-                        {/* bottom fade shadow — indicates more content below */}
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                       </div>
 
-                      {/* ===== Mobile cards — internal scroll ===== */}
                       <div className="md:hidden relative">
                         <div className="divide-y divide-gray-100 overflow-y-auto max-h-[70vh]">
                           {visiblePastQuizzes.map((pq) => {
@@ -921,11 +932,9 @@ export default function StudentDashboard() {
                           })}
                         </div>
 
-                        {/* bottom fade shadow for mobile */}
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                       </div>
 
-                      {/* ===== Footer hint — total count ===== */}
                       <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 text-[11px] text-gray-500 text-center">
                         ප්‍රතිඵල{" "}
                         <strong className="text-gray-700">
@@ -1132,9 +1141,13 @@ function SubjectMiniCard({
   );
 }
 
+// ---------------------------------------------------------------------------
+// 🔥 ActiveQuizCard — now has its own 1s countdown timer
+// ---------------------------------------------------------------------------
 function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
-  const msLeft = msUntilEnd(quiz);
-  const endsIn = msLeft != null ? formatCountdown(msLeft) : null;
+  // Live-updating "ends in ..." string, refreshed every second
+  // without needing the parent dashboard to re-render.
+  const endsIn = useLiveCountdown(() => msUntilEnd(quiz), [quiz]);
 
   return (
     <div className="bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-emerald-200/70 shadow-sm space-y-3 sm:space-y-4 hover:shadow-md transition">
@@ -1175,9 +1188,12 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// 🔥 UpcomingQuizCard — now has its own 1s countdown timer
+// ---------------------------------------------------------------------------
 function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
-  const msWait = msUntilStart(quiz);
-  const startsIn = msWait != null && msWait > 0 ? formatCountdown(msWait) : null;
+  const startsIn = useLiveCountdown(() => msUntilStart(quiz), [quiz]);
+
   const startTime = quiz.scheduled_at
     ? new Date(quiz.scheduled_at).toLocaleString("en-GB", {
         day: "2-digit",
