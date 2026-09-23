@@ -55,6 +55,7 @@ type Profile = {
   school?: string | null;
   stream?: string | null;
   medium?: Medium | null;
+  is_admin?: boolean | null;
 };
 
 type StudentStats = {
@@ -89,20 +90,16 @@ type PastQuizRow = {
   } | null;
 };
 
-type ResultRow = {
-  id: string;
-  quiz_id: string;
-  score: number | null;
-  total_marks: number | null;
-  time_spent_seconds: number | null;
-  submitted_at: string;
-};
-
-type QuizRow = {
-  id: string;
-  title: string | null;
-  subject: string | null;
-  stream: string | null;
+// ------------------------------------------------------------
+// Dashboard RPC response shape
+// ------------------------------------------------------------
+type DashboardBundle = {
+  profile?: Profile | null;
+  stats?: StudentStats | null;
+  subject_stats?: SubjectStats[] | null;
+  past_results?: PastQuizRow[] | null;
+  live_quizzes?: Quiz[] | null;
+  error?: string;
 };
 
 // ------------------------------------------------------------
@@ -207,9 +204,7 @@ function canStudentSeeQuiz(
 }
 
 // ------------------------------------------------------------
-// 🔥 NEW: live countdown hook
-// Re-computes a countdown string every second, so the value
-// stays fresh WITHOUT the parent needing to re-render.
+// Live countdown hook
 // ------------------------------------------------------------
 function useLiveCountdown(
   computeMs: () => number | null,
@@ -257,9 +252,6 @@ export default function StudentDashboard() {
 
   // Parent re-render every 10s — used so quizzes actually MOVE
   // from "upcoming" → "active" → "expired" without a manual refresh.
-  // (The per-second countdown text itself is handled inside the
-  // ActiveQuizCard / UpcomingQuizCard components, so we don't
-  // re-render the whole page every second.)
   const [, setTick] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 10_000);
@@ -281,119 +273,69 @@ export default function StudentDashboard() {
       return;
     }
 
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("id, full_name, school, stream, medium, is_admin")
-      .eq("id", user.id)
-      .maybeSingle();
+    // ✅ එකම RPC call එකෙන් හැම දත්තම (7 queries → 1)
+    const { data: bundleRaw, error: bundleError } = await supabase.rpc(
+      "get_dashboard_data",
+    );
 
-    if (profileError) {
-      setGuardError("Profile එක load කිරීමේදී දෝෂයක් ඇති විය: " + profileError.message);
+    if (bundleError) {
+      console.error("[dashboard] get_dashboard_data error:", bundleError);
+      setGuardError("Dashboard load කිරීමේදී දෝෂයක්: " + bundleError.message);
       setLoading(false);
       return;
     }
 
-    if (!profileData) {
+    const bundle = (bundleRaw ?? {}) as DashboardBundle;
+
+    if (bundle.error === "unauthorized" || !bundle.profile) {
       await supabase.auth.signOut();
       router.replace("/auth/login?reason=no_profile");
       return;
     }
 
-    setProfile(profileData as Profile);
+    // ─── Profile ───
+    setProfile(bundle.profile);
 
-    if ((profileData as { is_admin?: boolean }).is_admin) {
+    if (bundle.profile.is_admin) {
       setDebugWarning(
         "ඔබ Admin ගිණුමක් — Admin ලා leaderboard සහ stats වලින් ඉවත් කරලා තියෙන නිසා ඔබේ stats 0 ලෙස පෙන්වයි.",
       );
     }
 
-    const { data: statsData, error: statsError } = await supabase.rpc(
-      "get_student_stats",
-      { p_student_id: user.id },
-    );
+    // ─── Overall stats ───
+    setStats(bundle.stats ?? null);
 
-    if (statsError) {
-      console.error("[dashboard] get_student_stats error:", statsError);
-      setDebugWarning((prev) => prev ?? "Stats load කිරීමේදී දෝෂයක්: " + statsError.message);
-    } else if (statsData && statsData.length > 0) {
-      setStats(statsData[0]);
-    }
-
-    const { data: subjectStatsData, error: subjectStatsError } = await supabase.rpc(
-      "get_student_subject_stats",
-      { p_student_id: user.id },
-    );
-
-    if (subjectStatsError) {
-      console.error("[dashboard] get_student_subject_stats error:", subjectStatsError);
-    } else if (subjectStatsData) {
+    // ─── Subject stats ───
+    if (Array.isArray(bundle.subject_stats)) {
       const map: Record<string, SubjectStats> = {};
-      for (const row of subjectStatsData as SubjectStats[]) {
+      for (const row of bundle.subject_stats) {
         const key = subjectKeyOf(row.subject);
         if (key) map[key] = row;
       }
       setSubjectStats(map);
+    } else {
+      setSubjectStats({});
     }
 
-    const { data: resultsRaw, error: resultsError } = await supabase
-      .from("quiz_results")
-      .select("id, quiz_id, score, total_marks, time_spent_seconds, submitted_at")
-      .eq("student_id", user.id)
-      .order("submitted_at", { ascending: false });
-
-    if (resultsError) {
-      console.error("[dashboard] quiz_results error:", resultsError);
-    }
-
-    const results = (resultsRaw as ResultRow[] | null) ?? [];
-
-    if (results.length > 0) {
-      const quizIds = Array.from(new Set(results.map((r) => r.quiz_id)));
-
-      const { data: quizzesRaw, error: quizzesError } = await supabase
-        .from("quizzes")
-        .select("id, title, subject, stream")
-        .in("id", quizIds);
-
-      if (quizzesError) console.error("[dashboard] quizzes lookup error:", quizzesError);
-
-      const quizMap = new Map<string, QuizRow>();
-      (quizzesRaw as QuizRow[] | null)?.forEach((q) => quizMap.set(q.id, q));
-
-      const merged: PastQuizRow[] = results.map((r) => {
-        const q = quizMap.get(r.quiz_id);
-        return {
-          id: r.id,
-          quiz_id: r.quiz_id,
-          score: r.score ?? 0,
-          total_marks: r.total_marks ?? 0,
-          time_spent_seconds: r.time_spent_seconds ?? 0,
-          submitted_at: r.submitted_at,
-          quizzes: q
-            ? {
-                title: q.title ?? "Untitled quiz",
-                subject: q.subject ?? null,
-                stream: q.stream ?? null,
-              }
-            : null,
-        };
-      });
-
+    // ─── Past results ───
+    if (Array.isArray(bundle.past_results)) {
+      const merged: PastQuizRow[] = bundle.past_results.map((r) => ({
+        id: r.id,
+        quiz_id: r.quiz_id,
+        score: r.score ?? 0,
+        total_marks: r.total_marks ?? 0,
+        time_spent_seconds: r.time_spent_seconds ?? 0,
+        submitted_at: r.submitted_at,
+        quizzes: r.quizzes ?? null,
+      }));
       setPastQuizzes(merged);
     } else {
       setPastQuizzes([]);
     }
 
-    const { data: quizData } = await supabase
-      .from("quizzes")
-      .select(
-        "id, title, subject, stream, duration_minutes, total_questions, is_live, scheduled_at, created_at",
-      )
-      .eq("is_live", true)
-      .order("scheduled_at", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false });
+    // ─── Live quizzes ───
+    setQuizzes(Array.isArray(bundle.live_quizzes) ? bundle.live_quizzes : []);
 
-    setQuizzes((quizData as Quiz[]) ?? []);
     setLoading(false);
   }, [router]);
 
@@ -1142,11 +1084,9 @@ function SubjectMiniCard({
 }
 
 // ---------------------------------------------------------------------------
-// 🔥 ActiveQuizCard — now has its own 1s countdown timer
+// ActiveQuizCard — 1s countdown
 // ---------------------------------------------------------------------------
 function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
-  // Live-updating "ends in ..." string, refreshed every second
-  // without needing the parent dashboard to re-render.
   const endsIn = useLiveCountdown(() => msUntilEnd(quiz), [quiz]);
 
   return (
@@ -1189,7 +1129,7 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
 }
 
 // ---------------------------------------------------------------------------
-// 🔥 UpcomingQuizCard — now has its own 1s countdown timer
+// UpcomingQuizCard — 1s countdown
 // ---------------------------------------------------------------------------
 function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
   const startsIn = useLiveCountdown(() => msUntilStart(quiz), [quiz]);

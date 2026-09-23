@@ -75,11 +75,6 @@ type Question = {
   explanation_ta?: string | null;
 };
 
-type QuizQuestionRow = {
-  order_index: number;
-  questions: Question | Question[] | null;
-};
-
 type StudentResult = {
   id: string;
   score: number;
@@ -196,7 +191,7 @@ export default function StudentQuizPage() {
   const [reviewIndex, setReviewIndex] = useState(0);
 
   // ------------------------------------------------------------
-  // Load quiz, questions, result, my answers, user medium, stream
+  // Load quiz (from CDN cache) + profile + my result/answers
   // ------------------------------------------------------------
   useEffect(() => {
     if (!quizId) return;
@@ -228,57 +223,48 @@ export default function StudentQuizPage() {
         }
       }
 
-      const { data: quizData, error: quizError } = await supabase
-        .from("quizzes")
-        .select("id, title, subject, stream, duration_minutes, scheduled_at")
-        .eq("id", quizId)
-        .single();
+      // ✅ CDN-cached API — replaces 5-6 Supabase queries with 1 fetch
+      const cacheRes = await fetch(`/api/quiz/${quizId}`, {
+        next: { revalidate: 60 },
+      });
 
       if (cancelled) return;
 
-      if (quizError || !quizData) {
+      if (!cacheRes.ok) {
+        setLoadError("Quiz එක සොයාගත නොහැකි විය.");
+        setLoadingQuiz(false);
+        return;
+      }
+
+      const payload = (await cacheRes.json()) as {
+        quiz: Quiz;
+        questions: Question[];
+      };
+
+      if (cancelled) return;
+
+      const quizData = payload.quiz;
+      const questionsData = payload.questions ?? [];
+
+      if (!quizData) {
         setLoadError("Quiz එක සොයාගත නොහැකි විය.");
         setLoadingQuiz(false);
         return;
       }
 
       if (isSubjectBlockedForStream(quizData.subject, localStream)) {
-        if (!cancelled) {
-          setQuiz(quizData as Quiz);
-          setStreamBlocked(true);
-          setLoadingQuiz(false);
-        }
+        setQuiz(quizData as Quiz);
+        setStreamBlocked(true);
+        setLoadingQuiz(false);
         return;
       }
 
       setQuiz(quizData as Quiz);
       setTimeLeft((quizData.duration_minutes || 30) * 60);
 
-      // Load questions — prefer quiz_questions join, fallback to direct
-      let loaded: Question[] = [];
-      const { data: qqData, error: qqError } = await supabase
-        .from("quiz_questions")
-        .select("order_index, questions(*)")
-        .eq("quiz_id", quizId)
-        .order("order_index", { ascending: true });
+      setQuestions(questionsData.slice(0, 20));
 
-      if (!qqError && qqData && qqData.length > 0) {
-        loaded = qqData
-          .map((row: QuizQuestionRow) => row.questions)
-          .filter((q): q is Question => q !== null);
-      } else {
-        const { data: directData } = await supabase
-          .from("questions")
-          .select("*")
-          .eq("quiz_id", quizId)
-          .order("created_at", { ascending: true });
-        loaded = directData ?? [];
-      }
-
-      if (cancelled) return;
-      setQuestions(loaded.slice(0, 20));
-
-      // Load my previous result + my answers (if any)
+      // Load my previous result + my answers (if any) — user-scoped, no cache
       if (user) {
         const { data: resultData } = await supabase
           .from("quiz_results")
@@ -394,7 +380,6 @@ export default function StudentQuizPage() {
 
         if (answersErr) {
           console.error("quiz_answers insert failed:", answersErr);
-          // Non-fatal — result was already saved.
           setSubmitError(
             "Answers save කිරීමේදී දෝෂයක් (result save විය): " +
               answersErr.message,
