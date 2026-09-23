@@ -42,28 +42,25 @@ interface QuestionBankSelectorModalProps {
 const streams = ["All", "Common", "Bio Science"];
 const subjects = ["All", "Physics", "Chemistry", "Biology"];
 
-function initialStreamFilter(quizStream: string | undefined): string {
-  if (quizStream === undefined) return "Common";
-  return quizStream;
-}
-
 export default function QuestionBankSelectorModal({
   isOpen,
   onClose,
   initialSelectedIds,
   onConfirmSelection,
-  quizSubject,
-  quizStream,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  quizSubject: _quizSubject,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  quizStream: _quizStream,
   maxLimit = 20,
 }: QuestionBankSelectorModalProps) {
   const [questions, setQuestions] = useState<BankQuestion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
 
-  const [selectedSubject, setSelectedSubject] = useState(quizSubject || "All");
-  const [selectedStream, setSelectedStream] = useState<string>(
-    initialStreamFilter(quizStream),
-  );
+  // ✅ Default to "All" so questions ALWAYS show up
+  const [selectedSubject, setSelectedSubject] = useState<string>("All");
+  const [selectedStream, setSelectedStream] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
 
@@ -75,8 +72,8 @@ export default function QuestionBankSelectorModal({
 
     if (justOpened) {
       setSelectedIds(initialSelectedIds);
-      setSelectedSubject(quizSubject || "All");
-      setSelectedStream(initialStreamFilter(quizStream));
+      setSelectedSubject("All");
+      setSelectedStream("All");
       setSearchQuery("");
       setSelectedTopic("");
     }
@@ -85,29 +82,44 @@ export default function QuestionBankSelectorModal({
 
   const loadBankQuestions = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
 
-    let query = supabase
-      .from("questions")
-      .select(
-        "id, subject, stream, topic, question_text, image_url, option_1, option_2, option_3, option_4, option_5, correct_option, explanation",
-      )
-      .order("created_at", { ascending: false });
+    try {
+      // ✅ select("*") — column issues නැහැ
+      let query = supabase
+        .from("questions")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (selectedSubject && selectedSubject !== "All") {
-      query = query.eq("subject", selectedSubject);
+      if (selectedSubject && selectedSubject !== "All") {
+        query = query.eq("subject", selectedSubject);
+      }
+
+      if (selectedStream === "Common") {
+        query = query.is("stream", null);
+      } else if (selectedStream && selectedStream !== "All") {
+        query = query.eq("stream", selectedStream);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("[Bank] Query error:", error);
+        setLoadError("Query error: " + error.message);
+        setQuestions([]);
+      } else {
+        console.log("[Bank] Loaded:", data?.length ?? 0, "questions");
+        setQuestions((data ?? []) as BankQuestion[]);
+      }
+    } catch (err) {
+      console.error("[Bank] Unexpected error:", err);
+      setLoadError(
+        "Unexpected error: " + (err instanceof Error ? err.message : String(err)),
+      );
+      setQuestions([]);
+    } finally {
+      setLoading(false);
     }
-
-    if (selectedStream === "Common") {
-      query = query.is("stream", null);
-    } else if (selectedStream && selectedStream !== "All") {
-      query = query.eq("stream", selectedStream);
-    }
-
-    const { data, error } = await query;
-    if (!error && data) {
-      setQuestions(data as BankQuestion[]);
-    }
-    setLoading(false);
   }, [selectedSubject, selectedStream]);
 
   useEffect(() => {
@@ -125,7 +137,7 @@ export default function QuestionBankSelectorModal({
   const filteredQuestions = questions.filter((q) => {
     if (searchQuery.trim()) {
       const s = searchQuery.toLowerCase();
-      const matchText = q.question_text.toLowerCase().includes(s);
+      const matchText = q.question_text?.toLowerCase().includes(s);
       const matchTopic = q.topic?.toLowerCase().includes(s);
       if (!matchText && !matchTopic) return false;
     }
@@ -176,12 +188,11 @@ export default function QuestionBankSelectorModal({
   const remaining = maxLimit - selectedIds.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-emerald-950/60 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden my-4 sm:my-6 flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 bg-emerald-950/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden flex flex-col h-[90vh] max-h-[90vh]">
 
         {/* ═══════════════ HEADER BANNER ═══════════════ */}
         <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
-          {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
             style={{
@@ -190,13 +201,11 @@ export default function QuestionBankSelectorModal({
               backgroundSize: "20px 20px",
             }}
           />
-          {/* glows */}
           <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
 
           <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              {/* Logo */}
               <div className="shrink-0 hidden sm:block">
                 <div className="relative">
                   <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
@@ -240,18 +249,15 @@ export default function QuestionBankSelectorModal({
           <div className="flex items-center gap-3 flex-wrap">
             <span
               className={`px-3 py-1 rounded-full text-xs font-extrabold tabular-nums shadow-sm ${
-                isAtLimit
-                  ? "bg-amber-600 text-white"
-                  : "bg-emerald-600 text-white"
+                isAtLimit ? "bg-amber-600 text-white" : "bg-emerald-600 text-white"
               }`}
             >
-              තෝරාගත් ප්‍රශ්න: {selectedIds.length} / {maxLimit}
+              තෝරාගත්: {selectedIds.length} / {maxLimit}
             </span>
             <span className="text-xs text-gray-600 font-medium">
               {isAtLimit ? (
                 <span className="text-amber-800 font-bold flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" /> උපරිම ප්‍රශ්න සීමාවට
-                  ({maxLimit}) ළඟා වී ඇත.
+                  <AlertTriangle className="w-3.5 h-3.5" /> උපරිම සීමාවට ({maxLimit}) ළඟා වී ඇත.
                 </span>
               ) : (
                 `තව ${remaining}ක් තෝරාගත හැක.`
@@ -265,8 +271,7 @@ export default function QuestionBankSelectorModal({
               disabled={isAtLimit || filteredQuestions.length === 0}
               className="text-xs font-semibold px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700 disabled:opacity-50 transition"
             >
-              Select All Shown (
-              {Math.min(filteredQuestions.length, remaining)})
+              Select All Shown ({Math.min(filteredQuestions.length, remaining)})
             </button>
             <button
               onClick={handleClearSelection}
@@ -285,10 +290,12 @@ export default function QuestionBankSelectorModal({
             <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
               Filter Questions
             </span>
+            <span className="text-[10px] text-gray-400 font-normal normal-case">
+              (default: All — සියලු ප්‍රශ්න පෙන්වයි)
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* Search */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -300,7 +307,6 @@ export default function QuestionBankSelectorModal({
               />
             </div>
 
-            {/* Subject */}
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
@@ -313,7 +319,6 @@ export default function QuestionBankSelectorModal({
               ))}
             </select>
 
-            {/* Stream */}
             <select
               value={selectedStream}
               onChange={(e) => setSelectedStream(e.target.value)}
@@ -326,7 +331,6 @@ export default function QuestionBankSelectorModal({
               ))}
             </select>
 
-            {/* Topic */}
             <input
               type="text"
               placeholder="Filter by topic..."
@@ -336,7 +340,6 @@ export default function QuestionBankSelectorModal({
             />
           </div>
 
-          {/* Hint about common streams */}
           {selectedStream === "Common" && (
             <p className="text-[11px] text-emerald-700 font-semibold mt-2 flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5" />
@@ -346,16 +349,70 @@ export default function QuestionBankSelectorModal({
         </div>
 
         {/* ═══════════════ QUESTION LIST (scrollable) ═══════════════ */}
-        <div className="relative flex-1 min-h-0">
-          <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-3">
+        <div className="relative flex-1 min-h-0 overflow-hidden">
+          <div className="absolute inset-0 overflow-y-auto p-4 sm:p-6 space-y-3">
             {loading ? (
               <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />{" "}
+                <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                 Question Bank එකෙන් ප්‍රශ්න ලෝඩ් වෙමින්...
               </div>
+            ) : loadError ? (
+              <div className="p-8 text-center space-y-3">
+                <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
+                <p className="text-red-600 font-medium text-sm">{loadError}</p>
+                <button
+                  onClick={() => loadBankQuestions()}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl"
+                >
+                  නැවත උත්සාහ කරන්න
+                </button>
+              </div>
             ) : filteredQuestions.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
-                මෙම Filter වලට ගැලපෙන ප්‍රශ්න Question Bank එකේ නැත.
+              <div className="p-12 text-center space-y-3">
+                <FileQuestion className="w-12 h-12 text-gray-300 mx-auto" />
+                <p className="text-gray-500 font-semibold text-sm">
+                  ප්‍රශ්න කිසිවක් හමු නොවුණි
+                </p>
+                {questions.length === 0 ? (
+                  <>
+                    <p className="text-gray-400 text-xs">
+                      Supabase එකේ ප්‍රශ්න නැහැ.
+                    </p>
+                    <div className="inline-block text-left bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 max-w-md">
+                      <p className="font-bold mb-1">Debug Info:</p>
+                      <p>
+                        DB rows: <strong>{questions.length}</strong>
+                      </p>
+                      <p>
+                        Filters: subject={selectedSubject}, stream={selectedStream}
+                      </p>
+                      <p className="mt-2 text-[10px] text-amber-700">
+                        → F12 Console එකේ [Bank] logs බලන්න
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-gray-400 text-xs">
+                    Filter වලට ගැලපෙන ප්‍රශ්න නැත (DB එකේ {questions.length}
+                    ක් තියෙනවා).
+                  </p>
+                )}
+                {(selectedSubject !== "All" ||
+                  selectedStream !== "All" ||
+                  selectedTopic ||
+                  searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setSelectedSubject("All");
+                      setSelectedStream("All");
+                      setSelectedTopic("");
+                      setSearchQuery("");
+                    }}
+                    className="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl"
+                  >
+                    සියලු Filters Clear කරන්න
+                  </button>
+                )}
               </div>
             ) : (
               filteredQuestions.map((q, idx) => {
@@ -392,7 +449,6 @@ export default function QuestionBankSelectorModal({
                             {q.subject}
                           </span>
                         )}
-                        {/* Stream badge — "Common" for null stream */}
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             q.stream
@@ -430,7 +486,8 @@ export default function QuestionBankSelectorModal({
                                   : "bg-gray-100 text-gray-600"
                               }`}
                             >
-                              ({oIdx + 1}) {opt} {q.correct_option === oIdx && "✓"}
+                              ({oIdx + 1}) {opt}{" "}
+                              {q.correct_option === oIdx && "✓"}
                             </div>
                           ))}
                       </div>
@@ -441,18 +498,23 @@ export default function QuestionBankSelectorModal({
             )}
           </div>
 
-          {/* Bottom fade — indicates more content below */}
+          {/* Bottom fade */}
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
         </div>
 
         {/* ═══════════════ FOOTER ═══════════════ */}
         <div className="px-4 sm:px-6 py-4 border-t border-emerald-100 bg-emerald-50/60 backdrop-blur-sm flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-3 shrink-0">
           <span className="text-xs text-gray-600 font-medium text-center sm:text-left">
-            තෝරාගත් ප්‍රශ්න ගණන:{" "}
+            තෝරාගත් ගණන:{" "}
             <strong className="text-emerald-700 tabular-nums">
               {selectedIds.length}
             </strong>{" "}
             / {maxLimit}
+            {questions.length > 0 && (
+              <span className="text-gray-400 ml-2">
+                · මුළු Bank: {questions.length}
+              </span>
+            )}
           </span>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -470,7 +532,7 @@ export default function QuestionBankSelectorModal({
             >
               <Check className="w-4 h-4" />
               <span className="truncate">
-                තෝරාගත් ප්‍රශ්න ({selectedIds.length}) එකතු කරන්න
+                තෝරාගත් ({selectedIds.length}) එකතු කරන්න
               </span>
             </button>
           </div>
