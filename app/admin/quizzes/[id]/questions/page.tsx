@@ -28,6 +28,14 @@ type Quiz = {
   total_questions: number;
 };
 
+// ✅ All columns needed for the multilingual edit modal
+const QUESTION_COLUMNS = `
+  id, quiz_id, subject, stream, topic, image_url, correct_option,
+  question_text, option_1, option_2, option_3, option_4, option_5, explanation,
+  question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
+  question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta
+`;
+
 export default function ManageQuizQuestionsPage() {
   const params = useParams<{ id: string }>();
   const quizId = params?.id ?? "";
@@ -50,10 +58,11 @@ export default function ManageQuizQuestionsPage() {
 
       setQuiz(quizData ?? null);
 
+      // ✅ Primary: quiz_questions join — ALL multilingual columns
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
         .select(
-          "question_id, order_index, questions(id, quiz_id, subject, stream, question_text, topic, correct_option, option_1, option_2, option_3, option_4, option_5, image_url, explanation)"
+          `question_id, order_index, questions(${QUESTION_COLUMNS})`,
         )
         .eq("quiz_id", quizId)
         .order("order_index", { ascending: true });
@@ -71,15 +80,14 @@ export default function ManageQuizQuestionsPage() {
 
         setQuestions(flatQuestions);
       } else {
+        // ✅ Fallback: direct questions.quiz_id — ALL multilingual columns
         const { data: directData } = await supabase
           .from("questions")
-          .select(
-            "id, quiz_id, subject, stream, question_text, topic, correct_option, option_1, option_2, option_3, option_4, option_5, image_url, explanation"
-          )
+          .select(QUESTION_COLUMNS)
           .eq("quiz_id", quizId)
           .order("created_at", { ascending: true });
 
-        setQuestions(directData || []);
+        setQuestions((directData as EditableQuestion[]) || []);
       }
     } catch (err) {
       console.error("Error loading quiz questions:", err);
@@ -183,7 +191,6 @@ export default function ManageQuizQuestionsPage() {
   const isAtLimit = questions.length >= 20;
 
   return (
-    // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
@@ -195,7 +202,6 @@ export default function ManageQuizQuestionsPage() {
 
           {/* ============ Header Banner ============ */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
-            {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
               style={{
@@ -204,17 +210,13 @@ export default function ManageQuizQuestionsPage() {
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            {/* rings */}
             <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-            {/* shine */}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 space-y-5">
               <div className="flex items-start gap-4">
-                {/* Logo */}
                 <div className="shrink-0">
                   <div className="relative">
                     <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
@@ -224,7 +226,6 @@ export default function ManageQuizQuestionsPage() {
                   </div>
                 </div>
 
-                {/* Title */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     <Link
@@ -249,7 +250,6 @@ export default function ManageQuizQuestionsPage() {
                 </div>
               </div>
 
-              {/* Capacity + actions */}
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`px-3 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap border ${
@@ -271,11 +271,7 @@ export default function ManageQuizQuestionsPage() {
                 <button
                   onClick={() => setShowEntryForm((v) => !v)}
                   disabled={isAtLimit}
-                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 whitespace-nowrap border ${
-                    showEntryForm
-                      ? "bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border-white/20"
-                      : "bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border-white/20"
-                  }`}
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 whitespace-nowrap border bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border-white/20"
                 >
                   {showEntryForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   {showEntryForm ? "Cancel" : "නව ප්‍රශ්නයක්"}
@@ -307,7 +303,6 @@ export default function ManageQuizQuestionsPage() {
 
           {/* ============ Questions list ============ */}
           <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden">
-            {/* Header strip */}
             <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="text-base sm:text-lg font-bold text-gray-900">
                 Quiz එකට ඇතුළත් ප්‍රශ්න{" "}
@@ -332,7 +327,6 @@ export default function ManageQuizQuestionsPage() {
               </div>
             ) : (
               <>
-                {/* ===== Scrollable list with fade shadow ===== */}
                 <div className="relative">
                   <div className="overflow-y-auto max-h-[65vh] p-4 sm:p-5 space-y-3 sm:space-y-4">
                     {questions.map((q, idx) => {
@@ -441,11 +435,9 @@ export default function ManageQuizQuestionsPage() {
                     })}
                   </div>
 
-                  {/* Bottom fade */}
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                 </div>
 
-                {/* Footer hint */}
                 <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[11px] text-gray-500 text-center">
                   ප්‍රශ්න{" "}
                   <strong className="text-gray-700">{questions.length}</strong>ක්

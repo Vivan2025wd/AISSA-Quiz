@@ -52,6 +52,14 @@ type QuizQuestionRow = {
   questions: EditableQuestion | null;
 };
 
+// ─── Shared column list for question fetches ───
+const QUESTION_COLUMNS = `
+  id, quiz_id, subject, stream, topic, image_url, correct_option,
+  question_text, option_1, option_2, option_3, option_4, option_5, explanation,
+  question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
+  question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta
+`;
+
 export default function AdminQuizzesPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -133,10 +141,11 @@ export default function AdminQuizzesPage() {
     setLoadingQuestions(true);
 
     try {
+      // ✅ 1) Try quiz_questions link table — WITH English + Tamil columns
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
         .select(
-          "question_id, order_index, questions(id, quiz_id, subject, stream, question_text, topic, correct_option, option_1, option_2, option_3, option_4, option_5, image_url, explanation)"
+          `question_id, order_index, questions(${QUESTION_COLUMNS})`
         )
         .eq("quiz_id", quiz.id)
         .order("order_index", { ascending: true });
@@ -147,15 +156,14 @@ export default function AdminQuizzesPage() {
           .filter((q): q is EditableQuestion => q !== null);
         setQuizQuestions(flatList);
       } else {
+        // ✅ 2) Fallback — direct questions.quiz_id — WITH English + Tamil columns
         const { data: directData } = await supabase
           .from("questions")
-          .select(
-            "id, quiz_id, subject, stream, question_text, topic, correct_option, option_1, option_2, option_3, option_4, option_5, image_url, explanation"
-          )
+          .select(QUESTION_COLUMNS)
           .eq("quiz_id", quiz.id)
           .order("created_at", { ascending: true });
 
-        setQuizQuestions(directData || []);
+        setQuizQuestions((directData as EditableQuestion[]) || []);
       }
     } catch (err) {
       console.error("Error loading quiz questions:", err);
@@ -258,7 +266,7 @@ export default function AdminQuizzesPage() {
 
   return (
     // ============ Modern green/white background ============
-    <div className="min-h-screen bg-linear-to-brrom-emerald-50 via-white to-teal-50 relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
