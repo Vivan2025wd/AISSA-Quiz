@@ -47,7 +47,6 @@ type Question = {
   correct_option: number;
   topic: string | null;
 
-  // Sinhala — always present (base columns)
   question_text: string;
   option_1: string;
   option_2: string;
@@ -56,7 +55,6 @@ type Question = {
   option_5: string | null;
   explanation: string | null;
 
-  // English — optional columns
   question_text_en?: string | null;
   option_1_en?: string | null;
   option_2_en?: string | null;
@@ -65,7 +63,6 @@ type Question = {
   option_5_en?: string | null;
   explanation_en?: string | null;
 
-  // Tamil — optional columns
   question_text_ta?: string | null;
   option_1_ta?: string | null;
   option_2_ta?: string | null;
@@ -83,7 +80,6 @@ type StudentResult = {
   submitted_at: string;
 };
 
-// key = question_id, value = selected_option (null = unanswered)
 type MyAnswersMap = Record<string, number | null>;
 
 // ------------------------------------------------------------
@@ -188,6 +184,9 @@ export default function StudentQuizPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // ✅ NEW: track when the student loaded the page (for accurate time_spent)
+  const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
+
   const [reviewIndex, setReviewIndex] = useState(0);
 
   // ------------------------------------------------------------
@@ -223,7 +222,6 @@ export default function StudentQuizPage() {
         }
       }
 
-      // ✅ CDN-cached API — replaces 5-6 Supabase queries with 1 fetch
       const cacheRes = await fetch(`/api/quiz/${quizId}`, {
         next: { revalidate: 60 },
       });
@@ -260,11 +258,23 @@ export default function StudentQuizPage() {
       }
 
       setQuiz(quizData as Quiz);
-      setTimeLeft((quizData.duration_minutes || 30) * 60);
+
+      // ✅✅ TIMER FIX: countdown = scheduled_at + duration - NOW
+      // Student කවදා හරි ආවත්, ඉතුරු කාලය විතරයි දෙන්නේ.
+      const durationSec = (quizData.duration_minutes || 30) * 60;
+      if (quizData.scheduled_at) {
+        const startMs = new Date(quizData.scheduled_at).getTime();
+        const endMs = startMs + durationSec * 1000;
+        const remainingSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+        setTimeLeft(remainingSec);
+      } else {
+        // No scheduled_at → fall back to full duration from now
+        setTimeLeft(durationSec);
+      }
+      setStartedAtMs(Date.now());
 
       setQuestions(questionsData.slice(0, 20));
 
-      // Load my previous result + my answers (if any) — user-scoped, no cache
       if (user) {
         const { data: resultData } = await supabase
           .from("quiz_results")
@@ -337,7 +347,6 @@ export default function StudentQuizPage() {
         return;
       }
 
-      // 1. Parent result row
       const { data: resultRow, error: resultErr } = await supabase
         .from("quiz_results")
         .insert([
@@ -360,7 +369,6 @@ export default function StudentQuizPage() {
         return;
       }
 
-      // 2. Per-question answer rows
       const answerRows = questions.map((q, idx) => {
         const sel = selectedAnswers[idx];
         return {
@@ -389,7 +397,6 @@ export default function StudentQuizPage() {
 
       setIsSubmitting(false);
 
-      // Refresh myResult + myAnswers
       const { data: resultData } = await supabase
         .from("quiz_results")
         .select("id, score, total_marks, time_spent_seconds, submitted_at")
@@ -417,15 +424,16 @@ export default function StudentQuizPage() {
     [quizId, router, questions, selectedAnswers],
   );
 
-  const startingDuration = (quiz?.duration_minutes ?? 30) * 60;
-
+  // ✅ timeSpent = actual seconds spent since page loaded (capped by window)
   const finishQuiz = useCallback(async () => {
     setIsSubmitted(true);
     const finalScore = calculateScore();
     const totalMarks = questions.length;
-    const timeSpent = startingDuration - timeLeft;
-    await submitQuizResult(finalScore, totalMarks, timeSpent);
-  }, [calculateScore, questions.length, timeLeft, startingDuration, submitQuizResult]);
+    const actualSeconds = startedAtMs
+      ? Math.floor((Date.now() - startedAtMs) / 1000)
+      : 0;
+    await submitQuizResult(finalScore, totalMarks, Math.max(0, actualSeconds));
+  }, [calculateScore, questions.length, startedAtMs, submitQuizResult]);
 
   useEffect(() => {
     if (windowStatus !== "active") return;
@@ -744,7 +752,6 @@ export default function StudentQuizPage() {
                 })}
               </div>
 
-              {/* Navigation */}
               <div className="flex items-center gap-2 pt-3 sm:pt-4 border-t border-gray-100">
                 <button
                   disabled={currentQuestionIndex === 0}
@@ -822,7 +829,7 @@ export default function StudentQuizPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Themed page wrapper (gradient + aurora blobs) — for pre-quiz states
+// Themed page wrapper
 // ---------------------------------------------------------------------------
 function ThemedShell({ children }: { children: React.ReactNode }) {
   return (
@@ -859,7 +866,6 @@ function QuizShell({
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-          {/* Banner */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -938,13 +944,11 @@ function ReviewMode({
   const localized = localizeQuestion(q, medium);
   const optionsList = getLocalizedOptions(localized);
 
-  // Student's pick for this question (null / undefined = unanswered)
   const studentSel = myAnswers[q.id];
   const studentAnswered = studentSel !== undefined && studentSel !== null;
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-xl shadow-sm border border-emerald-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
@@ -979,7 +983,6 @@ function ReviewMode({
         )}
       </div>
 
-      {/* Mobile palette — reflects review colors */}
       <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
         <div className="grid grid-cols-6 xs:grid-cols-8 sm:grid-cols-10 gap-1.5">
           {questions.map((question, idx) => {
@@ -1129,7 +1132,6 @@ function ReviewMode({
           </div>
         </div>
 
-        {/* Desktop palette — reflects review colors */}
         <div className="hidden md:block bg-white/80 backdrop-blur-md p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
           <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
             ප්‍රශ්න ලැයිස්තුව
