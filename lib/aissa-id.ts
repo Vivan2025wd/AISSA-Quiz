@@ -128,7 +128,7 @@ export function validateAissaId(input: string): IdValidationResult {
 // ============================================================
 //   N        prefix
 //   25       school year (2 digits)
-//   VIVAN    name (2–10 letters, first 6 taken)
+//   VIVAN    first name (first word only, 2–6 letters)
 //   001      student number from school (1–4 digits, zero-padded to 3)
 //   CCC      school code (2–6 chars)
 //   AWC      AISSA district
@@ -139,8 +139,20 @@ function cleanAlpha(s: string): string {
   return (s ?? "").replace(/[^A-Za-z]/g, "").toUpperCase();
 }
 
+/**
+ * Abbreviate a full name for use in a Non-AISSA ID.
+ * Takes ONLY the first word (first name) — middle/last names are ignored.
+ * Capped at 6 characters.
+ *
+ *   "Binuk Minrutha"          → "BINUK"
+ *   "Vivan Rakmitha"          → "VIVAN"
+ *   "Adhikarige Vivan Perera" → "ADHIKA"
+ *   "A. B. Perera"            → "AB"
+ */
 export function abbreviateName(fullName: string): string {
-  const cleaned = cleanAlpha(fullName);
+  // Take only the FIRST word (first name) — ignore middle/last names.
+  const firstWord = (fullName ?? "").trim().split(/\s+/)[0] ?? "";
+  const cleaned = cleanAlpha(firstWord);
   return cleaned ? cleaned.slice(0, 6) : "STUDENT";
 }
 

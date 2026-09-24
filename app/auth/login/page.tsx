@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   LogIn,
-  Mail,
   Lock,
   ArrowRight,
   ShieldCheck,
   KeyRound,
   Loader2,
   GraduationCap,
+  IdCard,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -30,12 +30,10 @@ export default function StudentLoginPage() {
 function LoginPageFallback() {
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4">
-      {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-md">
-        {/* Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20 mb-4">
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
@@ -47,8 +45,6 @@ function LoginPageFallback() {
           />
           <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
           <div className="relative p-5 sm:p-6 flex items-center gap-4">
             <div className="shrink-0">
@@ -71,7 +67,6 @@ function LoginPageFallback() {
           </div>
         </div>
 
-        {/* Loading card */}
         <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-xl p-6 sm:p-8">
           <div className="flex justify-center py-6">
             <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
@@ -87,7 +82,8 @@ function StudentLoginPageInner() {
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
 
-  const [email, setEmail] = useState("");
+  // ✅ Single input — AISSA ID හෝ Email
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
   const [needsAdminCode, setNeedsAdminCode] = useState(false);
@@ -100,20 +96,44 @@ function StudentLoginPageInner() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Detect: email (has @) vs AISSA ID
+  const looksLikeEmail = (v: string) => v.includes("@");
+
   // ============================================================
-  // Step 1 — email + password
+  // Step 1 — AISSA ID / Email + password
   // ============================================================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
 
-    // 🔑 Clear any admin-verified flag from a PREVIOUS session
-    // BEFORE attempting login. Otherwise an admin who used this
-    // browser earlier leaves a stale flag that lets the NEXT user
-    // skip the code prompt — even if they were only just granted
-    // admin rights in the DB.
     clearAdminSession();
+
+    let email = identifier.trim();
+
+    // ✅ If NOT an email → resolve AISSA ID → email
+    if (!looksLikeEmail(identifier)) {
+      const { data: resolved, error: rpcErr } = await supabase.rpc(
+        "get_email_by_ais_id",
+        { p_ais_id: identifier.trim().toUpperCase() },
+      );
+
+      if (rpcErr) {
+        setIsSubmitting(false);
+        setError("AISSA ID lookup error: " + rpcErr.message);
+        return;
+      }
+
+      if (!resolved) {
+        setIsSubmitting(false);
+        setError(
+          "මෙම AISSA ID එකට අදාළ ගිණුමක් නොමැත. (No account found for this AISSA ID)",
+        );
+        return;
+      }
+
+      email = resolved as string;
+    }
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -155,7 +175,6 @@ function StudentLoginPageInner() {
     setIsSubmitting(false);
 
     if (profile.is_admin) {
-      // Force the code prompt — flag cleared above, so always fresh.
       setNeedsAdminCode(true);
       return;
     }
@@ -199,13 +218,11 @@ function StudentLoginPageInner() {
       return;
     }
 
-    // Bind the flag to the current user id + timestamp
     markAdminVerified(user.id);
     router.push("/admin/quizzes");
   };
 
   return (
-    // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4">
       {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
@@ -213,9 +230,8 @@ function StudentLoginPageInner() {
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-md">
-        {/* ============ Header banner ============ */}
+        {/* Header banner */}
         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20 mb-4">
-          {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
             style={{
@@ -224,16 +240,12 @@ function StudentLoginPageInner() {
               backgroundSize: "22px 22px",
             }}
           />
-          {/* glows */}
           <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-          {/* rings */}
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-          {/* shine */}
           <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
           <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Logo */}
             <div className="shrink-0">
               <div className="relative">
                 <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
@@ -243,7 +255,6 @@ function StudentLoginPageInner() {
               </div>
             </div>
 
-            {/* Title */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
@@ -263,13 +274,13 @@ function StudentLoginPageInner() {
               <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
                 {needsAdminCode
                   ? "Admin ගිණුමක් හඳුනාගන්නා ලදී — Access Code එක ඇතුළත් කරන්න"
-                  : "ඔබගේ ගිණුමට ඇතුළත් වී Quizzes සඳහා සහභාගී වන්න"}
+                  : "AISSA ID හෝ Email එකෙන් ඇතුළු වන්න"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ============ Main Card (glass) ============ */}
+        {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-xl p-6 sm:p-8 space-y-5">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
@@ -282,20 +293,23 @@ function StudentLoginPageInner() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                  ඊමේල් ලිපිනය (Email)
+                  AISSA ID හෝ Email
                 </label>
                 <div className="relative">
-                  <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <IdCard className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="email"
-                    placeholder="student@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    placeholder="R25THENUMI-SBVC-AWC  හෝ  your@email.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     required
                     disabled={isSubmitting}
                     className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                   />
                 </div>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  AISSA සාමාජිකයින්ට ID එකෙන්, අනිත් අයට Email එකෙන්.
+                </p>
               </div>
 
               <div>

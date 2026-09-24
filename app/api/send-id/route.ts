@@ -1,142 +1,100 @@
-// app/api/send-id/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // required for Resend's Node SDK
-
-const NON_AISSA_REGEX =
-  /^N(\d{2})([A-Z]{2,6})(\d{3})-([A-Z0-9]{2,6})-([A-Z]{2,4})$/;
-
-interface SendIdPayload {
-  email: string;
-  fullName: string;
-  aisId: string;
-}
-
-// Dynamic helper function to initialize Resend strictly at runtime
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured");
-  }
-  return new Resend(apiKey);
-}
-
-function buildHtml(fullName: string, aisId: string): string {
-  return `
-  <!DOCTYPE html>
-  <html>
-    <head><meta charset="utf-8" /></head>
-    <body style="margin:0;padding:0;background:#f3f4f6;font-family:Inter,Arial,sans-serif;">
-      <div style="max-width:560px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
-        <div style="background:#1e293b;padding:24px 32px;color:#ffffff;">
-          <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.7;">All Island School Science Association</p>
-          <h1 style="margin:6px 0 0;font-size:22px;font-weight:800;">AISSA Quiz Platform</h1>
-        </div>
-        <div style="padding:28px 32px;color:#111827;">
-          <p style="font-size:15px;margin:0 0 12px;">Hi <strong>${fullName}</strong>,</p>
-          <p style="font-size:14px;line-height:1.6;margin:0 0 20px;color:#374151;">
-            Welcome to the AISSA Quiz platform! Since you registered without an existing
-            AISSA Member ID, we have generated an official Quiz ID for you.
-          </p>
-          <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:18px;text-align:center;">
-            <p style="margin:0;font-size:11px;letter-spacing:1.5px;color:#4f46e5;font-weight:700;text-transform:uppercase;">Your Official Quiz ID</p>
-            <p style="margin:8px 0 0;font-size:22px;font-weight:800;font-family:'Courier New',monospace;color:#1e1b4b;word-break:break-all;">${aisId}</p>
-          </div>
-          <p style="font-size:13px;line-height:1.6;margin:20px 0 0;color:#4b5563;">
-            Use this ID for all future AISSA competitions and quiz rankings.
-            Keep it safe — it is unique to you.
-          </p>
-          <p style="font-size:12px;margin:24px 0 0;color:#9ca3af;">
-            If you did not register for the AISSA Quiz platform, please ignore this email.
-          </p>
-        </div>
-        <div style="background:#f9fafb;padding:16px 32px;text-align:center;color:#9ca3af;font-size:11px;">
-          © ${new Date().getFullYear()} AISSA — All Island School Science Association
-        </div>
-      </div>
-    </body>
-  </html>`;
-}
-
-function buildText(fullName: string, aisId: string): string {
-  return [
-    `Hi ${fullName},`,
-    ``,
-    `Welcome to the AISSA Quiz platform!`,
-    ``,
-    `Your official Quiz ID: ${aisId}`,
-    ``,
-    `Use this ID for all future AISSA competitions and quiz rankings.`,
-    ``,
-    `— AISSA Team`,
-  ].join("\n");
-}
-
-export async function POST(req: NextRequest) {
-  // ---- 1. Parse body ------------------------------------------------------
-  let body: SendIdPayload;
+export async function POST(req: Request) {
   try {
-    body = (await req.json()) as SendIdPayload;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+    const body = await req.json();
+    const { email, fullName, aisId } = body as {
+      email?: string;
+      fullName?: string;
+      aisId?: string;
+    };
 
-  const { email, fullName, aisId } = body ?? ({} as SendIdPayload);
-
-  // ---- 2. Validate inputs -------------------------------------------------
-  if (!email || typeof email !== "string" || !email.includes("@")) {
-    return NextResponse.json({ error: "Invalid email" }, { status: 400 });
-  }
-  if (!fullName || typeof fullName !== "string") {
-    return NextResponse.json({ error: "Invalid full name" }, { status: 400 });
-  }
-  if (!aisId || !NON_AISSA_REGEX.test(aisId)) {
-    // Only accept Non-AISSA (N-prefixed) IDs — AISSA members don't get an email.
-    return NextResponse.json(
-      { error: "Invalid Non-AISSA Quiz ID" },
-      { status: 400 },
-    );
-  }
-
-  // ---- 3. Safely initialize Resend client ---------------------------------
-  let resend: Resend;
-  try {
-    resend = getResendClient();
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Unknown initialization error";
-    console.error("Resend Initialization Error:", errorMessage);
-    return NextResponse.json(
-      { error: "Email service not configured" },
-      { status: 500 },
-    );
-  }
-
-  // ---- 4. Send via Resend -------------------------------------------------
-  try {
-    const { error: sendError } = await resend.emails.send({
-      from:
-        process.env.AISSA_FROM_EMAIL ??
-        "AISSA Quiz <onboarding@resend.dev>",
-      to: email,
-      subject: `Your AISSA Quiz ID: ${aisId}`,
-      html: buildHtml(fullName, aisId),
-      text: buildText(fullName, aisId),
-    });
-
-    if (sendError) {
-      console.error("Resend send error:", sendError);
+    if (!email || !aisId) {
       return NextResponse.json(
-        { error: "Failed to send email" },
-        { status: 502 },
+        { error: "Missing email or aisId" },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json({ ok: true });
-  } catch (err: unknown) {
-    console.error("Unexpected /api/send-id error:", err);
+    const apiKey = process.env.BREVO_API_KEY;
+    const fromEmail =
+      process.env.AISSA_FROM_EMAIL ?? "AISSA Quiz <vivanrakmitha5@gmail.com>";
+
+    if (!apiKey) {
+      console.error("[send-id] BREVO_API_KEY missing");
+      return NextResponse.json(
+        { error: "Server misconfigured" },
+        { status: 500 },
+      );
+    }
+
+    // Parse "Name <email>" format
+    const match = fromEmail.match(/^(.+?)\s*<(.+?)>$/);
+    const senderName = match?.[1]?.trim() ?? "AISSA Quiz";
+    const senderEmail = match?.[2]?.trim() ?? fromEmail;
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ?? "https://aissa-quiz.vercel.app";
+
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email, name: fullName || "Student" }],
+        subject: "Your AISSA Quiz ID",
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #059669; font-size: 24px;">Hello, ${fullName || "Student"}! 👋</h1>
+            <p style="color: #333; font-size: 16px; line-height: 1.6;">
+              You have successfully registered on the AISSA Quiz Platform.
+            </p>
+            <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
+              <p style="color: #047857; font-size: 14px; font-weight: bold; margin: 0 0 8px 0; text-transform: uppercase;">
+                Your AISSA Quiz ID
+              </p>
+              <p style="color: #064e3b; font-size: 24px; font-weight: bold; margin: 0; font-family: monospace; letter-spacing: 2px;">
+                ${aisId}
+              </p>
+            </div>
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+              You do not need this ID to log in, but please keep it safe for future reference.
+            </p>
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+              <a href="${appUrl}/auth/login" 
+                 style="display: inline-block; background: #059669; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; margin-top: 12px;">
+                Log in →
+              </a>
+            </p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;" />
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              AISSA Quiz Platform — All Island School Science Association
+            </p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.error("[send-id] Brevo error:", res.status, errBody);
+      return NextResponse.json(
+        { error: "Email send failed", detail: errBody },
+        { status: 500 },
+      );
+    }
+
+    const data = await res.json();
+    console.log("[send-id] ✅ Email sent to:", email, "| id:", data?.messageId);
+    return NextResponse.json({ success: true, id: data?.messageId });
+  } catch (err) {
+    console.error("[send-id] Unexpected error:", err);
     return NextResponse.json(
-      { error: "Unexpected error sending email" },
+      { error: "Unexpected error" },
       { status: 500 },
     );
   }
