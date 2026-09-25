@@ -195,13 +195,15 @@ export default function QuestionEntryForm(props: Props) {
         ta.questionText.trim() !== "" ||
         ta.options.some((o) => o.trim() !== "");
 
+      // ✅ Note: quiz_id is intentionally NOT sent here.
+      //    The `questions` table no longer has that column — the
+      //    question-to-quiz link lives in `quiz_questions`.
       const payload: Record<string, unknown> = {
         subject,
         stream: derivedStream,
         topic: topic.trim() || null,
         image_url: imageUrl.trim() || null,
         correct_option: correctAnswer,
-        quiz_id: isLocked ? props.quizId : null,
 
         question_text: si.questionText.trim(),
         option_1: si.options[0].trim(),
@@ -240,6 +242,7 @@ export default function QuestionEntryForm(props: Props) {
         );
       }
 
+      // ✅ Link the question to the quiz via quiz_questions (junction table)
       if (isLocked) {
         const { error: linkError } = await supabase
           .from("quiz_questions")
@@ -283,7 +286,6 @@ export default function QuestionEntryForm(props: Props) {
     >
       {/* ═══════════════ HEADER BANNER ═══════════════ */}
       <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white">
-        {/* dot grid */}
         <div
           className="absolute inset-0 opacity-[0.08] pointer-events-none"
           style={{
@@ -292,13 +294,11 @@ export default function QuestionEntryForm(props: Props) {
             backgroundSize: "20px 20px",
           }}
         />
-        {/* glows */}
         <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
 
         <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
           <div className="flex items-start gap-3 min-w-0 flex-1">
-            {/* Logo */}
             <div className="shrink-0 hidden sm:block">
               <div className="relative">
                 <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />

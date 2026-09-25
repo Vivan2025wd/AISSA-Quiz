@@ -29,8 +29,9 @@ type Quiz = {
 };
 
 // ✅ All columns needed for the multilingual edit modal
+//    (quiz_id column was dropped — questions live only in quiz_questions now)
 const QUESTION_COLUMNS = `
-  id, quiz_id, subject, stream, topic, image_url, correct_option,
+  id, subject, stream, topic, image_url, correct_option,
   question_text, option_1, option_2, option_3, option_4, option_5, explanation,
   question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
   question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta
@@ -58,7 +59,7 @@ export default function ManageQuizQuestionsPage() {
 
       setQuiz(quizData ?? null);
 
-      // ✅ Primary: quiz_questions join — ALL multilingual columns
+      // ✅ quiz_questions junction is the ONLY source of linked questions
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
         .select(
@@ -80,14 +81,7 @@ export default function ManageQuizQuestionsPage() {
 
         setQuestions(flatQuestions);
       } else {
-        // ✅ Fallback: direct questions.quiz_id — ALL multilingual columns
-        const { data: directData } = await supabase
-          .from("questions")
-          .select(QUESTION_COLUMNS)
-          .eq("quiz_id", quizId)
-          .order("created_at", { ascending: true });
-
-        setQuestions((directData as EditableQuestion[]) || []);
+        setQuestions([]);
       }
     } catch (err) {
       console.error("Error loading quiz questions:", err);
@@ -114,17 +108,12 @@ export default function ManageQuizQuestionsPage() {
     )
       return;
 
+    // ✅ Just delete the junction row — questions table is untouched
     await supabase
       .from("quiz_questions")
       .delete()
       .eq("quiz_id", quizId)
       .eq("question_id", questionId);
-
-    await supabase
-      .from("questions")
-      .update({ quiz_id: null })
-      .eq("id", questionId)
-      .eq("quiz_id", quizId);
 
     await supabase
       .from("quizzes")

@@ -78,8 +78,9 @@ type QuizQuestionRow = {
 };
 
 // ─── Shared column list for question fetches ───
+// ✅ `quiz_id` removed — no longer exists on questions table
 const QUESTION_COLUMNS = `
-  id, quiz_id, subject, stream, topic, image_url, correct_option,
+  id, subject, stream, topic, image_url, correct_option,
   question_text, option_1, option_2, option_3, option_4, option_5, explanation,
   question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
   question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta
@@ -98,7 +99,6 @@ export default function AdminQuizzesPage() {
   const [subject, setSubject] = useState("Physics");
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
-  // ✅ Auto-populated
   const [date, setDate] = useState(getDefaultDate());
   const [startTime, setStartTime] = useState(getDefaultTime());
   const [duration, setDuration] = useState("45");
@@ -167,6 +167,7 @@ export default function AdminQuizzesPage() {
     setLoadingQuestions(true);
 
     try {
+      // ✅ Single source of truth: quiz_questions junction table
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
         .select(`question_id, order_index, questions(${QUESTION_COLUMNS})`)
@@ -179,13 +180,7 @@ export default function AdminQuizzesPage() {
           .filter((q): q is EditableQuestion => q !== null);
         setQuizQuestions(flatList);
       } else {
-        const { data: directData } = await supabase
-          .from("questions")
-          .select(QUESTION_COLUMNS)
-          .eq("quiz_id", quiz.id)
-          .order("created_at", { ascending: true });
-
-        setQuizQuestions((directData as EditableQuestion[]) || []);
+        setQuizQuestions([]);
       }
     } catch (err) {
       console.error("Error loading quiz questions:", err);
@@ -203,17 +198,12 @@ export default function AdminQuizzesPage() {
     )
       return;
 
+    // ✅ Only delete the junction row — question itself stays in bank
     await supabase
       .from("quiz_questions")
       .delete()
       .eq("quiz_id", viewingQuiz.id)
       .eq("question_id", questionId);
-
-    await supabase
-      .from("questions")
-      .update({ quiz_id: null })
-      .eq("id", questionId)
-      .eq("quiz_id", viewingQuiz.id);
 
     openQuestionsModal(viewingQuiz);
     fetchQuizzes();
@@ -222,7 +212,6 @@ export default function AdminQuizzesPage() {
   const resetForm = () => {
     setTopic("");
     setDescription("");
-    // ✅ Refresh to current date/time on reset
     setDate(getDefaultDate());
     setStartTime(getDefaultTime());
     setDuration("45");
@@ -500,7 +489,7 @@ export default function AdminQuizzesPage() {
                       className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                     />
                     <p className="text-[10px] text-gray-400 mt-1">
-
+                      * Auto — අද දිනය ලෙස set වේ
                     </p>
                   </div>
 
@@ -517,6 +506,7 @@ export default function AdminQuizzesPage() {
                       className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                     />
                     <p className="text-[10px] text-gray-400 mt-1">
+                      * Auto — දැන් + විනාඩි {START_BUFFER_MINUTES}
                     </p>
                   </div>
 
