@@ -13,6 +13,7 @@ import {
   FlaskConical,
   Dna,
   BookOpen,
+  Monitor,
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -25,7 +26,7 @@ const TOP_SCHOOLS = 10;
 const TOP_INDIVIDUALS = 20;
 const FETCH_LIMIT = 500;
 
-const SUBJECT_PRIORITY = ["physics", "chemistry", "biology"];
+const SUBJECT_PRIORITY = ["physics", "chemistry", "biology", "ict"];
 
 // ------------------------------------------------------------
 // Types
@@ -63,16 +64,33 @@ type QuizSubjectRow = {
 };
 
 // ------------------------------------------------------------
-// Subject visibility by stream
+// Subject visibility by stream + subjects list
 // ------------------------------------------------------------
 function isSubjectAllowedForStream(
   subject: string | null | undefined,
   quizStream: string | null | undefined,
   studentStream: string | null | undefined,
+  studentSubjects?: string | null,   // ✅ new
 ): boolean {
   if (!subject) return false;
 
   const subj = subject.toLowerCase();
+
+  // ✅ Priority 1: explicit subjects list (from registration)
+  if (studentSubjects && studentSubjects.trim()) {
+    const codes = studentSubjects
+      .split(",")
+      .map((s) => s.trim().toLowerCase());
+
+    if (subj.includes("physics")) return codes.includes("physics");
+    if (subj.includes("chemistry")) return codes.includes("chemistry");
+    if (subj.includes("biology")) return codes.includes("biology");
+    if (subj.includes("ict") || subj.includes("information"))
+      return codes.includes("ict");
+    return false;
+  }
+
+  // Fallback: stream defaults
   const s = (studentStream ?? "").toLowerCase();
 
   if (s.includes("bio")) {
@@ -84,7 +102,12 @@ function isSubjectAllowedForStream(
   }
 
   if (s.includes("physical") || s.includes("maths")) {
-    return subj.includes("physics") || subj.includes("chemistry");
+    return (
+      subj.includes("physics") ||
+      subj.includes("chemistry") ||
+      subj.includes("ict") ||
+      subj.includes("information")
+    );
   }
 
   return streamsMatch(studentStream, quizStream);
@@ -127,6 +150,12 @@ function subjectMeta(subject: string) {
     return {
       icon: <Dna className="w-3.5 h-3.5" />,
       active: "bg-emerald-600 text-white shadow-sm",
+    };
+  }
+  if (s.includes("ict") || s.includes("information")) {
+    return {
+      icon: <Monitor className="w-3.5 h-3.5" />,
+      active: "bg-cyan-600 text-white shadow-sm",
     };
   }
   return {
@@ -211,6 +240,7 @@ export default function LeaderboardPage() {
 
   const [studentId, setStudentId] = useState<string | null>(null);
   const [studentStream, setStudentStream] = useState<string | null>(null);
+  const [studentSubjects, setStudentSubjects] = useState<string | null>(null);  // ✅ new
   const [studentSchool, setStudentSchool] = useState<string | null>(null);
 
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
@@ -244,7 +274,7 @@ export default function LeaderboardPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, stream, school")
+        .select("id, stream, school, subjects")   // ✅ add subjects
         .eq("id", user.id)
         .maybeSingle();
 
@@ -258,6 +288,7 @@ export default function LeaderboardPage() {
 
       setStudentId(profile.id ?? null);
       setStudentStream(profile.stream ?? null);
+      setStudentSubjects(profile.subjects ?? null);   // ✅ new
       setStudentSchool(profile.school ?? null);
     }
 
@@ -295,7 +326,14 @@ export default function LeaderboardPage() {
       const set = new Set<string>();
       for (const row of (data ?? []) as QuizSubjectRow[]) {
         if (!row.subject) continue;
-        if (isSubjectAllowedForStream(row.subject, row.stream, studentStream)) {
+        if (
+          isSubjectAllowedForStream(
+            row.subject,
+            row.stream,
+            studentStream,
+            studentSubjects,   // ✅ pass subjects
+          )
+        ) {
           set.add(row.subject);
         }
       }
@@ -320,7 +358,7 @@ export default function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [studentStream]);
+  }, [studentStream, studentSubjects]);   // ✅ add studentSubjects to deps
 
   // ------------------------------------------------------------
   // School leaderboard — load once
@@ -431,7 +469,7 @@ export default function LeaderboardPage() {
     // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
@@ -439,7 +477,6 @@ export default function LeaderboardPage() {
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
           {/* ============ Header Banner ============ */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
-            {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
               style={{
@@ -448,17 +485,13 @@ export default function LeaderboardPage() {
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            {/* rings */}
             <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
-            {/* shine */}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              {/* Logo */}
               <div className="shrink-0">
                 <div className="relative">
                   <div className="absolute inset-0 bg-amber-300/30 blur-xl rounded-full" />
@@ -468,7 +501,6 @@ export default function LeaderboardPage() {
                 </div>
               </div>
 
-              {/* Text */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Link
@@ -497,7 +529,6 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            {/* Tabs inside banner bottom (glass effect) */}
             <div className="relative px-5 sm:px-6 md:px-8 pb-5 sm:pb-6">
               <div className="inline-flex p-1 bg-black/20 backdrop-blur-md rounded-xl border border-white/15 gap-1">
                 <button
@@ -655,7 +686,7 @@ export default function LeaderboardPage() {
                           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                         </div>
 
-                        {/* Mobile cards — max-h + scroll */}
+                        {/* Mobile cards */}
                         <div className="lg:hidden relative">
                           <div className="divide-y divide-gray-100 max-h-[60vh] overflow-y-auto">
                             {topSchools.map((item) => {

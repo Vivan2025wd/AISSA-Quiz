@@ -20,11 +20,12 @@ import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionE
 
 // ------------------------------------------------------------
 // Filters
-//   • "Common" = Physics / Chemistry (stream IS NULL in DB)
-//   • "Bio Science" = Biology only
+//   • "Common"     = Physics / Chemistry (stream IS NULL in DB)
+//   • "Bio Science"= Biology only
+//   • "Maths"      = ICT only
 // ------------------------------------------------------------
-const subjectFilters = ["All", "Physics", "Chemistry", "Biology"];
-const streamFilters = ["All", "Common", "Bio Science"];
+const subjectFilters = ["All", "Physics", "Chemistry", "Biology", "ICT"];
+const streamFilters = ["All", "Common", "Bio Science", "Maths"];   // ✅ Maths added
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
@@ -41,15 +42,15 @@ export default function QuestionsPage() {
   const loadQuestions = useCallback(async () => {
     setLoading(true);
 
-      let query = supabase
-    .from("questions")
-    .select(
-      `id, quiz_id, subject, stream, topic, image_url,
-       question_text, option_1, option_2, option_3, option_4, option_5, explanation, correct_option,
-       question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
-       question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta`,
-    )
-    .order("created_at", { ascending: false });
+    let query = supabase
+      .from("questions")
+      .select(
+        `id, quiz_id, subject, stream, topic, image_url,
+         question_text, option_1, option_2, option_3, option_4, option_5, explanation, correct_option,
+         question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
+         question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta`,
+      )
+      .order("created_at", { ascending: false });
 
     if (filterSubject !== "All") {
       query = query.eq("subject", filterSubject);
@@ -272,6 +273,18 @@ export default function QuestionsPage() {
                           opt !== null && opt !== undefined && opt.trim() !== "",
                       );
 
+                      // ✅ Stream badge color per stream:
+                      //    null → emerald ("Common")
+                      //    Bio Science → purple
+                      //    Maths → cyan
+                      const streamBadgeClass = !q.stream
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : q.stream === "Bio Science"
+                          ? "bg-purple-50 text-purple-700 border-purple-200"
+                          : q.stream === "Maths"
+                            ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                            : "bg-gray-50 text-gray-700 border-gray-200";
+
                       return (
                         <div
                           key={q.id}
@@ -288,13 +301,9 @@ export default function QuestionsPage() {
                                     {q.subject}
                                   </span>
                                 )}
-                                {/* Stream badge — "Common" (emerald) if NULL, purple if Bio Science */}
+                                {/* Stream badge */}
                                 <span
-                                  className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${
-                                    q.stream
-                                      ? "bg-purple-50 text-purple-700 border-purple-200"
-                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  }`}
+                                  className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${streamBadgeClass}`}
                                 >
                                   {q.stream ?? "Common"}
                                 </span>

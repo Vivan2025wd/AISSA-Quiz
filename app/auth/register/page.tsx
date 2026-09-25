@@ -39,10 +39,22 @@ const sriLankanDistricts = [
   "Anuradhapura","Polonnaruwa","Badulla","Monaragala","Ratnapura","Kegalle",
 ];
 
-const streams = [
-  "Select Stream",
-  "Biological Science",
-  "Maths",
+// ============================================================
+// Streams + Subjects
+// ============================================================
+type StreamKey = "Biological Science" | "Maths";
+type SubjectCode = "physics" | "chemistry" | "biology" | "ict";
+
+const streams = ["Biological Science", "Maths"] as const;
+
+// Bio stream subjects (fixed)
+const BIO_SUBJECTS: SubjectCode[] = ["physics", "chemistry", "biology"];
+
+// Maths stream electives — student picks ONE of these
+// (Physics is mandatory common to both streams)
+const MATHS_ELECTIVES: { code: SubjectCode; label: string }[] = [
+  { code: "chemistry", label: "Chemistry" },
+  { code: "ict", label: "ICT" },
 ];
 
 type IdMode = "has-aissa" | "no-aissa";
@@ -65,7 +77,7 @@ export default function StudentRegisterPage() {
     address: "",
     district: sriLankanDistricts[0],
     school: "",
-    stream: streams[0],
+    stream: streams[0] as StreamKey,
     medium: "sinhala" as Medium,
     aissaIdInput: "",
     aissaDistrict: "AWC" as AissaDistrictCode,
@@ -74,6 +86,16 @@ export default function StudentRegisterPage() {
     password: "",
     confirmPassword: "",
   });
+
+  // ✅ Maths elective — "chemistry" or "ict"
+  const [mathsElective, setMathsElective] = useState<SubjectCode>("chemistry");
+
+  // ✅ Compute final subjects list to save
+  const finalSubjects: SubjectCode[] = useMemo(() => {
+    if (formData.stream === "Biological Science") return BIO_SUBJECTS;
+    // Maths: Physics (mandatory) + one elective (Chemistry OR ICT)
+    return ["physics", mathsElective];
+  }, [formData.stream, mathsElective]);
 
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -236,6 +258,12 @@ export default function StudentRegisterPage() {
     e.preventDefault();
     setError("");
 
+    // ✅ Maths stream requires an elective (Chemistry OR ICT)
+    if (formData.stream === "Maths" && !mathsElective) {
+      setError("Maths stream එකට Chemistry හෝ ICT දෙකෙන් එකක් තෝරන්න.");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("ඇතුළත් කළ මුරපද (Passwords) දෙක සමාන නොවේ!");
       return;
@@ -291,6 +319,8 @@ export default function StudentRegisterPage() {
           student_number: isAissaMember
             ? null
             : Number(formData.studentNumber) || null,
+          // ✅ NEW: comma-separated subject codes
+          subjects: finalSubjects.join(","),
         },
       },
     });
@@ -344,7 +374,6 @@ export default function StudentRegisterPage() {
       <div className="relative w-full max-w-xl">
         {/* ============ Header banner ============ */}
         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20 mb-4">
-          {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
             style={{
@@ -353,16 +382,12 @@ export default function StudentRegisterPage() {
               backgroundSize: "22px 22px",
             }}
           />
-          {/* glows */}
           <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-          {/* rings */}
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-          {/* shine */}
           <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
           <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Logo */}
             <div className="shrink-0">
               <div className="relative">
                 <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
@@ -372,7 +397,6 @@ export default function StudentRegisterPage() {
               </div>
             </div>
 
-            {/* Title */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
@@ -566,6 +590,73 @@ export default function StudentRegisterPage() {
                 </select>
               </div>
 
+              {/* ---------- Subject Combination ---------- */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  ඔබ කරන විෂයන් (Your Subjects)
+                </label>
+
+                {formData.stream === "Biological Science" ? (
+                  // Bio stream: fixed subjects
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="flex flex-wrap gap-2">
+                      {["Physics", "Chemistry", "Biology"].map((s) => (
+                        <span
+                          key={s}
+                          className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-800 text-xs font-bold rounded-lg"
+                        >
+                          ✓ {s}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-emerald-700 mt-2">
+                      * Bio Science එකට Physics, Chemistry, Biology අනිවාර්යයි.
+                    </p>
+                  </div>
+                ) : (
+                  // Maths stream: Physics (fixed) + one elective (Chemistry OR ICT)
+                  <div className="p-3 bg-cyan-50/70 border border-cyan-200 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="px-3 py-1.5 bg-white border border-cyan-300 text-cyan-800 font-bold rounded-lg">
+                        ✓ Physics (අනිවාර්යයි)
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-bold text-cyan-900 uppercase mb-2">
+                        + ඔබේ දෙවන විෂය තෝරන්න
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {MATHS_ELECTIVES.map((opt) => {
+                          const isActive = mathsElective === opt.code;
+                          return (
+                            <button
+                              key={opt.code}
+                              type="button"
+                              onClick={() => setMathsElective(opt.code)}
+                              disabled={isSubmitting}
+                              className={`py-3 rounded-xl text-sm font-bold transition border flex items-center justify-center gap-2 ${
+                                isActive
+                                  ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
+                                  : "bg-white text-gray-700 border-gray-300 hover:border-cyan-400"
+                              } disabled:opacity-60`}
+                            >
+                              {isActive && <CheckCircle2 className="w-3.5 h-3.5" />}
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-cyan-700 leading-relaxed">
+                      * Maths stream එකට Physics අනිවාර්යයි. ඊට අමතරව <strong>Chemistry</strong> හෝ{" "}
+                      <strong>ICT</strong> දෙකෙන් එකක් තෝරන්න.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* ---------- Medium ---------- */}
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-1.5">
@@ -648,7 +739,6 @@ export default function StudentRegisterPage() {
                 </div>
               ) : (
                 <div className="p-4 bg-teal-50/70 border border-teal-200 rounded-xl space-y-4">
-                  {/* Info header */}
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                     <div>
@@ -661,7 +751,6 @@ export default function StudentRegisterPage() {
                     </div>
                   </div>
 
-                  {/* School Year + Student Number */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-teal-900 uppercase mb-1.5">

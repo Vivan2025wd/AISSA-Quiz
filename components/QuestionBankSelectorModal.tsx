@@ -40,7 +40,7 @@ interface QuestionBankSelectorModalProps {
 }
 
 const streams = ["All", "Common", "Bio Science"];
-const subjects = ["All", "Physics", "Chemistry", "Biology"];
+const subjects = ["All", "Physics", "Chemistry", "Biology", "ICT"];
 
 export default function QuestionBankSelectorModal({
   isOpen,

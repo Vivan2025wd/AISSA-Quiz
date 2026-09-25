@@ -24,13 +24,18 @@ import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionE
 import QuestionBankSelectorModal from "@/components/QuestionBankSelectorModal";
 
 // ------------------------------------------------------------
-// Solution A — Physics & Chemistry are common across all science
-// streams; only Biology is Bio-Science-specific.
+// Stream rules:
+//   • Physics / Chemistry → Common (null) — all science streams
+//   • Biology             → Bio Science only
+//   • ICT                 → Maths stream only
 // ------------------------------------------------------------
 const BIO_STREAM = "Bio Science";
+const MATHS_STREAM = "Maths";
 
 function derivedStreamForSubject(subject: string): string | null {
-  return subject === "Biology" ? BIO_STREAM : null;
+  if (subject === "Biology") return BIO_STREAM;
+  if (subject === "ICT") return MATHS_STREAM;
+  return null; // Physics, Chemistry → Common
 }
 
 interface Quiz {
@@ -141,12 +146,9 @@ export default function AdminQuizzesPage() {
     setLoadingQuestions(true);
 
     try {
-      // ✅ 1) Try quiz_questions link table — WITH English + Tamil columns
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
-        .select(
-          `question_id, order_index, questions(${QUESTION_COLUMNS})`
-        )
+        .select(`question_id, order_index, questions(${QUESTION_COLUMNS})`)
         .eq("quiz_id", quiz.id)
         .order("order_index", { ascending: true });
 
@@ -156,7 +158,6 @@ export default function AdminQuizzesPage() {
           .filter((q): q is EditableQuestion => q !== null);
         setQuizQuestions(flatList);
       } else {
-        // ✅ 2) Fallback — direct questions.quiz_id — WITH English + Tamil columns
         const { data: directData } = await supabase
           .from("questions")
           .select(QUESTION_COLUMNS)
@@ -265,9 +266,7 @@ export default function AdminQuizzesPage() {
   };
 
   return (
-    // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
-      {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
@@ -277,7 +276,6 @@ export default function AdminQuizzesPage() {
 
           {/* ============ Header Banner ============ */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
-            {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.08] pointer-events-none"
               style={{
@@ -286,17 +284,13 @@ export default function AdminQuizzesPage() {
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            {/* rings */}
             <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-            {/* shine */}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
 
             <div className="relative p-5 sm:p-6 md:p-7 space-y-5">
               <div className="flex items-start gap-4">
-                {/* Logo */}
                 <div className="shrink-0">
                   <div className="relative">
                     <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
@@ -306,7 +300,6 @@ export default function AdminQuizzesPage() {
                   </div>
                 </div>
 
-                {/* Title */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
@@ -328,7 +321,6 @@ export default function AdminQuizzesPage() {
                 </div>
               </div>
 
-              {/* Action buttons */}
               <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <Link
                   href="/admin/questions"
@@ -405,6 +397,7 @@ export default function AdminQuizzesPage() {
                       <option value="Physics">Physics</option>
                       <option value="Chemistry">Chemistry</option>
                       <option value="Biology">Biology</option>
+                      <option value="ICT">ICT</option>
                     </select>
                   </div>
 
@@ -417,21 +410,27 @@ export default function AdminQuizzesPage() {
                       className={`w-full p-3 rounded-xl font-medium text-sm border ${
                         derivedStream === null
                           ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                          : "bg-purple-50 border-purple-200 text-purple-800"
+                          : derivedStream === BIO_STREAM
+                            ? "bg-purple-50 border-purple-200 text-purple-800"
+                            : "bg-cyan-50 border-cyan-200 text-cyan-800"
                       }`}
                     >
                       {derivedStream === null ? (
                         <span className="font-bold">
                           Common — All Science Streams
                         </span>
-                      ) : (
+                      ) : derivedStream === BIO_STREAM ? (
                         <span className="font-bold">Bio Science only</span>
+                      ) : (
+                        <span className="font-bold">Maths stream only</span>
                       )}
                     </div>
                     <p className="text-[11px] text-gray-500 mt-1">
                       {derivedStream === null
                         ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
-                        : "* Biology Bio Science stream එකට විතරයි."}
+                        : derivedStream === BIO_STREAM
+                          ? "* Biology Bio Science stream එකට විතරයි."
+                          : "* ICT Maths stream එකට විතරයි (Physics + Chemistry හෝ Physics + ICT)."}
                     </p>
                   </div>
                 </div>
@@ -465,7 +464,6 @@ export default function AdminQuizzesPage() {
                   />
                 </div>
 
-                {/* Date / time / duration */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="flex items-center gap-1 text-xs font-bold text-gray-700 uppercase mb-2">
@@ -511,7 +509,6 @@ export default function AdminQuizzesPage() {
                   </div>
                 </div>
 
-                {/* Question bank picker */}
                 <div className="p-3.5 sm:p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -584,7 +581,6 @@ export default function AdminQuizzesPage() {
 
           {/* ============ Quizzes list ============ */}
           <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden">
-            {/* Header strip */}
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
               <h2 className="text-base sm:text-lg font-bold text-gray-900">
                 All Created Quizzes{" "}
@@ -605,12 +601,23 @@ export default function AdminQuizzesPage() {
               </div>
             ) : (
               <>
-                {/* ===== Scrollable grid with fade shadow ===== */}
                 <div className="relative">
                   <div className="overflow-y-auto max-h-[65vh] p-4 sm:p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                       {quizzes.map((quiz) => {
                         const isCommon = !quiz.stream;
+                        const isBio = quiz.stream === BIO_STREAM;
+                        const isMaths = quiz.stream === MATHS_STREAM;
+
+                        // ✅ Stream badge color per stream
+                        const streamBadgeClass = isCommon
+                          ? "bg-emerald-100 text-emerald-800"
+                          : isBio
+                            ? "bg-purple-100 text-purple-800"
+                            : isMaths
+                              ? "bg-cyan-100 text-cyan-800"
+                              : "bg-gray-100 text-gray-700";
+
                         return (
                           <div
                             key={quiz.id}
@@ -647,11 +654,7 @@ export default function AdminQuizzesPage() {
 
                                 {/* Stream badge */}
                                 <span
-                                  className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${
-                                    isCommon
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-purple-100 text-purple-800"
-                                  }`}
+                                  className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${streamBadgeClass}`}
                                 >
                                   {isCommon ? "Common" : quiz.stream}
                                 </span>
@@ -702,11 +705,9 @@ export default function AdminQuizzesPage() {
                     </div>
                   </div>
 
-                  {/* Bottom fade — indicates more content below */}
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                 </div>
 
-                {/* Footer hint */}
                 <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[11px] text-gray-500 text-center">
                   Quizzes{" "}
                   <strong className="text-gray-700">{quizzes.length}</strong>ක්

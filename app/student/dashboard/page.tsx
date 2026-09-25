@@ -22,6 +22,7 @@ import {
   Award,
   RefreshCw,
   GraduationCap,
+  Monitor,
 } from "lucide-react";
 import {
   getQuizWindowStatus,
@@ -34,7 +35,7 @@ import {
 // Types
 // ------------------------------------------------------------
 type Medium = "sinhala" | "english" | "tamil";
-type SubjectKey = "all" | "physics" | "chemistry" | "biology";
+type SubjectKey = "all" | "physics" | "chemistry" | "biology" | "ict";
 type RealSubjectKey = Exclude<SubjectKey, "all">;
 
 type Quiz = {
@@ -56,6 +57,7 @@ type Profile = {
   stream?: string | null;
   medium?: Medium | null;
   is_admin?: boolean | null;
+  subjects?: string | null;   // ✅ comma-separated codes (physics,chemistry / physics,ict)
 };
 
 type StudentStats = {
@@ -103,15 +105,30 @@ type DashboardBundle = {
 };
 
 // ------------------------------------------------------------
-// Stream → Subject rules
+// Stream + Subjects → Allowed subjects
+//   • Priority 1: explicit subjects list (from registration)
+//   • Fallback:   stream defaults
 // ------------------------------------------------------------
 function allowedSubjectsForStream(
   stream: string | null | undefined,
+  subjectsRaw?: string | null,
 ): RealSubjectKey[] {
+  // ✅ Priority 1: explicit subjects list saved during registration
+  if (subjectsRaw && subjectsRaw.trim()) {
+    const codes = subjectsRaw
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter((s): s is RealSubjectKey =>
+        ["physics", "chemistry", "biology", "ict"].includes(s),
+      );
+    if (codes.length > 0) return codes;
+  }
+
+  // Fallback: stream-based defaults
   const s = (stream ?? "").toLowerCase();
   if (s.includes("bio")) return ["physics", "chemistry", "biology"];
   if (s.includes("physical") || s.includes("maths"))
-    return ["physics", "chemistry"];
+    return ["physics", "chemistry"];   // safe fallback: no ICT
   return ["physics", "chemistry", "biology"];
 }
 
@@ -159,6 +176,7 @@ function subjectStyle(subject: string | null | undefined): string {
   if (s.includes("physics")) return "bg-blue-50 text-blue-700 border-blue-200";
   if (s.includes("chemistry")) return "bg-purple-50 text-purple-700 border-purple-200";
   if (s.includes("biology")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (s.includes("ict") || s.includes("information")) return "bg-cyan-50 text-cyan-700 border-cyan-200";
   return "bg-gray-100 text-gray-700 border-gray-200";
 }
 
@@ -167,19 +185,23 @@ function subjectKeyOf(subject: string | null | undefined): RealSubjectKey | null
   if (s.includes("physics")) return "physics";
   if (s.includes("chemistry")) return "chemistry";
   if (s.includes("biology")) return "biology";
+  if (s.includes("ict") || s.includes("information")) return "ict";
   return null;
 }
 
 function subjectLabel(k: RealSubjectKey): string {
   if (k === "physics") return "Physics";
   if (k === "chemistry") return "Chemistry";
-  return "Biology";
+  if (k === "biology") return "Biology";
+  if (k === "ict") return "ICT";
+  return "Subject";
 }
 
 function subjectIcon(k: SubjectKey) {
   if (k === "physics") return <Atom className="w-3.5 h-3.5" />;
   if (k === "chemistry") return <FlaskConical className="w-3.5 h-3.5" />;
   if (k === "biology") return <Dna className="w-3.5 h-3.5" />;
+  if (k === "ict") return <Monitor className="w-3.5 h-3.5" />;
   return <BookOpen className="w-3.5 h-3.5" />;
 }
 
@@ -190,17 +212,19 @@ function subjectTabClass(k: SubjectKey, isActive: boolean): string {
   if (k === "physics") return `${base} bg-blue-600 text-white shadow-sm`;
   if (k === "chemistry") return `${base} bg-purple-600 text-white shadow-sm`;
   if (k === "biology") return `${base} bg-emerald-600 text-white shadow-sm`;
+  if (k === "ict") return `${base} bg-cyan-600 text-white shadow-sm`;
   return `${base} bg-slate-800 text-white shadow-sm`;
 }
 
 function canStudentSeeQuiz(
   studentStream: string | null | undefined,
+  studentSubjects: string | null | undefined,   // ✅ new param
   quizSubject: string | null | undefined,
 ): boolean {
   if (!quizSubject) return true;
   const key = subjectKeyOf(quizSubject);
   if (!key) return true;
-  return allowedSubjectsForStream(studentStream).includes(key);
+  return allowedSubjectsForStream(studentStream, studentSubjects).includes(key);
 }
 
 // ------------------------------------------------------------
@@ -353,8 +377,8 @@ export default function StudentDashboard() {
   // Derived
   // ------------------------------------------------------------
   const allowedSubjects = useMemo<RealSubjectKey[]>(
-    () => allowedSubjectsForStream(profile?.stream),
-    [profile?.stream],
+    () => allowedSubjectsForStream(profile?.stream, profile?.subjects),
+    [profile?.stream, profile?.subjects],
   );
 
   const subjectBreakdown = useMemo(() => {
@@ -363,6 +387,7 @@ export default function StudentDashboard() {
       physics: { ...empty },
       chemistry: { ...empty },
       biology: { ...empty },
+      ict: { ...empty },
     };
 
     for (const row of pastQuizzes) {
@@ -440,7 +465,7 @@ export default function StudentDashboard() {
   const activeQuizzes: Quiz[] = [];
   const upcomingQuizzes: Quiz[] = [];
   for (const q of quizzes) {
-    if (!canStudentSeeQuiz(profile?.stream, q.subject)) continue;
+    if (!canStudentSeeQuiz(profile?.stream, profile?.subjects, q.subject)) continue;
 
     const status = getQuizWindowStatus(q);
     if (status === "active" || status === "unscheduled") activeQuizzes.push(q);
@@ -572,7 +597,9 @@ export default function StudentDashboard() {
           {/* ============ Subject Mini Cards ============ */}
           <div
             className={`grid grid-cols-1 ${
-              allowedSubjects.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+              allowedSubjects.length >= 3
+                ? "sm:grid-cols-2 lg:grid-cols-3"
+                : "sm:grid-cols-2"
             } gap-3 sm:gap-4`}
           >
             {allowedSubjects.map((key) => (
@@ -957,6 +984,10 @@ function BestSubjectCard({
           icon: "bg-emerald-50 text-emerald-600",
           label: "text-emerald-800",
         },
+        ict: {
+          icon: "bg-cyan-50 text-cyan-600",
+          label: "text-cyan-800",
+        },
       }[best.key]
     : null;
 
@@ -1020,6 +1051,13 @@ function SubjectMiniCard({
       label: "text-emerald-800",
       rank: "text-emerald-700",
       score: "text-emerald-900",
+    },
+    ict: {
+      wrap: "border-cyan-200/70",
+      icon: "bg-cyan-50 text-cyan-600",
+      label: "text-cyan-800",
+      rank: "text-cyan-700",
+      score: "text-cyan-900",
     },
   }[subjectKey];
 

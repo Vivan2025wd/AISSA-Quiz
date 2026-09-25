@@ -93,24 +93,59 @@ function subjectBadgeStyle(subject: string | null | undefined): string {
     return "bg-purple-500/20 text-purple-100 border-purple-300/30";
   if (s.includes("biology"))
     return "bg-emerald-500/20 text-emerald-100 border-emerald-300/30";
+  if (s.includes("ict") || s.includes("information"))
+    return "bg-cyan-500/20 text-cyan-100 border-cyan-300/30";  // ✅ ICT
   return "bg-white/15 text-white border-white/20";
 }
 
 // ------------------------------------------------------------
 // Stream → Subject rules
+//   • Biology             → Bio Science stream only
+//   • ICT                 → Maths (Physical Science) stream only
+//   • Physics / Chemistry → Common (all science streams)
+//
+//   Returns a reason object when blocked, otherwise null.
 // ------------------------------------------------------------
-function isSubjectBlockedForStream(
+type BlockReason = {
+  subject: string;
+  requiredStream: string;
+  detail: string;
+  allowedHint: string;
+};
+
+function getBlockReasonForStream(
   quizSubject: string | null | undefined,
   studentStream: string | null | undefined,
-): boolean {
-  if (!quizSubject || !studentStream) return false;
+): BlockReason | null {
+  if (!quizSubject || !studentStream) return null;
+
   const subj = quizSubject.toLowerCase();
   const s = studentStream.toLowerCase();
 
-  if ((s.includes("physical") || s.includes("maths")) && subj.includes("biology")) {
-    return true;
+  const isBio = s.includes("bio");
+  const isMaths = s.includes("physical") || s.includes("maths");
+
+  // ✅ Biology → Bio Science only
+  if (subj.includes("biology") && !isBio) {
+    return {
+      subject: quizSubject,
+      requiredStream: "Bio Science",
+      detail: "Biology විෂය Bio Science stream එකට විතරයි.",
+      allowedHint: "Physics · Chemistry · Biology",
+    };
   }
-  return false;
+
+  // ✅ ICT → Maths (Physical Science) only
+  if ((subj.includes("ict") || subj.includes("information")) && !isMaths) {
+    return {
+      subject: quizSubject,
+      requiredStream: "Maths (Physical Science)",
+      detail: "ICT විෂය Maths (Physical Science) stream එකට විතරයි.",
+      allowedHint: "Physics · Chemistry · ICT",
+    };
+  }
+
+  return null;
 }
 
 // ------------------------------------------------------------
@@ -175,7 +210,9 @@ export default function StudentQuizPage() {
 
   const [medium, setMedium] = useState<Medium>("sinhala");
   const [studentStream, setStudentStream] = useState<string | null>(null);
-  const [streamBlocked, setStreamBlocked] = useState(false);
+
+  // ✅ Changed from boolean to reason object
+  const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
@@ -184,13 +221,12 @@ export default function StudentQuizPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // ✅ NEW: track when the student loaded the page (for accurate time_spent)
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
 
   const [reviewIndex, setReviewIndex] = useState(0);
 
   // ------------------------------------------------------------
-  // Load quiz (from CDN cache) + profile + my result/answers
+  // Load quiz + profile + my result/answers
   // ------------------------------------------------------------
   useEffect(() => {
     if (!quizId) return;
@@ -250,17 +286,18 @@ export default function StudentQuizPage() {
         return;
       }
 
-      if (isSubjectBlockedForStream(quizData.subject, localStream)) {
+      // ✅ Check block reason (Biology → Bio only, ICT → Maths only)
+      const reason = getBlockReasonForStream(quizData.subject, localStream);
+      if (reason) {
         setQuiz(quizData as Quiz);
-        setStreamBlocked(true);
+        setBlockReason(reason);
         setLoadingQuiz(false);
         return;
       }
 
       setQuiz(quizData as Quiz);
 
-      // ✅✅ TIMER FIX: countdown = scheduled_at + duration - NOW
-      // Student කවදා හරි ආවත්, ඉතුරු කාලය විතරයි දෙන්නේ.
+      // ✅ TIMER FIX: countdown = scheduled_at + duration - NOW
       const durationSec = (quizData.duration_minutes || 30) * 60;
       if (quizData.scheduled_at) {
         const startMs = new Date(quizData.scheduled_at).getTime();
@@ -268,7 +305,6 @@ export default function StudentQuizPage() {
         const remainingSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
         setTimeLeft(remainingSec);
       } else {
-        // No scheduled_at → fall back to full duration from now
         setTimeLeft(durationSec);
       }
       setStartedAtMs(Date.now());
@@ -424,7 +460,6 @@ export default function StudentQuizPage() {
     [quizId, router, questions, selectedAnswers],
   );
 
-  // ✅ timeSpent = actual seconds spent since page loaded (capped by window)
   const finishQuiz = useCallback(async () => {
     setIsSubmitted(true);
     const finalScore = calculateScore();
@@ -438,7 +473,7 @@ export default function StudentQuizPage() {
   useEffect(() => {
     if (windowStatus !== "active") return;
     if (isSubmitted || loadingQuiz || questions.length === 0) return;
-    if (streamBlocked) return;
+    if (blockReason) return;   // ✅ use blockReason instead of streamBlocked
 
     if (timeLeft <= 0) {
       const t = setTimeout(() => {
@@ -450,7 +485,7 @@ export default function StudentQuizPage() {
 
     const interval = setInterval(() => setTimeLeft((p) => p - 1), 1000);
     return () => clearInterval(interval);
-  }, [timeLeft, isSubmitted, loadingQuiz, questions.length, finishQuiz, windowStatus, streamBlocked]);
+  }, [timeLeft, isSubmitted, loadingQuiz, questions.length, finishQuiz, windowStatus, blockReason]);
 
   const handleSelectOption = (i: number) => {
     if (isSubmitted) return;
@@ -500,9 +535,9 @@ export default function StudentQuizPage() {
   }
 
   // ============================================================
-  // STREAM BLOCKED
+  // STREAM BLOCKED — dynamic based on subject
   // ============================================================
-  if (streamBlocked) {
+  if (blockReason) {
     return (
       <ThemedShell>
         <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
@@ -514,18 +549,19 @@ export default function StudentQuizPage() {
               ප්‍රවේශය සීමා කර ඇත
             </h2>
             <p className="text-sm text-gray-600 leading-relaxed">
-              මෙම Quiz එක ඔබේ stream එකට අදාළ නොවේ.{" "}
-              <strong className="text-gray-800">Biology</strong> විෂය Bio
-              Science stream එකට විතරයි.
+              {blockReason.detail}
             </p>
             <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-gray-500 flex-wrap">
               <span className="px-2 py-1 bg-gray-100 rounded-md">
                 ඔබේ stream: {studentStream || "—"}
               </span>
-              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md">
-                Physics · Chemistry විතරයි
+              <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded-md">
+                අවශ්‍ය: {blockReason.requiredStream}
               </span>
             </div>
+            <p className="text-[11px] text-emerald-700 font-medium pt-1">
+              මෙම Quiz එකට අදාළ: {blockReason.allowedHint}
+            </p>
           </div>
           <button
             onClick={() => router.push("/student/dashboard")}

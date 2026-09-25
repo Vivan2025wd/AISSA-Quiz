@@ -56,15 +56,20 @@ interface QuestionEditModalProps {
   onSaved: () => void;
 }
 
-const subjects = ["Physics", "Chemistry", "Biology"];
+const subjects = ["Physics", "Chemistry", "Biology", "ICT"];
 const BIO_STREAM = "Bio Science";
+const MATHS_STREAM = "Maths";
 
 /**
- * Physics and Chemistry are common across all science streams
- * (stream = null in the DB). Biology is Bio-Science-only.
+ * Stream rules:
+ *   • Physics / Chemistry → Common (null) — all science streams
+ *   • Biology             → Bio Science only
+ *   • ICT                 → Maths stream only
  */
 function derivedStreamForSubject(subject: string): string | null {
-  return subject === "Biology" ? BIO_STREAM : null;
+  if (subject === "Biology") return BIO_STREAM;
+  if (subject === "ICT") return MATHS_STREAM;
+  return null; // Physics, Chemistry → Common
 }
 
 type Language = "si" | "en" | "ta";
@@ -224,7 +229,11 @@ function QuestionEditorForm({
       .from("questions")
       .update({
         subject,
-        stream: derivedStream, // null for Physics/Chemistry, "Bio Science" for Biology
+        // ✅ Stream rules:
+        //    • Biology → "Bio Science"
+        //    • ICT     → "Maths"
+        //    • Physics / Chemistry → null (Common)
+        stream: derivedStream,
         topic: topic.trim() || null,
         image_url: imageUrl.trim() || null,
         correct_option: correctAnswer,
@@ -283,7 +292,6 @@ function QuestionEditorForm({
 
         {/* ═══════════════ HEADER BANNER ═══════════════ */}
         <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
-          {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none"
             style={{
@@ -292,13 +300,11 @@ function QuestionEditorForm({
               backgroundSize: "20px 20px",
             }}
           />
-          {/* glows */}
           <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
 
           <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              {/* Logo */}
               <div className="shrink-0 hidden sm:block">
                 <div className="relative">
                   <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
@@ -371,17 +377,23 @@ function QuestionEditorForm({
                   className={`w-full p-3 rounded-xl font-medium text-sm border ${
                     derivedStream === null
                       ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                      : "bg-purple-50 border-purple-200 text-purple-800"
+                      : derivedStream === BIO_STREAM
+                        ? "bg-purple-50 border-purple-200 text-purple-800"
+                        : "bg-cyan-50 border-cyan-200 text-cyan-800"
                   }`}
                 >
                   {derivedStream === null
                     ? "Common — All Science Streams"
-                    : "Bio Science only"}
+                    : derivedStream === BIO_STREAM
+                      ? "Bio Science only"
+                      : "Maths stream only"}
                 </div>
                 <p className="text-[11px] text-gray-500 mt-1">
                   {derivedStream === null
                     ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
-                    : "* Biology Bio Science stream එකට විතරයි."}
+                    : derivedStream === BIO_STREAM
+                      ? "* Biology Bio Science stream එකට විතරයි."
+                      : "* ICT Maths stream එකට විතරයි (Physics + ICT හෝ Physics + Chemistry)."}
                 </p>
               </div>
             </div>

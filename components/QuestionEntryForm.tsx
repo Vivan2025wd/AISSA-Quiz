@@ -14,13 +14,20 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import ImageUploadField from "@/components/ImageUploadField";
 
-// Physics & Chemistry are COMMON across all science streams
-// (stored with stream = NULL). Biology is Bio-Science-only.
-const subjects = ["Physics", "Chemistry", "Biology"];
+// ============================================================
+// Stream rules:
+//   • Physics / Chemistry → Common (null) — all science streams
+//   • Biology             → Bio Science only
+//   • ICT                 → Maths stream only
+// ============================================================
+const subjects = ["Physics", "Chemistry", "Biology", "ICT"];
 const BIO_STREAM = "Bio Science";
+const MATHS_STREAM = "Maths";
 
 function derivedStreamForSubject(subject: string): string | null {
-  return subject === "Biology" ? BIO_STREAM : null;
+  if (subject === "Biology") return BIO_STREAM;
+  if (subject === "ICT") return MATHS_STREAM;
+  return null; // Physics, Chemistry → Common
 }
 
 type Language = "si" | "en" | "ta";
@@ -409,17 +416,23 @@ export default function QuestionEntryForm(props: Props) {
                 className={`w-full p-3 rounded-xl font-medium text-sm border ${
                   derivedStream === null
                     ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : "bg-purple-50 border-purple-200 text-purple-800"
+                    : derivedStream === BIO_STREAM
+                      ? "bg-purple-50 border-purple-200 text-purple-800"
+                      : "bg-cyan-50 border-cyan-200 text-cyan-800"
                 }`}
               >
                 {derivedStream === null
                   ? "Common — All Science Streams"
-                  : "Bio Science only"}
+                  : derivedStream === BIO_STREAM
+                    ? "Bio Science only"
+                    : "Maths stream only"}
               </div>
               <p className="text-[11px] text-gray-500 mt-1">
                 {derivedStream === null
                   ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
-                  : "* Biology Bio Science stream එකට විතරයි."}
+                  : derivedStream === BIO_STREAM
+                    ? "* Biology Bio Science stream එකට විතරයි."
+                    : "* ICT Maths stream එකට විතරයි (Physics + ICT හෝ Physics + Chemistry)."}
               </p>
             </div>
           </div>
