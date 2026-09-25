@@ -38,6 +38,26 @@ function derivedStreamForSubject(subject: string): string | null {
   return null; // Physics, Chemistry → Common
 }
 
+// ------------------------------------------------------------
+// ✅ Default date / time helpers — CURRENT value with buffer
+// ------------------------------------------------------------
+const START_BUFFER_MINUTES = 5;   // start time default = now + 5 min
+
+function getDefaultDate(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getDefaultTime(): string {
+  const d = new Date(Date.now() + START_BUFFER_MINUTES * 60_000);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 interface Quiz {
   id: string;
   title: string;
@@ -78,8 +98,9 @@ export default function AdminQuizzesPage() {
   const [subject, setSubject] = useState("Physics");
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState("2026-09-20");
-  const [startTime, setStartTime] = useState("20:00");
+  // ✅ Auto-populated
+  const [date, setDate] = useState(getDefaultDate());
+  const [startTime, setStartTime] = useState(getDefaultTime());
   const [duration, setDuration] = useState("45");
   const [isLive, setIsLive] = useState(true);
 
@@ -201,8 +222,9 @@ export default function AdminQuizzesPage() {
   const resetForm = () => {
     setTopic("");
     setDescription("");
-    setDate("2026-09-20");
-    setStartTime("20:00");
+    // ✅ Refresh to current date/time on reset
+    setDate(getDefaultDate());
+    setStartTime(getDefaultTime());
     setDuration("45");
     setIsLive(true);
     setSelectedQuestionIds([]);
@@ -477,6 +499,9 @@ export default function AdminQuizzesPage() {
                       disabled={isSubmitting}
                       className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                     />
+                    <p className="text-[10px] text-gray-400 mt-1">
+
+                    </p>
                   </div>
 
                   <div>
@@ -491,6 +516,8 @@ export default function AdminQuizzesPage() {
                       disabled={isSubmitting}
                       className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                     />
+                    <p className="text-[10px] text-gray-400 mt-1">
+                    </p>
                   </div>
 
                   <div>
@@ -609,7 +636,6 @@ export default function AdminQuizzesPage() {
                         const isBio = quiz.stream === BIO_STREAM;
                         const isMaths = quiz.stream === MATHS_STREAM;
 
-                        // ✅ Stream badge color per stream
                         const streamBadgeClass = isCommon
                           ? "bg-emerald-100 text-emerald-800"
                           : isBio
@@ -652,7 +678,6 @@ export default function AdminQuizzesPage() {
                                   <Clock className="w-3.5 h-3.5" /> {quiz.duration_minutes} Mins
                                 </span>
 
-                                {/* Stream badge */}
                                 <span
                                   className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${streamBadgeClass}`}
                                 >
