@@ -4,14 +4,14 @@
 
 ### All Island School Science Association — Online Examination Engine
 
-*A production-grade, cloud-native MCQ testing platform built for Sri Lankan G.C.E. Advanced Level science students — featuring automated server-side timer enforcement, real-time leaderboards, dual student-type onboarding, and a centralized Question Bank.*
+*A production-grade, cloud-native MCQ testing and analytics platform engineered for Sri Lankan G.C.E. Advanced Level science students — featuring automated server-side timer enforcement, real-time WebSocket leaderboards, trilingual examination support, dual student onboarding, and a centralized Question Bank.*
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth%20%7C%20Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Resend](https://img.shields.io/badge/Resend-Email%20API-000000?style=for-the-badge&logo=resend&logoColor=white)](https://resend.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%20%7C%20Auth%20%7C%20Realtime%20%7C%20Storage-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Brevo](https://img.shields.io/badge/Brevo-Transactional%20Email-0B996F?style=for-the-badge&logo=brevo&logoColor=white)](https://www.brevo.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
 
 **[🌐 Live Demo](https://aissa-quiz.vercel.app)** · **[🐛 Report Bug](https://github.com/YourUsername/AISSA-Quiz/issues)** · **[✨ Request Feature](https://github.com/YourUsername/AISSA-Quiz/issues)**
@@ -24,17 +24,41 @@
 
 - [🌟 Overview](#-overview)
 - [✨ Key Features](#-key-features)
-- [🏗 Architecture](#-architecture)
+  - [🎓 Student Experience](#-student-experience)
+  - [🛡 Administrator Experience](#-administrator-experience)
+  - [📱 Mobile Optimization](#-mobile-optimization)
+  - [🔬 Engineering Highlights](#-engineering-highlights)
+- [🏗 Architecture & Data Flow](#-architecture--data-flow)
 - [💻 Tech Stack](#-tech-stack)
 - [📁 Project Structure](#-project-structure)
-- [⚡ Quick Start](#-quick-start)
-- [🗄 Master Database Schema](#-master-database-schema)
-- [🔐 Security Model](#-security-model)
-- [📝 Question Bank & Quiz Mechanics](#-question-bank--quiz-mechanics)
-- [📊 Leaderboard & Ranking System](#-leaderboard--ranking-system)
-- [📧 Email Automation](#-email-automation)
-- [🚀 Deployment](#-deployment)
-- [🛠 Troubleshooting](#-troubleshooting)
+- [⚡ Getting Started](#-getting-started)
+  - [1. Prerequisites](#1-prerequisites)
+  - [2. Clone & Install](#2-clone--install)
+  - [3. Environment Variables](#3-environment-variables)
+  - [4. Set Up Database & Storage](#4-set-up-database--storage)
+  - [5. Run Development Server](#5-run-development-server)
+- [🔑 Environment Variables Reference](#-environment-variables-reference)
+- [🗄 Consolidated Master Database Schema](#-consolidated-master-database-schema)
+- [🔐 Security & Authentication Model](#-security--authentication-model)
+  - [Dual-Identifier Login](#dual-identifier-login)
+  - [Two-Factor Admin Verification](#two-factor-admin-verification)
+  - [Row Level Security (RLS) & Triggers](#row-level-security-rls--triggers)
+- [📝 Question Bank & Quiz Scheduling](#-question-bank--quiz-scheduling)
+  - [Trilingual Question Support](#trilingual-question-support)
+  - [Storage Integration for Diagrams](#storage-integration-for-diagrams)
+  - [20-Question Cap Enforced at DB Level](#20-question-cap-enforced-at-db-level)
+- [⏱ Live Quiz Engine & Timer Mechanics](#-live-quiz-engine--timer-mechanics)
+  - [Window-Based Timers](#window-based-timers)
+  - [CDN Edge Caching](#cdn-edge-caching)
+  - [Detailed Question Review](#detailed-question-review)
+- [📊 Leaderboard & Ranking Algorithms](#-leaderboard--ranking-algorithms)
+  - [Subject-Specific Rankings](#subject-specific-rankings)
+  - [School Composite Scoring](#school-composite-scoring)
+  - [WebSocket Real-Time Feed](#websocket-real-time-feed)
+- [🆔 Student ID Format & Generation](#-student-id-format--generation)
+- [📧 Transactional Email Automation](#-transactional-email-automation)
+- [🚀 Production Deployment Runbook](#-production-deployment-runbook)
+- [🛠 Troubleshooting & FAQ](#-troubleshooting--faq)
 - [🗺 Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -43,97 +67,144 @@
 
 ## 🌟 Overview
 
-The **AISSA Quiz Platform** is a full-stack web application built **as a volunteer project** for the All Island School Science Association — a Sri Lankan student body serving A/L students in the Biological Science and Physical Science / Maths streams.
+The **AISSA Quiz Platform** is a full-stack, cloud-native online examination system built as a dedicated community initiative for the **All Island School Science Association (AISSA)** — an established Sri Lankan student association empowering A/L students across the Biological Science and Physical Science / Mathematics streams.
 
-The platform replaces a manual quiz workflow with a modern, scalable, and secure system that:
+The platform eliminates manual exam workflows, spreadsheet grading, and disjointed communication channels with a unified, high-performance web platform that:
 
-- Onboards **two types of students** — those with an official AISSA Member ID, and those without (who receive an auto-generated Non-AISSA Quiz ID by email)
-- Runs **timed live exams** with automatic force-submission when time runs out
-- Publishes **real-time leaderboards** at both individual and school levels
-- Gives admins a **centralized Question Bank** decoupled from quiz scheduling
-- Provides **analytics and CSV exports** for reporting back to schools and the AISSA committee
-
-It is architected as a **portfolio-grade reference implementation** of Next.js App Router + Supabase best practices — RLS-first, server-authoritative, and idempotently deployable.
+1. **Onboards Students In Two Distinct Tracks**: Existing AISSA members use their official ID; non-members are automatically assigned a standardized Non-AISSA ID dispatched directly to their inbox.
+2. **Conducts High-Stakes Timed Exams**: Automated client and server time-window synchronization enforces strict submission cutoffs, preventing late attempts even if tabs are closed or reopened.
+3. **Supports Trilingual Content**: Supports Sinhala, English, and Tamil question texts, options, and worked solutions.
+4. **Calculates Multi-Tier Leaderboards**: Computes real-time live top-10 per quiz, island-wide rankings per science subject, and composite school performance metrics.
+5. **Decouples Questions From Quizzes**: A centralized Question Bank allows questions to be authored, edited, illustrated with uploaded diagrams, tagged, and reused across multiple quizzes.
+6. **Delivers Sub-Second Performance**: Next.js Edge Caching, single-query dashboard data bundling via Postgres RPC, and Tailwind CSS v4 ensure instantaneous load times even on low-bandwidth mobile connections.
 
 ---
 
 ## ✨ Key Features
 
-### 🎓 For Students
-- **Dual Onboarding Path** — register with an existing AISSA Member ID (`R26THENUMI-SBVC-AWC`), or request an auto-generated Non-AISSA Quiz ID (`N26VIVAN123-COL-AWC`) delivered by email
-- **School Autocomplete** — real-time fuzzy search over a curated `schools` directory, with free-text fallback for unlisted schools
-- **Timed Live Exam Engine** — interactive question palette, per-question navigation, image diagrams, auto-submit on timer expiry
-- **Instant Grading** — scores computed server-side at submission; duplicate attempts prevented by DB constraint
-- **Live Per-Quiz Leaderboard** — Supabase Realtime subscription pushes new entrants to the top-10 in real time
-- **Island-Wide Rankings** — individual (by total score, ties broken by total time) and school (by aggregate score)
-- **Personal Performance History** — every attempt with score, duration, and date
-- **Trilingual UI** — English + Sinhala labels throughout
+### 🎓 Student Experience
 
-### 🛡 For Administrators
-- **Central Question Bank** (`/admin/questions`) — CRUD MCQ repository with subject / stream / topic tagging, image URLs, optional 5th option, and solution explanations
-- **Quiz Scheduler** (`/admin/quizzes`) — schedule quizzes with date, time, duration, and stream; pick up to **20 questions** from the bank via a filterable modal with live capacity counter
-- **Per-Quiz Question Manager** (`/admin/quizzes/[id]/questions`) — link / unlink bank questions non-destructively
-- **Student Performance Analytics** (`/admin/performance`) — searchable, filterable table with AISSA ID badges (colour-coded by member type), percentage badges, and CSV export
-- **Admin Dashboard** (`/admin/dashboard`) — high-level counters: total questions (with per-subject breakdown), live/upcoming quizzes, registered students, active schools
-- **Two-Factor Admin Access** — bcrypt-hashed code verified server-side, plus a session-scoped flag that expires on browser close
+- **Dual Onboarding & Auto-Generation**:
+  - Register with an existing AISSA Member ID (`R25THENUMI-SBVC-AWC`) with regex validation against official district zones.
+  - Or request an auto-generated Non-AISSA Quiz ID (`N25VIVAN001-CCC-AWC`) with automated school-year sequencing and immediate email delivery.
+- **Universal Single-Field Login**:
+  - Sign in using **either** email address or assigned AISSA / Non-AISSA ID. The backend automatically resolves the ID to the account email.
+- **Trilingual Examination Interface**:
+  - Questions and explanations switch dynamically between Sinhala, English, and Tamil according to the student's selected medium.
+- **Stream-Aware Subject Filtering**:
+  - Students in the Physical Science / Mathematics stream are automatically protected from taking Biology quizzes, keeping analytics clean and relevant.
+- **Interactive Live Exam Engine**:
+  - Visual question palette with state indicators (Answered, Unanswered, Active).
+  - Synchronized countdown timer tied to server-scheduled start and end windows.
+  - Automatic force-submission upon timer expiration.
+  - Support for illustrated questions (diagrams, circuits, chemical structures).
+- **Post-Quiz Question Review**:
+  - Comprehensive review mode highlighting chosen vs. correct answers with full worked explanations for every question.
+- **Performance Analytics Dashboard**:
+  - Complete dashboard loaded in a single database RPC call: Island rank, average score %, total exams completed, total time invested, and subject-specific metrics.
+- **School & Individual Leaderboards**:
+  - Filterable by subject (Physics, Chemistry, Biology) with tie-breakers prioritizing total marks and speed.
+
+### 🛡 Administrator Experience
+
+- **Centralized Question Bank** (`/admin/questions`):
+  - Full CRUD management of MCQ items independent of quiz schedules.
+  - Multilingual inputs (Sinhala base + English + Tamil).
+  - Integrated Supabase Storage image uploader with drag-and-drop, 5MB limit, and external URL support.
+  - Support for 4 or 5 options with worked explanations.
+- **Quiz Scheduler** (`/admin/quizzes`):
+  - Schedule quizzes by date, start time, duration, and subject.
+  - Pick questions from the Question Bank using a search-and-filter modal with a live capacity counter.
+  - Database-enforced hard ceiling of **20 questions** per quiz.
+  - Live toggle to publish or unpublish exams instantly.
+- **Per-Quiz Question Linking** (`/admin/quizzes/[id]/questions`):
+  - Reorder, attach, or detach questions without deleting bank assets.
+- **Student Performance & Analytics** (`/admin/performance`):
+  - Searchable and filterable student attempts table with color-coded AISSA member badges, percentage scores, and one-click CSV export for school reporting.
+- **Executive Admin Overview** (`/admin/dashboard`):
+  - High-level metric cards for total questions by subject, registered students, active schools, and live/upcoming schedules.
+- **Two-Factor Admin Gatekeeper**:
+  - Two-step sign-in requiring a server-verified bcrypt access code.
+  - Tab-isolated `sessionStorage` credential with automatic 30-minute expiration.
+
+### 📱 Mobile Optimization
+
+- **Responsive Navigation Drawer**:
+  - Admin layout features a sticky mobile header bar with hamburger toggle, smooth slide-in drawer, and backdrop blur.
+- **Touch-First Controls**:
+  - Generous touch targets (min 44px) across all option buttons, navigation arrows, and tabs.
+  - Responsive question palette wrapping gracefully on narrow viewports (360px+).
+- **Horizontal Scrolling Tables**:
+  - Admin tables, modals, and leaderboards wrap in scroll containers (`overflow-x-auto`) to prevent viewport breakage.
+- **Mobile-Friendly Image Zoom**:
+  - Question diagram previews scale down responsively while maintaining high resolution on retina screens.
 
 ### 🔬 Engineering Highlights
-- **Row Level Security everywhere** — every table has explicit `SELECT` / `INSERT` / `UPDATE` policies; no table is left open
-- **Server-authoritative security** — `SECURITY DEFINER` RPCs for admin code verification, leaderboards, and student stats; no client can compute these locally
-- **Database-enforced invariants** — 20-question limit, unique `(student_id, quiz_id)` attempts, unique `ais_id`, valid AISSA district codes
-- **Idempotent master schema** — the entire DB can be stood up or upgraded by running a single SQL file
-- **Cookie-based SSR auth** — `@supabase/ssr` used both in browser and in Server Components / Route Handlers / Middleware
-- **Deterministic data fetching** — flat queries + client-side joins instead of PostgREST nested selects, eliminating array-vs-object ambiguity bugs
+
+- **Single-Query Dashboard Bundle (`get_dashboard_data`)**:
+  - Replaces 7 separate client-side queries with a single PL/pgSQL RPC returning JSON, cutting roundtrips and latency by ~85%.
+- **Edge CDN Quiz Caching (`/api/quiz/[id]`)**:
+  - Serves quiz metadata and linked questions via Next.js Route Handler with `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
+- **Database-Level Invariants**:
+  - Concurrency-safe advisory locking on question linking (`check_quiz_question_limit`).
+  - Unique composite constraint on `quiz_results(student_id, quiz_id)` to prevent double submissions.
+  - Unique constraint on `profiles(ais_id)`.
+  - Check constraint enforcing valid AISSA district zones.
 
 ---
 
-## 🏗 Architecture
+## 🏗 Architecture & Data Flow
 
 ```mermaid
-graph TD
+flowchart TD
     User([Student / Admin]) -->|HTTP Request| Edge[Next.js Edge Middleware]
-    Edge -->|Session Check + Route Guard| App[Next.js App Router]
+    Edge -->|Session & Role Verification| App[Next.js App Router]
 
-    subgraph Frontend
-        App --> Landing[Landing / Auth]
-        App --> Student[Student Portal]
-        App --> Admin[Admin Portal]
+    subgraph Frontend [Next.js App Client / SSR]
+        App --> Landing[Landing Page]
+        App --> AuthPages[Auth: Login / Register]
+        App --> StudentDashboard[Student Portal: Dashboard / Leaderboard]
+        App --> QuizEngine[Exam Engine: /student/quiz/id]
+        App --> AdminPortal[Admin Portal: Guarded by AdminGuard]
     end
 
-    subgraph Supabase Backend
-        Student -->|signIn / signUp| Auth[Supabase Auth]
-        Student -->|INSERT quiz_results| PostgREST[PostgREST API]
-        Student -->|Realtime Subscribe| RT[Supabase Realtime]
-        Admin -->|CRUD quizzes / questions| PostgREST
-        Admin -->|RPC: leaderboards, stats| RPC[SECURITY DEFINER Functions]
-
-        Auth --> PG[(PostgreSQL 15+)]
-        PostgREST --> PG
-        RPC --> PG
-        PG --> RLS[Row Level Security]
-        PG --> Triggers[PL/pgSQL Triggers]
+    subgraph API [Next.js API Layer]
+        App -->|Fetch Cached Quiz| QuizAPI["/api/quiz/[id] (CDN S-MaxAge 60s)"]
+        App -->|Dispatch New ID Email| SendIdAPI["/api/send-id"]
     end
 
-    Student -.->|Non-AISSA registration| Email[/api/send-id route/]
-    Email -->|Resend API| Inbox[(Student's Inbox)]
+    subgraph Backend [Supabase Cloud]
+        AuthPages -->|Auth RPC / signInWithPassword| SupaAuth[Supabase Auth]
+        StudentDashboard -->|RPC: get_dashboard_data| SupaDB[(PostgreSQL 15+)]
+        QuizEngine -->|INSERT quiz_results & quiz_answers| SupaDB
+        QuizEngine -->|Realtime WebSocket| SupaRealtime[Supabase Realtime]
+        AdminPortal -->|CRUD Questions / Quizzes / Storage| SupaDB
+        AdminPortal -->|Upload Diagrams| SupaStorage[Bucket: question-images]
+        QuizAPI -->|Service Role Client| SupaDB
+    end
+
+    SendIdAPI -->|Brevo SMTP / REST API| Brevo[Brevo Transactional Email Engine]
+    Brevo -->|Delivers ID to Inbox| StudentInbox[(Student Email)]
 ```
 
 ---
 
 ## 💻 Tech Stack
 
-| Layer | Technology | Version | Why |
+| Layer | Technology | Version | Purpose |
 |---|---|---|---|
-| **Framework** | Next.js (App Router, Turbopack) | `15.x` | SSR, Edge Middleware, Route Handlers, Server Components |
-| **UI Runtime** | React | `19.x` | Server Components, `use` hook, Actions |
-| **Language** | TypeScript | `5.x` | End-to-end type safety, strict `null` checks |
-| **Styling** | Tailwind CSS | `v4` | Utility-first, no runtime cost, native `@import` support |
-| **Icons** | Lucide React | latest | Consistent 1.5px stroke icon set |
-| **Database** | PostgreSQL | 15+ (via Supabase) | Triggers, RLS, CTEs, `rank()` window functions |
-| **Auth** | Supabase Auth | via `@supabase/ssr` | Cookie-based sessions, SSR-compatible |
-| **Realtime** | Supabase Realtime | via `postgres_changes` | WebSocket leaderboard subscriptions |
-| **Email** | Resend | `resend` SDK | Transactional email for generated IDs |
-| **Hashing** | pgcrypto (Postgres extension) | — | Server-side bcrypt for admin code |
+| **Framework** | Next.js (App Router, Turbopack) | `16.3.5` | Hybrid SSR, Edge Middleware, Route Handlers, Turbopack bundling |
+| **Runtime** | React | `19.2.8` | Server and Client Components, Actions, hooks |
+| **Language** | TypeScript | `5.x` | End-to-end type safety, strict interface contracts |
+| **Styling** | Tailwind CSS | `v4.x` | Utility-first CSS engine, native CSS variables, zero runtime |
+| **Icons** | Lucide React | `^1.45.0` | Consistent 1.5px stroke modern UI icons |
+| **Database** | PostgreSQL | `15+` (Supabase) | Triggers, RLS, CTEs, GIN trigram indexes, window functions |
+| **Auth** | Supabase Auth | `@supabase/ssr` | Cookie-based SSR sessions, PKCE flow, metadata injection |
+| **Realtime** | Supabase Realtime | WebSocket | Live leaderboard event streaming via `postgres_changes` |
+| **Object Storage** | Supabase Storage | `v1` | `question-images` bucket for MCQ diagram assets |
+| **Email** | Brevo REST API v3 | API | Transactional dispatch of Non-AISSA registration IDs |
+| **Cryptography** | `pgcrypto` | Postgres Ext | Server-side bcrypt hashing for admin access code validation |
+| **Text Search** | `pg_trgm` | Postgres Ext | Trigram fuzzy matching for school search autocomplete |
 
 ---
 
@@ -142,65 +213,74 @@ graph TD
 ```
 AISSA-Quiz/
 ├── app/
-│   ├── layout.tsx                          # Root wrapper, fonts, metadata
-│   ├── globals.css                         # Tailwind v4 imports
-│   ├── page.tsx                            # Landing page (auth-aware CTA)
+│   ├── layout.tsx                          # Root layout, fonts, meta tags
+│   ├── globals.css                         # Tailwind v4 directives & custom utilities
+│   ├── page.tsx                            # Auth-aware landing page with dynamic CTAs
 │   │
 │   ├── auth/
-│   │   ├── login/page.tsx                  # Universal login (2-step for admins)
-│   │   └── register/page.tsx               # Dual-mode student registration
+│   │   ├── login/page.tsx                  # Dual login (Email OR AISSA ID) + 2-step admin code
+│   │   └── register/page.tsx               # Dual registration (AISSA member vs Non-AISSA)
 │   │
 │   ├── api/
-│   │   └── send-id/route.ts                # Resend handler for Non-AISSA IDs
+│   │   ├── quiz/[id]/route.ts              # CDN-cached quiz & question loader (service role)
+│   │   └── send-id/route.ts                # Brevo API handler for Non-AISSA Quiz ID delivery
 │   │
 │   ├── student/
-│   │   ├── dashboard/page.tsx              # Live quizzes + stats + history
-│   │   ├── quiz/[id]/page.tsx              # Timed MCQ engine
-│   │   └── leaderboard/page.tsx            # School + individual rankings
+│   │   ├── layout.tsx                      # Student session guard & floating logout bar
+│   │   ├── dashboard/page.tsx              # Single-query dashboard (stats, subjects, history, live)
+│   │   ├── leaderboard/page.tsx            # School rankings & subject-specific individual boards
+│   │   └── quiz/[id]/
+│   │       ├── layout.tsx                  # Clean exam container layout
+│   │       └── page.tsx                    # Live exam engine, synchronized timer, question review
 │   │
 │   └── admin/
-│       ├── layout.tsx                      # Sidebar shell
-│       ├── AdminGuard.tsx                  # is_admin + sessionStorage double-check
-│       ├── dashboard/page.tsx              # Overview counters
-│       ├── questions/page.tsx              # Central Question Bank
+│       ├── layout.tsx                      # Responsive sidebar + mobile drawer shell
+│       ├── AdminGuard.tsx                  # DB role + sessionStorage 30m security barrier
+│       ├── dashboard/page.tsx              # Executive platform analytics & live schedule
+│       ├── questions/page.tsx              # Central Question Bank with multilingual filtering
 │       ├── quizzes/
-│       │   ├── page.tsx                    # Scheduler + list
-│       │   └── [id]/questions/page.tsx     # Per-quiz question manager
-│       ├── performance/page.tsx            # Analytics + CSV
-│       └── register/page.tsx               # Code-gated admin signup
+│       │   ├── page.tsx                    # Quiz scheduler, live toggles, question picker
+│       │   └── [id]/questions/page.tsx     # Per-quiz question manager (reorder / link / unlink)
+│       ├── performance/page.tsx            # Student attempt analytics, score badges, CSV export
+│       └── register/page.tsx               # Secret-gated admin account creation
 │
 ├── components/
-│   ├── QuestionBankSelectorModal.tsx       # Pick up to 20 questions
-│   ├── QuestionEditModal.tsx               # Edit existing MCQ
-│   ├── QuestionEntryForm.tsx               # Standalone + locked modes
-│   ├── SchoolAutocomplete.tsx              # Debounced fuzzy school search
-│   └── RealtimeLeaderboard.tsx             # Live top-10 (WebSocket)
+│   ├── ImageUploadField.tsx                # Dual-mode Supabase Storage / URL diagram uploader
+│   ├── QuestionBankSelectorModal.tsx       # 20-question picker with live capacity counter
+│   ├── QuestionEditModal.tsx               # Multilingual question editor (SI, EN, TA)
+│   ├── QuestionEntryForm.tsx               # Standalone question authoring component
+│   ├── RealtimeLeaderboard.tsx             # WebSocket live top-10 component for ongoing quizzes
+│   └── SchoolAutocomplete.tsx              # Debounced fuzzy search over schools directory
 │
 ├── lib/
-│   ├── supabaseClient.ts                   # Browser client (cookie-based)
-│   ├── aissa-id.ts                         # ID regex, validation, generation
+│   ├── aissa-id.ts                         # AISSA ID regex, validation, parsing, generation
+│   ├── admin-session.ts                    # Tab-scoped sessionStorage security helpers
+│   ├── quiz-window.ts                      # Scheduled exam time-window calculations & countdowns
+│   ├── school-codes.ts                     # Deterministic school abbreviation generator
+│   ├── supabaseClient.ts                   # Client-side Supabase browser client
 │   └── supabase/
-│       └── server.ts                       # Server Component / Route Handler client
+│       └── server.ts                       # Server Component / Route Handler cookie client
 │
-├── middleware.ts                           # Edge route protection
-├── 000_MASTER_SCHEMA.sql                   # Single idempotent DB setup file
-├── next.config.ts
-├── tsconfig.json
-├── tailwind.config.ts
-└── package.json
+├── middleware.ts                           # Next.js Edge route guard for /admin and /student
+├── next.config.ts                          # Next.js runtime configuration
+├── package.json                            # Dependencies and build scripts
+├── postcss.config.mjs                      # PostCSS plugins
+└── tsconfig.json                           # TypeScript compiler options
 ```
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Getting Started
 
 ### 1. Prerequisites
-- **Node.js** ≥ 18.18 (or ≥ 20)
-- **npm** ≥ 9 (or `pnpm` / `yarn`)
-- A **Supabase project** (free tier is fine)
-- A **Resend account** (free tier — 100 emails/day) — *only needed for Non-AISSA onboarding emails*
+
+- **Node.js**: `v20.x` or later recommended (minimum `v18.18`)
+- **npm**: `v9.x` or later (or `pnpm` / `yarn`)
+- **Supabase Account**: A free Supabase project with PostgreSQL 15+
+- **Brevo Account**: Free tier provides 300 free emails/day for transactional ID delivery
 
 ### 2. Clone & Install
+
 ```bash
 git clone https://github.com/YourUsername/AISSA-Quiz.git
 cd AISSA-Quiz
@@ -209,84 +289,100 @@ npm install
 
 ### 3. Environment Variables
 
-Create `.env.local`:
+Create `.env.local` in the project root:
 
 ```env
-# Supabase — Project Settings → API
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+# -------------------------------------------------------------
+# Supabase Configuration (Required)
+# Found in: Supabase Dashboard → Project Settings → API
+# -------------------------------------------------------------
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# Resend — for Non-AISSA ID emails (optional in dev)
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
-AISSA_FROM_EMAIL="AISSA Quiz <noreply@yourdomain.com>"
+# -------------------------------------------------------------
+# Brevo Email Configuration (Required for Non-AISSA registration)
+# Found in: Brevo Dashboard → SMTP & API → API Keys
+# -------------------------------------------------------------
+BREVO_API_KEY=xkeysib-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AISSA_FROM_EMAIL="AISSA Quiz <vivanrakmitha5@gmail.com>"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-> **Important:** Both Supabase keys are required for the app to boot. The Resend keys are only required when a student registers *without* an AISSA ID.
+### 4. Set Up Database & Storage
 
-### 4. Set Up the Database
+1. Navigate to **Supabase Dashboard → SQL Editor**.
+2. Copy and paste the entire [Consolidated Master Database Schema](#-consolidated-master-database-schema) below.
+3. Click **Run**. The script is fully idempotent and creates tables, functions, triggers, RLS policies, and seeds initial data safely.
+4. Replace `'AISSA2026ADMIN'` in Section 12 with your preferred secret admin code.
 
-Open **Supabase → SQL Editor**, paste the entire [Master Schema](#-master-database-schema) below, and run it once. It's fully idempotent — safe to re-run on both fresh and existing databases.
-
-### 5. Seed the Admin Code
-
-Replace `AISSA2026ADMIN` with your own secret:
-
-```sql
-insert into public.admin_secrets (id, code_hash)
-values (true, crypt('YOUR-SECRET-ADMIN-CODE', gen_salt('bf')))
-on conflict (id) do update set code_hash = excluded.code_hash;
-```
-
-### 6. Run
+### 5. Run Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🗄 Master Database Schema
+## 🔑 Environment Variables Reference
 
-Copy and paste the entire idempotent SQL below into the Supabase SQL Editor.
+| Variable | Scope | Required | Purpose |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Public / Client | **Yes** | HTTPS endpoint of your Supabase project instance |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public / Client | **Yes** | Supabase anonymous public API key for browser client |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server Only | **Yes** | Privileged service key for `/api/quiz/[id]` server caching |
+| `BREVO_API_KEY` | Server Only | **Yes** | Brevo REST API v3 key for transactional emails |
+| `AISSA_FROM_EMAIL` | Server Only | Recommended | Sender name and email address for transactional ID messages |
+| `NEXT_PUBLIC_APP_URL` | Public / Server | Optional | Canonical URL of the application (e.g. `https://aissa-quiz.vercel.app`) |
+
+---
+
+## 🗄 Consolidated Master Database Schema
+
+Execute this comprehensive, idempotent script in your Supabase SQL Editor to set up or update the complete database schema:
 
 ```sql
 -- ============================================================
 -- AISSA Quiz Platform — CONSOLIDATED MASTER SCHEMA
---
--- Idempotent: safe on fresh databases AND on existing ones.
--- Covers migrations 012 (dual student types), 013 (schools),
--- 014 (leaderboard ranking), 015 (student stats).
+-- Fully idempotent: safe on fresh databases and existing setups.
 -- ============================================================
 
 create extension if not exists pgcrypto;
 create extension if not exists pg_trgm;
 
--- ------------------------------------------------------------
--- 1. PROFILES
--- ------------------------------------------------------------
+-- ============================================================
+-- 1. PROFILES TABLE (ශිෂ්‍ය විස්තර)
+-- ============================================================
 create table if not exists public.profiles (
   id              uuid references auth.users on delete cascade primary key,
   full_name       text not null default 'Student',
   address         text,
   district        text,
   school          text not null default 'Not Specified',
-  index_number    text,                                     -- legacy
+  index_number    text,
   stream          text not null default 'Bio Science',
+  medium          text not null default 'sinhala',
   ais_id          text,
   aissa_district  text,
   is_aissa_member boolean not null default false,
+  school_year     integer,
+  student_number  integer,
   is_admin        boolean not null default false,
   created_at      timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Backfill columns for older profile schemas
 alter table public.profiles add column if not exists address          text;
 alter table public.profiles add column if not exists district         text;
 alter table public.profiles add column if not exists index_number     text;
 alter table public.profiles add column if not exists ais_id           text;
 alter table public.profiles add column if not exists aissa_district   text;
 alter table public.profiles add column if not exists is_aissa_member  boolean not null default false;
+alter table public.profiles add column if not exists school_year     integer;
+alter table public.profiles add column if not exists student_number  integer;
+alter table public.profiles add column if not exists medium          text not null default 'sinhala';
 alter table public.profiles add column if not exists is_admin         boolean not null default false;
 
 do $$
@@ -308,12 +404,13 @@ begin
   end if;
 end $$;
 
+-- Revoke privilege escalation
 revoke insert (is_admin) on public.profiles from authenticated, anon;
 revoke update (is_admin) on public.profiles from authenticated, anon;
 
--- ------------------------------------------------------------
--- 2. handle_new_user() trigger
--- ------------------------------------------------------------
+-- ============================================================
+-- 2. HANDLE NEW USER TRIGGER
+-- ============================================================
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -323,7 +420,8 @@ as $$
 begin
   insert into public.profiles (
     id, full_name, address, district, school, index_number,
-    stream, ais_id, aissa_district, is_aissa_member, is_admin, created_at
+    stream, medium, ais_id, aissa_district, is_aissa_member,
+    school_year, student_number, is_admin, created_at
   )
   values (
     new.id,
@@ -333,9 +431,12 @@ begin
     coalesce(nullif(new.raw_user_meta_data->>'school', ''), 'Not Specified'),
     nullif(new.raw_user_meta_data->>'index_number', ''),
     coalesce(nullif(new.raw_user_meta_data->>'stream', ''), 'Bio Science'),
+    coalesce(nullif(new.raw_user_meta_data->>'medium', ''), 'sinhala'),
     nullif(new.raw_user_meta_data->>'ais_id', ''),
     nullif(new.raw_user_meta_data->>'aissa_district', ''),
-    coalesce(nullif(new.raw_user_meta_data->>'is_aissa_member', '')::boolean, false),
+    coalesce((new.raw_user_meta_data->>'is_aissa_member')::boolean, false),
+    nullif(new.raw_user_meta_data->>'school_year', '')::integer,
+    nullif(new.raw_user_meta_data->>'student_number', '')::integer,
     false,
     now()
   )
@@ -346,9 +447,12 @@ begin
     school          = excluded.school,
     index_number    = excluded.index_number,
     stream          = excluded.stream,
+    medium          = excluded.medium,
     ais_id          = excluded.ais_id,
     aissa_district  = excluded.aissa_district,
-    is_aissa_member = excluded.is_aissa_member;
+    is_aissa_member = excluded.is_aissa_member,
+    school_year     = excluded.school_year,
+    student_number  = excluded.student_number;
 
   return new;
 end;
@@ -360,9 +464,9 @@ create trigger on_auth_user_created
   for each row
   execute function public.handle_new_user();
 
--- ------------------------------------------------------------
--- 3. Admin secrets (singleton)
--- ------------------------------------------------------------
+-- ============================================================
+-- 3. ADMIN SECRETS (SINGLETON)
+-- ============================================================
 create table if not exists public.admin_secrets (
   id        boolean primary key default true,
   code_hash text not null,
@@ -371,9 +475,9 @@ create table if not exists public.admin_secrets (
 
 alter table public.admin_secrets enable row level security;
 
--- ------------------------------------------------------------
--- 4. Quizzes
--- ------------------------------------------------------------
+-- ============================================================
+-- 4. QUIZZES TABLE
+-- ============================================================
 create table if not exists public.quizzes (
   id               uuid default gen_random_uuid() primary key,
   title            text not null,
@@ -392,37 +496,64 @@ alter table public.quizzes add column if not exists scheduled_at     timestamp w
 alter table public.quizzes add column if not exists is_live          boolean default false;
 alter table public.quizzes alter column total_questions set default 0;
 
--- ------------------------------------------------------------
--- 5. Question Bank
--- ------------------------------------------------------------
+-- ============================================================
+-- 5. QUESTION BANK TABLE (MULTILINGUAL)
+-- ============================================================
 create table if not exists public.questions (
-  id             uuid default gen_random_uuid() primary key,
-  quiz_id        uuid references public.quizzes(id) on delete set null,
-  subject        text not null default 'Physics',
-  stream         text not null default 'Bio Science',
-  question_text  text not null,
-  image_url      text,
-  topic          text,
-  option_1       text not null,
-  option_2       text not null,
-  option_3       text not null,
-  option_4       text not null,
-  option_5       text,
-  correct_option integer not null,
-  explanation    text,
-  created_at     timestamp with time zone default timezone('utc'::text, now()) not null
+  id                uuid default gen_random_uuid() primary key,
+  quiz_id           uuid references public.quizzes(id) on delete set null,
+  subject           text not null default 'Physics',
+  stream            text,
+  topic             text,
+  image_url         text,
+  correct_option    integer not null,
+  
+  -- Sinhala (Default / Base)
+  question_text     text not null,
+  option_1          text not null,
+  option_2          text not null,
+  option_3          text not null,
+  option_4          text not null,
+  option_5          text,
+  explanation       text,
+
+  -- English (Multilingual)
+  question_text_en  text,
+  option_1_en       text,
+  option_2_en       text,
+  option_3_en       text,
+  option_4_en       text,
+  option_5_en       text,
+  explanation_en    text,
+
+  -- Tamil (Multilingual)
+  question_text_ta  text,
+  option_1_ta       text,
+  option_2_ta       text,
+  option_3_ta       text,
+  option_4_ta       text,
+  option_5_ta       text,
+  explanation_ta    text,
+
+  created_at        timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-alter table public.questions add column if not exists subject text default 'Physics';
-alter table public.questions add column if not exists stream  text default 'Bio Science';
-alter table public.questions add column if not exists topic   text;
-alter table public.questions alter column option_5 drop not null;
-alter table public.questions alter column quiz_id  drop not null;
+-- Backfill multilingual columns
+alter table public.questions add column if not exists question_text_en text;
+alter table public.questions add column if not exists option_1_en      text;
+alter table public.questions add column if not exists option_2_en      text;
+alter table public.questions add column if not exists option_3_en      text;
+alter table public.questions add column if not exists option_4_en      text;
+alter table public.questions add column if not exists option_5_en      text;
+alter table public.questions add column if not exists explanation_en   text;
 
-update public.questions q
-set subject = qz.subject, stream = qz.stream
-from public.quizzes qz
-where q.quiz_id = qz.id and (q.subject is null or q.stream is null);
+alter table public.questions add column if not exists question_text_ta text;
+alter table public.questions add column if not exists option_1_ta      text;
+alter table public.questions add column if not exists option_2_ta      text;
+alter table public.questions add column if not exists option_3_ta      text;
+alter table public.questions add column if not exists option_4_ta      text;
+alter table public.questions add column if not exists option_5_ta      text;
+alter table public.questions add column if not exists explanation_ta   text;
 
 do $$
 begin
@@ -433,12 +564,12 @@ end $$;
 
 alter table public.questions add constraint questions_correct_option_check check (
   correct_option between 0 and 4
-  and (correct_option < 4 or option_5 is not null)
+  and (correct_option < 4 or option_5 is not null or option_5_en is not null)
 );
 
--- ------------------------------------------------------------
--- 6. quiz_questions junction
--- ------------------------------------------------------------
+-- ============================================================
+-- 6. QUIZ QUESTIONS JUNCTION & 20-CAP TRIGGERS
+-- ============================================================
 create table if not exists public.quiz_questions (
   id           uuid default gen_random_uuid() primary key,
   quiz_id      uuid references public.quizzes(id)   on delete cascade not null,
@@ -448,6 +579,7 @@ create table if not exists public.quiz_questions (
   constraint quiz_questions_unique unique (quiz_id, question_id)
 );
 
+-- Backfill existing relations
 insert into public.quiz_questions (quiz_id, question_id)
 select quiz_id, id from public.questions where quiz_id is not null
 on conflict (quiz_id, question_id) do nothing;
@@ -484,12 +616,9 @@ create trigger trg_sync_quiz_total_questions
   after insert or update or delete on public.quiz_questions
   for each row execute function public.sync_quiz_total_questions();
 
-update public.quizzes q
-set total_questions = (select count(*) from public.quiz_questions qq where qq.quiz_id = q.id);
-
--- ------------------------------------------------------------
--- 7. quiz_results
--- ------------------------------------------------------------
+-- ============================================================
+-- 7. QUIZ RESULTS & ATTEMPT AUDITING
+-- ============================================================
 create table if not exists public.quiz_results (
   id                 uuid default gen_random_uuid() primary key,
   student_id         uuid references public.profiles(id) on delete cascade not null,
@@ -500,6 +629,7 @@ create table if not exists public.quiz_results (
   submitted_at       timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Deduplicate attempts if existing
 delete from public.quiz_results
 where id in (
   select id from (
@@ -518,6 +648,7 @@ begin
   end if;
 end $$;
 
+-- Enable Supabase Realtime on quiz_results
 do $$
 begin
   if not exists (
@@ -528,9 +659,23 @@ begin
   end if;
 end $$;
 
--- ------------------------------------------------------------
--- 8. Schools directory
--- ------------------------------------------------------------
+-- ============================================================
+-- 8. QUIZ ANSWERS (ANSWER AUDIT FOR REVIEW MODE)
+-- ============================================================
+create table if not exists public.quiz_answers (
+  id              uuid default gen_random_uuid() primary key,
+  result_id       uuid references public.quiz_results(id) on delete cascade,
+  student_id      uuid references public.profiles(id)     on delete cascade not null,
+  quiz_id         uuid references public.quizzes(id)      on delete cascade not null,
+  question_id     uuid references public.questions(id)    on delete cascade not null,
+  selected_option integer,
+  is_correct      boolean not null default false,
+  created_at      timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- ============================================================
+-- 9. SCHOOLS DIRECTORY (AUTOCOMPLETE)
+-- ============================================================
 create table if not exists public.schools (
   id         uuid primary key default gen_random_uuid(),
   name       text not null unique,
@@ -541,6 +686,399 @@ create table if not exists public.schools (
 create index if not exists schools_name_trgm_idx
   on public.schools using gin (name gin_trgm_ops);
 
+-- ============================================================
+-- 10. SUPABASE STORAGE BUCKET (DIAGRAMS)
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('question-images', 'question-images', true)
+on conflict (id) do update set public = true;
+
+-- ============================================================
+-- 11. RPC FUNCTIONS
+-- ============================================================
+
+-- Check admin helper
+create or replace function public.is_admin()
+returns boolean language sql security definer set search_path = public stable as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
+-- Claim admin role with bcrypt code
+create or replace function public.claim_admin(p_code text)
+returns boolean language plpgsql security definer set search_path = public, extensions as $$
+declare v_hash text; v_uid uuid := auth.uid();
+begin
+  if v_uid is null then return false; end if;
+  select code_hash into v_hash from public.admin_secrets limit 1;
+  if v_hash is null or crypt(p_code, v_hash) <> v_hash then return false; end if;
+  update public.profiles set is_admin = true where id = v_uid;
+  return true;
+end;
+$$;
+
+-- Verify admin code during step-2 login
+create or replace function public.verify_admin_code(p_code text)
+returns boolean language plpgsql security definer set search_path = public, extensions as $$
+declare v_hash text;
+begin
+  select code_hash into v_hash from public.admin_secrets limit 1;
+  if v_hash is null then return false; end if;
+  return v_hash = crypt(p_code, v_hash);
+end;
+$$;
+
+-- Resolve AISSA ID to account email
+create or replace function public.get_email_by_ais_id(p_ais_id text)
+returns text language plpgsql security definer set search_path = public, auth as $$
+declare v_email text;
+begin
+  select u.email into v_email
+  from public.profiles p
+  join auth.users u on u.id = p.id
+  where upper(p.ais_id) = upper(trim(p_ais_id))
+  limit 1;
+  return v_email;
+end;
+$$;
+
+-- Auto-generate next student number for school
+create or replace function public.get_next_student_number(p_school text, p_school_year integer)
+returns integer language plpgsql security definer set search_path = public as $$
+declare v_max integer;
+begin
+  select coalesce(max(student_number), 0) + 1 into v_max
+  from public.profiles
+  where school = p_school
+    and school_year = p_school_year;
+  return v_max;
+end;
+$$;
+
+-- Consolidated Single-Query Dashboard Bundle RPC
+create or replace function public.get_dashboard_data()
+returns jsonb language plpgsql security definer set search_path = public stable as $$
+declare
+  v_uid uuid := auth.uid();
+  v_profile record;
+  v_stats jsonb;
+  v_subj_stats jsonb;
+  v_past jsonb;
+  v_live jsonb;
+begin
+  if v_uid is null then
+    return jsonb_build_object('error', 'unauthorized');
+  end if;
+
+  select id, full_name, school, stream, medium, is_admin
+  into v_profile
+  from public.profiles where id = v_uid;
+
+  if not found then
+    return jsonb_build_object('error', 'no_profile');
+  end if;
+
+  -- 1. Overall student stats
+  with per_student as (
+    select qr.student_id,
+           count(*)::integer as cnt,
+           coalesce(sum(qr.score), 0)::integer as tot_score,
+           coalesce(sum(qr.time_spent_seconds), 0)::integer as tot_time,
+           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
+    from public.quiz_results qr
+    join public.profiles p on p.id = qr.student_id
+    where p.is_admin is not true
+    group by qr.student_id
+  ),
+  ranked as (
+    select ps.*,
+           rank() over (order by ps.tot_score desc, ps.tot_time asc)::integer as rnk
+    from per_student ps
+  )
+  select to_jsonb(t) into v_stats from (
+    select r.cnt as quizzes_completed, r.tot_score as total_score,
+           r.tot_time as total_time_seconds, round(r.avg_pct, 1) as average_score,
+           r.rnk as island_rank
+    from ranked r where r.student_id = v_uid
+    union all
+    select 0, 0, 0, null::numeric, null::integer
+    where not exists (select 1 from ranked where student_id = v_uid)
+    limit 1
+  ) t;
+
+  -- 2. Per-subject stats
+  with per_student_subj as (
+    select qr.student_id, lower(qz.subject) as subj,
+           count(*)::integer as cnt,
+           coalesce(sum(qr.score), 0)::integer as tot_score,
+           coalesce(sum(qr.total_marks), 0)::integer as tot_marks,
+           coalesce(sum(qr.time_spent_seconds), 0)::integer as tot_time,
+           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
+    from public.quiz_results qr
+    join public.quizzes qz on qz.id = qr.quiz_id
+    join public.profiles p on p.id = qr.student_id
+    where p.is_admin is not true and qz.subject is not null
+    group by qr.student_id, lower(qz.subject)
+  ),
+  ranked_subj as (
+    select pss.*,
+           rank() over (partition by pss.subj order by pss.tot_score desc, pss.tot_time asc)::integer as s_rnk
+    from per_student_subj pss
+  )
+  select coalesce(jsonb_agg(to_jsonb(s)), '[]'::jsonb) into v_subj_stats from (
+    select rs.subj as subject, rs.cnt as quizzes_completed, rs.tot_score as total_score,
+           rs.tot_marks as total_marks, rs.tot_time as total_time_seconds,
+           round(rs.avg_pct, 1) as average_score, rs.s_rnk as subject_rank
+    from ranked_subj rs where rs.student_id = v_uid
+  ) s;
+
+  -- 3. Past results with quiz metadata
+  select coalesce(jsonb_agg(to_jsonb(pr)), '[]'::jsonb) into v_past from (
+    select qr.id, qr.quiz_id, qr.score, qr.total_marks, qr.time_spent_seconds, qr.submitted_at,
+           jsonb_build_object('title', qz.title, 'subject', qz.subject, 'stream', qz.stream) as quizzes
+    from public.quiz_results qr
+    left join public.quizzes qz on qz.id = qr.quiz_id
+    where qr.student_id = v_uid
+    order by qr.submitted_at desc
+  ) pr;
+
+  -- 4. Live / Upcoming Quizzes
+  select coalesce(jsonb_agg(to_jsonb(lq)), '[]'::jsonb) into v_live from (
+    select id, title, subject, stream, duration_minutes, total_questions, is_live, scheduled_at, created_at
+    from public.quizzes
+    where is_live = true
+    order by scheduled_at asc nulls last, created_at desc
+  ) lq;
+
+  return jsonb_build_object(
+    'profile', to_jsonb(v_profile),
+    'stats', v_stats,
+    'subject_stats', v_subj_stats,
+    'past_results', v_past,
+    'live_quizzes', v_live
+  );
+end;
+$$;
+
+-- Subject Leaderboard RPC
+create or replace function public.get_subject_leaderboard(p_subject text, p_limit integer default 50)
+returns table (
+  rank               integer,
+  student_id         uuid,
+  full_name          text,
+  school             text,
+  medium             text,
+  quizzes_completed  integer,
+  total_score        integer,
+  total_time_seconds integer,
+  average_score      numeric
+)
+language sql security definer set search_path = public stable as $$
+  with per_student as (
+    select qr.student_id,
+           count(*)::integer as cnt,
+           coalesce(sum(qr.score), 0)::integer as total_score,
+           coalesce(sum(qr.time_spent_seconds), 0)::integer as total_time,
+           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
+    from public.quiz_results qr
+    join public.quizzes qz on qz.id = qr.quiz_id
+    where lower(qz.subject) = lower(p_subject)
+    group by qr.student_id
+  )
+  select rank() over (order by ps.total_score desc, ps.total_time asc)::integer,
+         ps.student_id, p.full_name, p.school, p.medium, ps.cnt,
+         ps.total_score, ps.total_time, round(ps.avg_pct, 1)
+  from per_student ps
+  join public.profiles p on p.id = ps.student_id
+  where p.is_admin is not true
+  order by ps.total_score desc, ps.total_time asc
+  limit p_limit;
+$$;
+
+-- School Leaderboard RPC (Composite Scoring)
+create or replace function public.get_school_leaderboard(p_limit integer default 50)
+returns table (
+  rank                   integer,
+  school                 text,
+  students_count         integer,
+  participating_students integer,
+  total_quizzes          integer,
+  top5_marks             integer,
+  academic_score         integer,
+  participation_score    integer,
+  total_score            integer,
+  avg_score              numeric
+)
+language sql security definer set search_path = public stable as $$
+  with school_students as (
+    select school, count(*)::integer as reg_count
+    from public.profiles
+    where school is not null and school <> '' and school not in ('Not Specified', 'AISSA Admin')
+      and is_admin is not true
+    group by school
+  ),
+  per_school as (
+    select p.school,
+           count(distinct qr.student_id)::integer as part_students,
+           count(*)::integer as total_quizzes,
+           coalesce(sum(qr.score), 0)::integer as total_marks,
+           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
+    from public.quiz_results qr
+    join public.profiles p on p.id = qr.student_id
+    where p.school is not null and p.school <> '' and p.school not in ('Not Specified', 'AISSA Admin')
+      and p.is_admin is not true
+    group by p.school
+  ),
+  ranked_school as (
+    select
+      ps.school,
+      coalesce(ss.reg_count, ps.part_students) as students_count,
+      ps.part_students as participating_students,
+      ps.total_quizzes,
+      ps.total_marks as top5_marks,
+      ps.total_marks as academic_score,
+      (ps.part_students * 5)::integer as participation_score,
+      (ps.total_marks + ps.part_students * 5)::integer as total_score,
+      round(ps.avg_pct, 1) as avg_score
+    from per_school ps
+    left join school_students ss on ss.school = ps.school
+  )
+  select
+    rank() over (order by rs.total_score desc, rs.avg_score desc nulls last)::integer,
+    rs.school, rs.students_count, rs.participating_students, rs.total_quizzes,
+    rs.top5_marks, rs.academic_score, rs.participation_score, rs.total_score,
+    rs.avg_score
+  from ranked_school rs
+  order by rs.total_score desc, rs.avg_score desc nulls last
+  limit p_limit;
+$$;
+
+-- Execute permissions
+grant execute on function public.claim_admin(text)                   to authenticated;
+grant execute on function public.verify_admin_code(text)             to anon, authenticated;
+grant execute on function public.get_email_by_ais_id(text)           to anon, authenticated;
+grant execute on function public.get_next_student_number(text, int)  to anon, authenticated;
+grant execute on function public.get_dashboard_data()                to authenticated;
+grant execute on function public.get_subject_leaderboard(text, int)  to authenticated;
+grant execute on function public.get_school_leaderboard(int)         to authenticated;
+
+-- ============================================================
+-- 12. ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================
+alter table public.profiles       enable row level security;
+alter table public.quizzes        enable row level security;
+alter table public.questions      enable row level security;
+alter table public.quiz_questions enable row level security;
+alter table public.quiz_results   enable row level security;
+alter table public.quiz_answers   enable row level security;
+alter table public.schools        enable row level security;
+
+-- Profiles
+drop policy if exists "Users can view own profile" on public.profiles;
+create policy "Users can view own profile" on public.profiles
+  for select using (auth.uid() = id);
+
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile" on public.profiles
+  for update using (auth.uid() = id);
+
+drop policy if exists "Users can insert own profile" on public.profiles;
+create policy "Users can insert own profile" on public.profiles
+  for insert with check (auth.uid() = id);
+
+drop policy if exists "Admins can view all profiles" on public.profiles;
+create policy "Admins can view all profiles" on public.profiles
+  for select using (public.is_admin());
+
+-- Quizzes
+drop policy if exists "Authenticated users can view quizzes" on public.quizzes;
+create policy "Authenticated users can view quizzes" on public.quizzes
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins can manage quizzes" on public.quizzes;
+create policy "Admins can manage quizzes" on public.quizzes
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- Questions
+drop policy if exists "Authenticated users can view questions" on public.questions;
+create policy "Authenticated users can view questions" on public.questions
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins can manage questions" on public.questions;
+create policy "Admins can manage questions" on public.questions
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- Quiz questions junction
+drop policy if exists "Authenticated users can view quiz_questions" on public.quiz_questions;
+create policy "Authenticated users can view quiz_questions" on public.quiz_questions
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins can manage quiz_questions" on public.quiz_questions;
+create policy "Admins can manage quiz_questions" on public.quiz_questions
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- Quiz results
+drop policy if exists "Users can view own results" on public.quiz_results;
+create policy "Users can view own results" on public.quiz_results
+  for select using (auth.uid() = student_id);
+
+drop policy if exists "Users can insert own results" on public.quiz_results;
+create policy "Users can insert own results" on public.quiz_results
+  for insert with check (auth.uid() = student_id);
+
+drop policy if exists "Admins can view all results" on public.quiz_results;
+create policy "Admins can view all results" on public.quiz_results
+  for select using (public.is_admin());
+
+-- Quiz answers
+drop policy if exists "Users can view own answers" on public.quiz_answers;
+create policy "Users can view own answers" on public.quiz_answers
+  for select using (auth.uid() = student_id);
+
+drop policy if exists "Users can insert own answers" on public.quiz_answers;
+create policy "Users can insert own answers" on public.quiz_answers
+  for insert with check (auth.uid() = student_id);
+
+drop policy if exists "Admins can view all answers" on public.quiz_answers;
+create policy "Admins can view all answers" on public.quiz_answers
+  for select using (public.is_admin());
+
+-- Schools directory
+drop policy if exists "Anyone can view schools" on public.schools;
+create policy "Anyone can view schools" on public.schools
+  for select using (true);
+
+drop policy if exists "Admins can manage schools" on public.schools;
+create policy "Admins can manage schools" on public.schools
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- Storage policies for question-images bucket
+create policy "Public Read Access for Question Images"
+  on storage.objects for select
+  using (bucket_id = 'question-images');
+
+create policy "Admins can upload Question Images"
+  on storage.objects for insert
+  with check (bucket_id = 'question-images' and public.is_admin());
+
+create policy "Admins can update Question Images"
+  on storage.objects for update
+  using (bucket_id = 'question-images' and public.is_admin());
+
+create policy "Admins can delete Question Images"
+  on storage.objects for delete
+  using (bucket_id = 'question-images' and public.is_admin());
+
+-- ============================================================
+-- 13. SEED INITIAL DATA & ADMIN SECRET
+-- ============================================================
+set search_path = public, extensions;
+
+-- Default Admin Access Code: AISSA2026ADMIN (Replace as needed)
+insert into public.admin_secrets (id, code_hash)
+values (true, crypt('AISSA2026ADMIN', gen_salt('bf')))
+on conflict (id) do update set code_hash = excluded.code_hash;
+
+-- Curated initial school directory
 insert into public.schools (name, district) values
   ('Ananda College, Colombo',                'Colombo'),
   ('Ananda Balika Vidyalaya, Colombo',       'Colombo'),
@@ -573,8 +1111,6 @@ insert into public.schools (name, district) values
   ('St. Anthony''s College, Kandy',          'Kandy'),
   ('St. Sylvester''s College, Kandy',        'Kandy'),
   ('Trinity College, Kandy',                 'Kandy'),
-  ('Vijaya College, Matale',                 'Matale'),
-  ('St. Thomas'' Girls'' High School, Matale','Matale'),
   ('Richmond College, Galle',                'Galle'),
   ('Mahinda College, Galle',                 'Galle'),
   ('Sanghamitta Balika Vidyalaya, Galle',    'Galle'),
@@ -583,420 +1119,242 @@ insert into public.schools (name, district) values
   ('Maliyadeva Balika Vidyalaya, Kurunegala','Kurunegala'),
   ('St. Anne''s College, Kurunegala',        'Kurunegala'),
   ('Jaffna Hindu College, Jaffna',           'Jaffna'),
-  ('Jaffna Hindu Ladies'' College, Jaffna',  'Jaffna'),
   ('St. John''s College, Jaffna',            'Jaffna'),
-  ('Vembadi Girls'' High School, Jaffna',    'Jaffna'),
-  ('St. Xavier''s College, Jaffna',          'Jaffna'),
-  ('Debarawewa Central College',             'Hambantota'),
-  ('St. Thomas'' College, Bandarawela',      'Badulla'),
-  ('St. Thomas'' College, Mount Lavinia',    'Colombo'),
-  ('St. Thomas'' Preparatory School',        'Colombo'),
-  ('Sujatha Balika Vidyalaya, Matale',       'Matale')
+  ('St. Thomas'' College, Mount Lavinia',    'Colombo')
 on conflict (name) do nothing;
-
--- ------------------------------------------------------------
--- 9. Security functions
--- ------------------------------------------------------------
-create or replace function public.is_admin()
-returns boolean language sql security definer set search_path = public stable as $$
-  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
-$$;
-
-create or replace function public.claim_admin(p_code text)
-returns boolean language plpgsql security definer set search_path = public, extensions as $$
-declare v_hash text; v_uid uuid := auth.uid();
-begin
-  if v_uid is null then return false; end if;
-  select code_hash into v_hash from public.admin_secrets limit 1;
-  if v_hash is null or crypt(p_code, v_hash) <> v_hash then return false; end if;
-  update public.profiles set is_admin = true where id = v_uid;
-  return true;
-end;
-$$;
-
-create or replace function public.verify_admin_code(p_code text)
-returns boolean language plpgsql security definer set search_path = public, extensions as $$
-declare v_hash text;
-begin
-  select code_hash into v_hash from public.admin_secrets limit 1;
-  if v_hash is null then return false; end if;
-  return v_hash = crypt(p_code, v_hash);
-end;
-$$;
-
--- ------------------------------------------------------------
--- 10. Stats + Leaderboard RPCs (latest signatures)
--- ------------------------------------------------------------
-drop function if exists public.get_student_stats(uuid) cascade;
-
-create function public.get_student_stats(p_student_id uuid)
-returns table (
-  quizzes_completed  integer,
-  total_score        integer,
-  total_time_seconds integer,
-  average_score      numeric,
-  island_rank        integer
-)
-language plpgsql security definer set search_path = public stable as $$
-begin
-  if p_student_id is distinct from auth.uid() then
-    raise exception 'Unauthorized stats access';
-  end if;
-
-  return query
-  with per_student as (
-    select qr.student_id,
-           count(*)::integer as cnt,
-           coalesce(sum(qr.score), 0)::integer as total_score,
-           coalesce(sum(qr.time_spent_seconds), 0)::integer as total_time,
-           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
-    from public.quiz_results qr group by qr.student_id
-  ),
-  ranked as (
-    select ps.*,
-           rank() over (order by ps.total_score desc, ps.total_time asc)::integer as rnk
-    from per_student ps
-  )
-  select r.cnt, r.total_score, r.total_time, round(r.avg_pct, 1), r.rnk
-  from ranked r where r.student_id = p_student_id
-  union all
-  select 0, 0, 0, null::numeric, null::integer
-  where not exists (select 1 from ranked where student_id = p_student_id)
-  limit 1;
-end;
-$$;
-
-drop function if exists public.get_individual_leaderboard(integer) cascade;
-
-create function public.get_individual_leaderboard(p_limit integer default 50)
-returns table (
-  rank               integer,
-  student_id         uuid,
-  full_name          text,
-  school             text,
-  quizzes_completed  integer,
-  total_score        integer,
-  total_time_seconds integer,
-  average_score      numeric
-)
-language sql security definer set search_path = public stable as $$
-  with per_student as (
-    select qr.student_id,
-           count(*)::integer as cnt,
-           coalesce(sum(qr.score), 0)::integer as total_score,
-           coalesce(sum(qr.time_spent_seconds), 0)::integer as total_time,
-           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
-    from public.quiz_results qr group by qr.student_id
-  )
-  select rank() over (order by ps.total_score desc, ps.total_time asc)::integer,
-         ps.student_id, p.full_name, p.school, ps.cnt,
-         ps.total_score, ps.total_time, round(ps.avg_pct, 1)
-  from per_student ps join public.profiles p on p.id = ps.student_id
-  order by ps.total_score desc, ps.total_time asc
-  limit p_limit;
-$$;
-
-drop function if exists public.get_school_leaderboard(integer) cascade;
-
-create function public.get_school_leaderboard(p_limit integer default 50)
-returns table (
-  rank            integer,
-  school          text,
-  students_count  integer,
-  total_quizzes   integer,
-  total_score     integer,
-  avg_score       numeric
-)
-language sql security definer set search_path = public stable as $$
-  with per_school as (
-    select p.school,
-           count(distinct qr.student_id)::integer as students_count,
-           count(*)::integer as total_quizzes,
-           coalesce(sum(qr.score), 0)::integer as total_score,
-           avg(qr.score::numeric / nullif(qr.total_marks, 0) * 100) as avg_pct
-    from public.quiz_results qr
-    join public.profiles p on p.id = qr.student_id
-    where p.school is not null and p.school <> ''
-      and p.school not in ('Not Specified', 'AISSA Admin')
-    group by p.school
-  )
-  select rank() over (order by ps.total_score desc, ps.avg_pct desc nulls last)::integer,
-         ps.school, ps.students_count, ps.total_quizzes, ps.total_score,
-         round(ps.avg_pct, 1)
-  from per_school ps
-  order by ps.total_score desc, ps.avg_pct desc nulls last
-  limit p_limit;
-$$;
-
-grant execute on function public.claim_admin(text)                   to authenticated;
-grant execute on function public.verify_admin_code(text)             to authenticated;
-grant execute on function public.get_student_stats(uuid)             to authenticated;
-grant execute on function public.get_individual_leaderboard(integer) to authenticated;
-grant execute on function public.get_school_leaderboard(integer)     to authenticated;
-
--- ------------------------------------------------------------
--- 11. Row Level Security
--- ------------------------------------------------------------
-alter table public.profiles       enable row level security;
-alter table public.quizzes        enable row level security;
-alter table public.questions      enable row level security;
-alter table public.quiz_questions enable row level security;
-alter table public.quiz_results   enable row level security;
-alter table public.schools        enable row level security;
-
-drop policy if exists "Users can view own profile" on public.profiles;
-create policy "Users can view own profile" on public.profiles
-  for select using (auth.uid() = id);
-
-drop policy if exists "Users can update own profile" on public.profiles;
-create policy "Users can update own profile" on public.profiles
-  for update using (auth.uid() = id);
-
-drop policy if exists "Users can insert own profile" on public.profiles;
-create policy "Users can insert own profile" on public.profiles
-  for insert with check (auth.uid() = id);
-
-drop policy if exists "Admins can view all profiles" on public.profiles;
-create policy "Admins can view all profiles" on public.profiles
-  for select using (public.is_admin());
-
-drop policy if exists "Authenticated users can view quizzes" on public.quizzes;
-create policy "Authenticated users can view quizzes" on public.quizzes
-  for select using (auth.role() = 'authenticated');
-
-drop policy if exists "Admins can manage quizzes" on public.quizzes;
-create policy "Admins can manage quizzes" on public.quizzes
-  for all using (public.is_admin()) with check (public.is_admin());
-
-drop policy if exists "Authenticated users can view questions" on public.questions;
-create policy "Authenticated users can view questions" on public.questions
-  for select using (auth.role() = 'authenticated');
-
-drop policy if exists "Admins can manage questions" on public.questions;
-create policy "Admins can manage questions" on public.questions
-  for all using (public.is_admin()) with check (public.is_admin());
-
-drop policy if exists "Authenticated users can view quiz_questions" on public.quiz_questions;
-create policy "Authenticated users can view quiz_questions" on public.quiz_questions
-  for select using (auth.role() = 'authenticated');
-
-drop policy if exists "Admins can manage quiz_questions" on public.quiz_questions;
-create policy "Admins can manage quiz_questions" on public.quiz_questions
-  for all using (public.is_admin()) with check (public.is_admin());
-
-drop policy if exists "Users can view own results" on public.quiz_results;
-create policy "Users can view own results" on public.quiz_results
-  for select using (auth.uid() = student_id);
-
-drop policy if exists "Users can insert own results" on public.quiz_results;
-create policy "Users can insert own results" on public.quiz_results
-  for insert with check (auth.uid() = student_id);
-
-drop policy if exists "Admins can view all results" on public.quiz_results;
-create policy "Admins can view all results" on public.quiz_results
-  for select using (public.is_admin());
-
-drop policy if exists "Anyone can view schools" on public.schools;
-create policy "Anyone can view schools" on public.schools
-  for select using (true);
-
-drop policy if exists "Admins can manage schools" on public.schools;
-create policy "Admins can manage schools" on public.schools
-  for all using (public.is_admin()) with check (public.is_admin());
-
--- ------------------------------------------------------------
--- 12. Seed / rotate admin code
--- ------------------------------------------------------------
-set search_path = public, extensions;
-
-insert into public.admin_secrets (id, code_hash)
-values (true, crypt('AISSA2026ADMIN', gen_salt('bf')))
-on conflict (id) do update set code_hash = excluded.code_hash;
 
 notify pgrst, 'reload schema';
 ```
 
 ---
 
-## 🔐 Security Model
+## 🔐 Security & Authentication Model
 
-The platform uses a **layered defense** approach:
+### Dual-Identifier Login
 
-### Registration (`/auth/register`)
-- Two onboarding modes: **AISSA member** (typed ID, validated with regex + district code whitelist) and **Non-AISSA** (auto-generated ID with school abbreviation + district)
-- All profile data flows through Supabase **user metadata**; the `handle_new_user` trigger writes the `profiles` row **server-side** — the client never inserts directly
-- Prevents race conditions and orphaned auth users
+Students can log in with **either** their primary email address or their assigned ID:
+1. When input lacks `@`, the client calls `get_email_by_ais_id(p_ais_id)`.
+2. The database securely resolves the identifier in `public.profiles` against `auth.users.email`.
+3. Standard Supabase authentication `signInWithPassword()` runs against the resolved email.
 
-### Admin Claim (`/admin/register`)
-- Requires the secret Admin Access Code
-- Calls `supabase.rpc('claim_admin', { p_code })` — verified against a bcrypt hash
-- Real code is **never sent to the browser**; comparison happens in `SECURITY DEFINER` PL/pgSQL
+### Two-Factor Admin Verification
 
-### Login (`/auth/login`)
-- **Step 1** — email + password via `signInWithPassword()`
-- **Step 2 (admins only)** — second prompt for the Admin Access Code, validated via `verify_admin_code()`
-- On success, sets `sessionStorage.aissa_admin_verified = "true"`
-- Because `sessionStorage` clears on tab/browser close, **the code is genuinely required again next session**
+Admin security uses defense-in-depth:
+1. **Password Authentication**: Authenticate user credentials.
+2. **Database Role Verification**: Ensure `profiles.is_admin = true`.
+3. **Secret Access Code**: Step 2 prompts for the Admin Access Code, verified via `verify_admin_code()` against a bcrypt hash in `public.admin_secrets`.
+4. **Session Token Isolation**: On verification, `lib/admin-session.ts` stamps `sessionStorage` with the user ID and timestamp (`ADMIN_VERIFICATION_MAX_AGE_MS = 30 min`). Closing the browser tab terminates the administrative session.
 
-### Route Protection
-- **`middleware.ts`** (Edge) — refreshes session cookies and gates `/student/*` and `/admin/*`
-- **`AdminGuard.tsx`** (Client) — re-verifies both `is_admin` in the DB *and* the sessionStorage flag on every admin page load
+### Row Level Security (RLS) & Triggers
 
-### Database-Level Invariants
-| Invariant | Enforced By |
-|---|---|
-| Max 20 questions per quiz | `check_quiz_question_limit` trigger |
-| One attempt per student/quiz | `quiz_results_student_quiz_unique` constraint |
-| Unique AISSA IDs | `profiles_ais_id_key` unique constraint |
-| Valid AISSA district codes | `profiles_aissa_district_check` check |
-| `is_admin` cannot be self-assigned | `REVOKE INSERT/UPDATE (is_admin)` on `profiles` |
+- **Privilege Self-Promotion Prevention**: `REVOKE INSERT (is_admin)` and `REVOKE UPDATE (is_admin)` prevents any authenticated client from promoting themselves to administrator.
+- **Answer Key Masking**: Client queries during live exams only receive question texts and options; solutions and explanations are never returned to non-admin callers until the review phase.
+- **Race Condition Prevention**: Database trigger `trg_check_quiz_question_limit` uses Postgres triggers to enforce the 20-question cap on junction table inserts.
 
 ---
 
-## 📝 Question Bank & Quiz Mechanics
+## 📝 Question Bank & Quiz Scheduling
 
-### Central Question Bank (`/admin/questions`)
-- Questions are **decoupled from quizzes** — they live with `quiz_id = NULL` and are linked via `quiz_questions`
-- Tagged by **subject** (Physics / Chemistry / Biology), **stream**, and optional **topic**
-- 4-option questions are the default; a 5th option is optional
-- Image URLs supported for diagrams, graphs, circuit schematics
-- Solution explanations rendered in a highlighted panel
+### Trilingual Question Support
 
-### Quiz Scheduler (`/admin/quizzes`)
-- Set title, subject, stream, date, time, duration in minutes
-- Pick up to **20 questions** from the bank via `QuestionBankSelectorModal` (filterable, live counter)
-- `is_live` toggle to publish / unpublish
-- Database trigger hard-stops any attempt to exceed 20 questions
+Questions support multilingual representation for Sri Lanka's national curricula:
+- **Base Columns**: `question_text`, `option_1`..`5`, `explanation` (Sinhala).
+- **English Columns**: `question_text_en`, `option_1_en`..`5_en`, `explanation_en`.
+- **Tamil Columns**: `question_text_ta`, `option_1_ta`..`5_ta`, `explanation_ta`.
 
-### Live Exam Engine (`/student/quiz/[id]`)
-- Loads questions via `quiz_questions` (falls back to legacy `quiz_id`)
-- **Question Palette** — visual state indicators (answered / unanswered / active)
-- **Client countdown timer** — server duration drives the initial value
-- **Auto-submit on expiry** — calls `finishQuiz()` which scores and posts to `quiz_results`
-- **Upsert submissions** — `onConflict: "student_id,quiz_id"` so re-takes replace, never error
+When a student selects a medium during registration, the quiz engine dynamically prioritizes their chosen language with automatic fallback.
 
----
+### Storage Integration for Diagrams
 
-## 📊 Leaderboard & Ranking System
+- Managed through the `question-images` Supabase Storage bucket.
+- The `ImageUploadField` component supports:
+  - Drag-and-drop file upload.
+  - Image size limit enforcement (5MB).
+  - Allowed MIME types: PNG, JPEG, WEBP, GIF.
+  - External CDN / Web image URL fallback.
 
-### Ranking Rules
+### 20-Question Cap Enforced at DB Level
 
-| Leaderboard | Primary Sort | Tiebreaker |
-|---|---|---|
-| **Individual** | `SUM(score)` DESC | `SUM(time_spent_seconds)` ASC — faster wins |
-| **School** | `SUM(score)` DESC across all attempts | `AVG(percentage)` DESC |
-
-Both use `rank() over (...)` window functions inside `SECURITY DEFINER` SQL functions.
-
-### Real-Time Per-Quiz Leaderboard
-
-`components/RealtimeLeaderboard.tsx` subscribes to `postgres_changes` INSERT events on `quiz_results` filtered by `quiz_id`, then re-fetches the top 10 — new submissions appear within ~1 second.
-
-### Island-Wide Leaderboards
-
-`/student/leaderboard` calls:
-
-- `get_individual_leaderboard(50)` — top 50 students island-wide
-- `get_school_leaderboard(50)` — top 50 schools by aggregate score
-
-Both RPCs are granted to `authenticated` and secured against client-side manipulation.
+- Admin UI modal `QuestionBankSelectorModal` tracks selected count in real time (`selectedIds.length / 20`).
+- If an admin bypasses the UI, the database trigger `trg_check_quiz_question_limit` aborts the transaction with code `P0001`.
 
 ---
 
-## 📧 Email Automation
+## ⏱ Live Quiz Engine & Timer Mechanics
 
-When a student registers **without an AISSA ID**, the client:
+### Window-Based Timers
 
-1. Generates an ID via `generateNonAissaId()` — format `N<YY><NAME6><RND3>-<SCHOOL3>-<DISTRICT>`
-2. Passes it to Supabase `signUp({ options: { data: { ais_id, ... } } })`
-3. Fires `POST /api/send-id` (best-effort, non-blocking) with `{ email, fullName, aisId }`
+Quizzes run on synchronized real-time windows managed by `lib/quiz-window.ts`:
+- **Upcoming**: `now < scheduled_at` (Countdown to open displayed).
+- **Active**: `scheduled_at <= now < scheduled_at + duration_minutes`.
+- **Expired**: `now >= scheduled_at + duration_minutes`.
 
-The route handler:
+Students entering midway through an exam window receive only the remaining duration:
+$$\text{Time Left} = \max(0, (\text{scheduled\_at} + \text{duration}) - \text{now})$$
 
-- Validates the payload and the ID format with a strict regex
-- Rejects anything that isn't a valid Non-AISSA ID
-- Sends a **responsive HTML email** via Resend with the ID prominently displayed
-- Falls back to plain text for legacy email clients
+### CDN Edge Caching
 
-Email sends are **fire-and-forget** from the client — a Resend hiccup never blocks signup.
+The `/api/quiz/[id]` route caches compiled quizzes on the Edge CDN:
+```http
+Cache-Control: public, s-maxage=60, stale-while-revalidate=300
+```
+This absorbs massive concurrent traffic spikes at exam start times without overloading the Supabase database.
+
+### Detailed Question Review
+
+Upon quiz completion:
+- Student's individual answers are preserved in `quiz_answers`.
+- The quiz page activates **Review Mode**:
+  - Highlights correct answers in green.
+  - Marks incorrect selections in red.
+  - Reveals step-by-step worked explanations and calculations.
 
 ---
 
-## 🚀 Deployment
+## 📊 Leaderboard & Ranking Algorithms
 
-### Vercel (Recommended)
+### Subject-Specific Rankings
 
-1. Push to GitHub:
-   ```bash
-   git add .
-   git commit -m "Ready for production"
-   git push origin main
-   ```
-2. Import the repo at [vercel.com/new](https://vercel.com/new)
-3. Add environment variables:
+Calculated through `get_subject_leaderboard(p_subject, p_limit)`:
+1. **Primary Sort**: Total Score (`SUM(score)` DESC).
+2. **Secondary Sort**: Total Time Spent (`SUM(time_spent_seconds)` ASC).
+3. **Tertiary Tie-Breaker**: Average Percentage (`AVG(score / total_marks * 100)` DESC).
+
+### School Composite Scoring
+
+Calculated through `get_school_leaderboard(p_limit)`:
+$$\text{Composite Score} = \text{Academic Score} + \text{Participation Score}$$
+- **Academic Score**: Aggregate marks scored across all school students.
+- **Participation Score**: Number of participating students $\times 5$ bonus points.
+- **Average %**: Tie-breaker based on school average percentage.
+
+### WebSocket Real-Time Feed
+
+`components/RealtimeLeaderboard.tsx` listens to Postgres changes on `quiz_results`:
+```ts
+supabase
+  .channel("realtime-leaderboard")
+  .on("postgres_changes", { event: "INSERT", schema: "public", table: "quiz_results", filter: `quiz_id=eq.${quizId}` }, () => fetchLeaderboard())
+  .subscribe();
+```
+New student submissions update the top 10 within ~1 second.
+
+---
+
+## 🆔 Student ID Format & Generation
+
+The platform enforces standardized student IDs defined in `lib/aissa-id.ts`:
+
+### 1. AISSA Member ID
+
+For registered members of the association:
+```
+[R|T|O|M]<YY><STUDENT>-<SCHOOL>-<DISTRICT>
+```
+*Examples*: `R25THENUMI-SBVC-AWC`, `T26KAMAL-SBVC-AWC`
+
+- **Prefix**: `R` (Regular), `T` (Treasurer/Council), `O` (Officer), `M` (Member).
+- **Batch Year**: Two-digit year of A/L intake (e.g., `25` for 2025).
+- **Student Token**: Uppercase alphanumeric student identifier.
+- **School Token**: 2 to 6 character school code.
+- **District Zone**: One of the 8 approved AISSA zones (`AWC`, `AWK`, `AUS`, `AS`, `AC`, `ANCW`, `ANE`, `AWG`).
+
+### 2. Non-AISSA Quiz ID
+
+For students without an association membership:
+```
+N<YY><NAME><STUDENT_NUMBER>-<SCHOOL>-<DISTRICT>
+```
+*Example*: `N25VIVAN001-CCC-AWC`
+
+- **Prefix**: Fixed `N`.
+- **Batch Year**: Two digits (e.g. `25`).
+- **Name Abbreviation**: First 2 to 6 letters of student's first name.
+- **Student Number**: 3-digit zero-padded number sequenced by `get_next_student_number()`.
+- **School Code**: Deterministic abbreviation generated by `lib/school-codes.ts`.
+- **District Zone**: Selected AISSA zone.
+
+---
+
+## 📧 Transactional Email Automation
+
+When a student registers without an AISSA ID:
+1. `lib/aissa-id.ts` synthesizes a deterministic Non-AISSA ID.
+2. The registration client dispatches a background POST request to `/api/send-id`.
+3. The server communicates with the **Brevo REST API v3** (`https://api.brevo.com/v3/smtp/email`):
+   - Uses `BREVO_API_KEY`.
+   - Sends a modern, responsive HTML email highlighting their assigned Quiz ID, instructions for use, and a direct login button.
+   - Non-blocking design ensures email network delays never interrupt account registration.
+
+---
+
+## 🚀 Production Deployment Runbook
+
+### Vercel Deployment
+
+1. Push your repository to GitHub.
+2. Import the repository in [Vercel](https://vercel.com/new).
+3. Configure Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `RESEND_API_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `BREVO_API_KEY`
    - `AISSA_FROM_EMAIL`
-4. Deploy
+   - `NEXT_PUBLIC_APP_URL` (e.g. `https://aissa-quiz.vercel.app`)
+4. Click **Deploy**.
 
 ### Production Checklist
 
-- [ ] Run the [Master Schema](#-master-database-schema) in Supabase SQL Editor
-- [ ] Set your admin code (replace `AISSA2026ADMIN`)
-- [ ] Verify Realtime is enabled on `public.quiz_results` (Database → Publications → `supabase_realtime`)
-- [ ] Verify your sending domain in Resend, or set `AISSA_FROM_EMAIL` to `onboarding@resend.dev` for testing
-- [ ] Configure SMTP or disable email confirmation during staging
-- [ ] Set a strong password policy in Supabase Auth settings
+- [ ] Execute the [Consolidated Master Database Schema](#-consolidated-master-database-schema) in Supabase.
+- [ ] Change the default admin access code (`AISSA2026ADMIN`).
+- [ ] Ensure Supabase Storage bucket `question-images` is public and policies are active.
+- [ ] Confirm Supabase Realtime is enabled on `quiz_results`.
+- [ ] Configure Brevo Sender Email verification in your Brevo account dashboard.
+- [ ] Test student registration (both AISSA member and auto-generated ID paths).
+- [ ] Verify admin two-step login and question bank authoring.
 
 ---
 
-## 🛠 Troubleshooting
+## 🛠 Troubleshooting & FAQ
 
-| Symptom | Cause | Fix |
+| Symptom | Cause | Solution |
 |---|---|---|
-| `syntax error at or near " "` (42601) | Non-breaking spaces (`\u00A0`) copied into SQL | Re-run the Master Schema above — it uses plain ASCII spaces |
-| `Key (student_id, quiz_id) is duplicated` (23505) | Pre-existing duplicate attempts | Master schema auto-deduplicates before applying the constraint |
-| `violates foreign key "quiz_results_student_id_fkey"` | Auth user has no `profiles` row | Confirm `on_auth_user_created` trigger exists; re-run the schema |
-| `Quiz question limit exceeded` | Tried to link >20 questions | Expected — unlink a question first |
-| Admin logged out on tab close | `sessionStorage` cleared by browser | Expected — re-enter the code next session |
-| `error TS5103: Invalid value for '--ignoreDeprecations'` | Outdated flag in `tsconfig.json` | Set `"ignoreDeprecations": "5.0"` |
-| `cannot change return type of existing function` (42P13) | Re-running a schema with new OUT params | Master schema uses `DROP FUNCTION ... CASCADE` before `CREATE` — re-run cleanly |
-| Leaderboard shows `N/A` for names | Old nested-select pattern returning `null` | Updated components use flat queries — pull latest |
+| `Quiz not found` (404) | `SUPABASE_SERVICE_ROLE_KEY` missing from `.env.local` | Add your service role key so `/api/quiz/[id]` can read quizzes |
+| `Key (student_id, quiz_id) is duplicated` | Student attempted to submit the same quiz twice | Expected invariant: each student is limited to 1 attempt per quiz |
+| `Quiz question limit exceeded` | Tried to link > 20 questions to a quiz | Unlink one or more questions in the question manager first |
+| `Server misconfigured (BREVO_API_KEY missing)` | Brevo API key not set in environment | Add `BREVO_API_KEY` to `.env.local` / Vercel Environment Variables |
+| Admin logged out upon closing tab | `sessionStorage` was cleared | Expected security feature: admin codes must be re-entered each browser session |
+| Storage image upload returns 403 | RLS policy missing on `storage.objects` | Re-run Section 12 of the Master Schema to apply storage upload policies |
+| Student cannot see Biology quizzes | Student registered under Maths stream | Expected feature: Physical Science / Maths stream excludes Biology quizzes |
 
 ---
 
 ## 🗺 Roadmap
 
-- [ ] **Quiz Bank Analytics** — per-topic difficulty heatmaps
-- [ ] **Past Paper Archive** — full A/L past paper MCQ set
-- [ ] **Mobile App** — React Native client sharing the same backend
-- [ ] **Granular Admin Roles** — Question Manager vs. Quiz Manager vs. Full Admin
-- [ ] **AI Question Generation** — Claude/GPT-assisted MCQ drafting
-- [ ] **Practice Mode** — untimed self-study with immediate feedback
-- [ ] **Tamil-language UI** — add third language
-- [ ] **Certificate Generation** — auto-PDF certificates for top performers
+- [ ] **Automated PDF Certificate Generation**: Instant downloadable merit certificates for top 10 rankers.
+- [ ] **Question Import from CSV / Excel**: Bulk upload capabilities for past paper series.
+- [ ] **AI-Assisted MCQ Drafter**: Gemini-powered question authoring assistance for teachers.
+- [ ] **Practice Mode (Untimed)**: Self-paced study mode with instant hint reveals.
+- [ ] **Comprehensive Analytics Export**: School-level performance PDF summaries for education directors.
 
 ---
 
 ## 🤝 Contributing
 
-This project was built as a **volunteer initiative** for the All Island School Science Association. Contributions from AISSA members and the open-source community are welcome.
+Contributions from the AISSA committee and the open-source developer community are welcome!
 
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit (`git commit -m 'Add amazing feature'`)
-4. Push (`git push origin feature/amazing-feature`)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
-Please keep PRs focused and include screenshots for UI changes.
 
 ---
 
 ## 📄 License
 
-Released under the **MIT License** for the codebase.  
-The AISSA name, logo, and content are the property of the **All Island School Science Association**.
+Distributed under the **MIT License**. See `LICENSE` for more information.  
+*The AISSA name, emblem, and official examination materials are property of the All Island School Science Association.*
 
 ---
 
@@ -1007,4 +1365,3 @@ The AISSA name, logo, and content are the property of the **All Island School Sc
 *Empowering the next generation of scientists — one quiz at a time.* 🇱🇰
 
 </div>
-```
