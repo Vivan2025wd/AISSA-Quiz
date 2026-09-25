@@ -45,7 +45,7 @@ export default function QuestionsPage() {
     let query = supabase
       .from("questions")
       .select(
-        `id, quiz_id, subject, stream, topic, image_url,
+        `id, subject, stream, topic, image_url,
          question_text, option_1, option_2, option_3, option_4, option_5, explanation, correct_option,
          question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
          question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta`,
