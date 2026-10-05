@@ -14,6 +14,14 @@ import {
   Hourglass,
   Sparkles,
   Trophy,
+  Flag,
+  Maximize2,
+  Minimize2,
+  Shield,
+  ShieldAlert,
+  Check,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -221,6 +229,20 @@ export default function StudentQuizPage() {
   // Server-confirmed score (from /api/grade response).
   const [confirmedScore, setConfirmedScore] = useState<number | null>(null);
 
+  // Modern UI/UX: Flag / Mark for Review
+  const [flaggedQuestions, setFlaggedQuestions] = useState<{ [key: number]: boolean }>({});
+  // Palette Filter: all, answered, unanswered, flagged
+  const [paletteFilter, setPaletteFilter] = useState<"all" | "answered" | "unanswered" | "flagged">("all");
+  // Pre-submission review modal
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  // Focus Mode / Fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  // Privacy-friendly integrity tracking (tab-switch detection)
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
+  // Draft auto-save indicator
+  const [draftSaved, setDraftSaved] = useState(false);
+
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
 
   const [reviewIndex, setReviewIndex] = useState(0);
@@ -328,6 +350,24 @@ export default function StudentQuizPage() {
             map[a.question_id] = a.selected_option;
           }
           setMyAnswers(map);
+        }
+
+        // ── Restore active draft if user hasn't submitted yet ──
+        if (!resultData && typeof window !== "undefined") {
+          try {
+            const draftRaw = sessionStorage.getItem(`aissa_draft_${quizId}`);
+            if (draftRaw) {
+              const draft = JSON.parse(draftRaw);
+              if (draft?.selectedAnswers && Object.keys(draft.selectedAnswers).length > 0) {
+                setSelectedAnswers(draft.selectedAnswers);
+              }
+              if (draft?.flaggedQuestions) {
+                setFlaggedQuestions(draft.flaggedQuestions);
+              }
+            }
+          } catch {
+            // ignore JSON parse error
+          }
         }
       }
 
@@ -443,7 +483,17 @@ export default function StudentQuizPage() {
         setIsCorrectMap(corrMap);
       }
 
+      // Clear draft storage upon submission
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(`aissa_draft_${quizId}`);
+        } catch {
+          // ignore
+        }
+      }
+
       setIsSubmitting(false);
+      setShowSubmitModal(false);
       router.push("/student/leaderboard");
     },
     [quizId, router, questions, selectedAnswers],
@@ -451,13 +501,113 @@ export default function StudentQuizPage() {
 
   const finishQuiz = useCallback(async () => {
     setIsSubmitted(true);
+    setShowSubmitModal(false);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem(`aissa_draft_${quizId}`);
+      } catch {
+        // ignore
+      }
+    }
     const actualSeconds = startedAtMs
       ? Math.floor((Date.now() - startedAtMs) / 1000)
       : 0;
     await submitQuizResult(Math.max(0, actualSeconds));
-  }, [startedAtMs, submitQuizResult]);
+  }, [startedAtMs, submitQuizResult, quizId]);
 
+  // ── Auto-save draft on answers/flags change ──
+  useEffect(() => {
+    if (!quizId || isSubmitted || loadingQuiz || windowStatus !== "active") return;
+    if (Object.keys(selectedAnswers).length > 0 || Object.keys(flaggedQuestions).length > 0) {
+      try {
+        sessionStorage.setItem(
+          `aissa_draft_${quizId}`,
+          JSON.stringify({ selectedAnswers, flaggedQuestions })
+        );
+        setDraftSaved(true);
+        const timer = setTimeout(() => setDraftSaved(false), 2000);
+        return () => clearTimeout(timer);
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }, [quizId, selectedAnswers, flaggedQuestions, isSubmitted, loadingQuiz, windowStatus]);
 
+  // ── Keyboard Navigation Shortcuts (1-5, Arrows, Flag) ──
+  useEffect(() => {
+    if (windowStatus !== "active" || isSubmitted || loadingQuiz || showSubmitModal) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      // 1 to 5 numeric keys
+      if (["1", "2", "3", "4", "5"].includes(e.key)) {
+        const optIdx = parseInt(e.key, 10) - 1;
+        handleSelectOption(optIdx);
+      }
+      // a to e letter keys
+      if (["a", "b", "c", "d", "e"].includes(e.key.toLowerCase())) {
+        const charMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3, e: 4 };
+        handleSelectOption(charMap[e.key.toLowerCase()]);
+      }
+      // Left and right arrow navigation
+      if (e.key === "ArrowLeft" && currentQuestionIndex > 0) {
+        setCurrentQuestionIndex((prev) => prev - 1);
+      }
+      if (e.key === "ArrowRight" && currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+      }
+      // Flag question shortcut: 'f' or 'm'
+      if (e.key.toLowerCase() === "f" || e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setFlaggedQuestions((prev) => ({
+          ...prev,
+          [currentQuestionIndex]: !prev[currentQuestionIndex],
+        }));
+      }
+      // Escape closes modal
+      if (e.key === "Escape" && showSubmitModal) {
+        setShowSubmitModal(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [windowStatus, isSubmitted, loadingQuiz, showSubmitModal, currentQuestionIndex, questions.length]);
+
+  // ── Privacy-Respecting Academic Integrity: Tab-Switch Monitoring ──
+  useEffect(() => {
+    if (windowStatus !== "active" || isSubmitted || loadingQuiz) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchCount((c) => {
+          const next = c + 1;
+          setShowTabSwitchWarning(true);
+          return next;
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [windowStatus, isSubmitted, loadingQuiz]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  };
+
+  const toggleFlag = (idx: number) => {
+    if (isSubmitted) return;
+    setFlaggedQuestions((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
+  };
 
   useEffect(() => {
     if (windowStatus !== "active") return;
@@ -467,7 +617,6 @@ export default function StudentQuizPage() {
     if (timeLeft <= 0) {
       const t = setTimeout(() => {
         void finishQuiz();
-        alert("කාලය අවසන්! Quiz එක Auto-Submit විය.");
       }, 0);
       return () => clearTimeout(t);
     }
@@ -478,12 +627,18 @@ export default function StudentQuizPage() {
 
   const handleSelectOption = (i: number) => {
     if (isSubmitted) return;
-    setSelectedAnswers((p) => ({ ...p, [currentQuestionIndex]: i }));
+    setSelectedAnswers((p) => {
+      if (p[currentQuestionIndex] === i) {
+        const copy = { ...p };
+        delete copy[currentQuestionIndex];
+        return copy;
+      }
+      return { ...p, [currentQuestionIndex]: i };
+    });
   };
 
-  const handleManualSubmit = async () => {
-    if (!confirm("ඔබට Quiz එක Submit කිරීමට අවශ්‍යද?")) return;
-    await finishQuiz();
+  const handleManualSubmit = () => {
+    setShowSubmitModal(true);
   };
 
   const formatTime = (s: number) =>
@@ -655,36 +810,117 @@ export default function StudentQuizPage() {
   const msEnd = msUntilEnd(quiz);
   const endsIn = msEnd != null ? formatCountdown(msEnd) : null;
 
+  const answeredCount = Object.keys(selectedAnswers).length;
+  const unansweredCount = Math.max(0, questions.length - answeredCount);
+  const flaggedCount = Object.values(flaggedQuestions).filter(Boolean).length;
+  const progressPct = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
+  const isCurrentFlagged = Boolean(flaggedQuestions[currentQuestionIndex]);
+  const isCurrentAnswered = selectedAnswers[currentQuestionIndex] !== undefined;
+
+  const filteredQuestionIndices = questions.map((_, idx) => idx).filter((idx) => {
+    if (paletteFilter === "all") return true;
+    const isAns = selectedAnswers[idx] !== undefined;
+    const isFlg = Boolean(flaggedQuestions[idx]);
+    if (paletteFilter === "answered") return isAns;
+    if (paletteFilter === "unanswered") return !isAns;
+    if (paletteFilter === "flagged") return isFlg;
+    return true;
+  });
+
   return (
     <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
-      {/* Timer bar */}
-      <div className="bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-xl shadow-sm border border-white/70 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs sm:text-sm text-gray-500 truncate">
-            {quiz.stream ? `${quiz.stream} • ` : ""}ප්‍රශ්නය{" "}
-            {currentQuestionIndex + 1} / {questions.length}
-          </p>
-          {endsIn && (
-            <p className="text-[10px] sm:text-[11px] font-bold text-red-600 flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              අවසන් වන තෙක්: {endsIn}
-            </p>
-          )}
+      {/* ── Tab Switch Integrity Notice (Privacy-Respecting Warning) ── */}
+      {showTabSwitchWarning && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 sm:p-4 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-sm backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex items-start gap-2.5">
+            <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">අවධානයයි: වෙනත් Window / Tab එකකට මාරුවීම සටහන් විය (Tab Switch #{tabSwitchCount})</p>
+              <p className="text-amber-800/80 text-xs mt-0.5">
+                තරඟයේ සාධාරණත්වය සහ ආරක්ෂාව වෙනුවෙන් කරුණාකර Quiz එක අවසන් වන තෙක් මෙම තිරය තුළම රැඳී සිටින්න.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowTabSwitchWarning(false)}
+            className="text-amber-700 hover:text-amber-900 text-xs font-bold px-2 py-1 hover:bg-amber-500/10 rounded-lg transition"
+          >
+            තේරුම් ගත්තා ✕
+          </button>
         </div>
-        <div
-          className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-base sm:text-lg font-bold shrink-0 ${
-            timeLeft < 300
-              ? "bg-red-50 text-red-600 border border-red-200"
-              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-          }`}
-        >
-          <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span>{formatTime(timeLeft)}</span>
+      )}
+
+      {/* ── Top Bar: Progress, Timer & Controls ── */}
+      <div className="bg-white/80 backdrop-blur-md p-3.5 sm:p-4 rounded-xl shadow-sm border border-white/70 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs sm:text-sm font-bold text-gray-800">
+                ප්‍රශ්නය {currentQuestionIndex + 1} / {questions.length}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {answeredCount} of {questions.length} කළා ({progressPct}%)
+              </span>
+              {draftSaved && (
+                <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 animate-pulse">
+                  <Check className="w-3 h-3" /> Auto-saved
+                </span>
+              )}
+            </div>
+            {endsIn && (
+              <p className="text-[10px] sm:text-[11px] font-bold text-red-600 flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                කාලය ඉතිරිව: {endsIn}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Focus / Fullscreen button */}
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="p-2 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white/70 hover:bg-white text-gray-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Focus Fullscreen"}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Exit Focus</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Focus Mode</span>
+                </>
+              )}
+            </button>
+
+            {/* Timer Badge */}
+            <div
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-base sm:text-lg font-bold shrink-0 transition-all ${
+                timeLeft < 300
+                  ? "bg-red-50 text-red-600 border border-red-200 shadow-sm shadow-red-100"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${timeLeft < 300 ? "animate-pulse text-red-500" : ""}`} />
+              <span>{formatTime(timeLeft)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+          <div
+            className="bg-linear-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 
       {submitError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm p-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm p-3.5 rounded-xl shadow-2xs">
           {submitError}
         </div>
       )}
@@ -693,47 +929,58 @@ export default function StudentQuizPage() {
         <div className="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-sm border border-white/70 text-center space-y-3">
           <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-            Quiz එක සම්පූර්ණ කර ඇත
+            Quiz එක සාර්ථකව Submit විය!
           </h2>
           <p className="text-gray-600 text-sm">
             ලකුණු: {confirmedScore !== null ? confirmedScore : "…"} / {questions.length}
           </p>
           {isSubmitting && (
             <p className="text-xs sm:text-sm text-gray-400 flex items-center justify-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Result save කරමින්...
+              <Loader2 className="w-4 h-4 animate-spin" /> ප්‍රතිඵල සුරකිමින්...
             </p>
           )}
         </div>
       ) : (
         <>
-          {/* Mobile palette */}
-          <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
+          {/* Mobile palette filter & grid */}
+          <div className="md:hidden bg-white/80 backdrop-blur-md p-3.5 rounded-xl shadow-sm border border-white/70 space-y-2.5">
             <div className="flex items-center justify-between text-xs text-gray-600">
-              <span className="font-semibold">ප්‍රශ්න</span>
-              <span className="text-[11px]">
-                <span className="text-blue-700 font-bold">
-                  {Object.keys(selectedAnswers).length}
-                </span>{" "}
-                / {questions.length}
+              <span className="font-bold flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-emerald-600" /> ප්‍රශ්න මාලාව
+              </span>
+              <span className="text-[11px] font-semibold text-gray-500">
+                {answeredCount} / {questions.length} සපයා ඇත
               </span>
             </div>
+
             <div className="grid grid-cols-6 xs:grid-cols-8 sm:grid-cols-10 gap-1.5">
               {questions.map((_, idx) => {
                 const isAnswered = selectedAnswers[idx] !== undefined;
                 const isCurrent = currentQuestionIndex === idx;
+                const isFlagged = Boolean(flaggedQuestions[idx]);
+
+                let btnClass = "bg-gray-100 text-gray-600 border border-gray-200";
+                if (isCurrent) {
+                  btnClass = "ring-2 ring-emerald-600 ring-offset-1 bg-emerald-600 text-white font-extrabold";
+                } else if (isFlagged && isAnswered) {
+                  btnClass = "bg-blue-100 text-blue-900 border-2 border-amber-400 font-bold";
+                } else if (isFlagged) {
+                  btnClass = "bg-amber-100 text-amber-900 border border-amber-300 font-bold";
+                } else if (isAnswered) {
+                  btnClass = "bg-blue-100 text-blue-800 border border-blue-300 font-semibold";
+                }
+
                 return (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => setCurrentQuestionIndex(idx)}
-                    className={`w-full aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition ${
-                      isCurrent
-                        ? "ring-2 ring-emerald-600 bg-emerald-600 text-white"
-                        : isAnswered
-                          ? "bg-blue-100 text-blue-800 border border-blue-300"
-                          : "bg-gray-100 text-gray-600"
-                    }`}
+                    className={`relative w-full aspect-square rounded-lg text-xs flex items-center justify-center transition active:scale-95 ${btnClass}`}
                   >
                     {idx + 1}
+                    {isFlagged && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white" />
+                    )}
                   </button>
                 );
               })}
@@ -741,7 +988,53 @@ export default function StudentQuizPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+            {/* ── Main Question Card ── */}
             <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-4 sm:space-y-6">
+              {/* Question Header & Action Row */}
+              <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-3">
+                <div className="min-w-0">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    Question {currentQuestionIndex + 1}
+                  </span>
+                  {currentQ.topic && (
+                    <span className="ml-2 text-xs font-medium text-gray-400">
+                      • {currentQ.topic}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Mark for review toggle */}
+                  <button
+                    type="button"
+                    onClick={() => toggleFlag(currentQuestionIndex)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition border ${
+                      isCurrentFlagged
+                        ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                        : "bg-gray-50 text-gray-600 hover:text-amber-800 hover:bg-amber-50 border-gray-200"
+                    }`}
+                    title="Mark for review (Shortcut: F)"
+                  >
+                    <Flag className={`w-3.5 h-3.5 ${isCurrentFlagged ? "fill-amber-600 text-amber-600" : ""}`} />
+                    <span>{isCurrentFlagged ? "Flagged (සලකුණු කළා)" : "Mark for Review"}</span>
+                  </button>
+
+                  {/* Clear answer button (if answered) */}
+                  {isCurrentAnswered && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectOption(selectedAnswers[currentQuestionIndex])}
+                      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200"
+                      title="Clear answer selection"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Question Text */}
               <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
                 {currentQuestionIndex + 1}. {localized.question_text}
               </h2>
@@ -751,101 +1044,291 @@ export default function StudentQuizPage() {
                 <img
                   src={localized.image_url}
                   alt="Question illustration"
-                  className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
+                  className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto object-contain"
                 />
               )}
 
+              {/* Option Choice List */}
               <div className="space-y-2.5 sm:space-y-3">
                 {currentOptions.map((option, idx) => {
-                  const isSelected =
-                    selectedAnswers[currentQuestionIndex] === idx;
+                  const isSelected = selectedAnswers[currentQuestionIndex] === idx;
+                  const optionLetters = ["A", "B", "C", "D", "E"];
                   return (
                     <button
                       key={idx}
                       disabled={isSubmitted}
                       onClick={() => handleSelectOption(idx)}
-                      className={`w-full text-left p-3.5 sm:p-4 rounded-lg border transition-all duration-150 text-sm sm:text-base ${
+                      className={`group w-full text-left p-3.5 sm:p-4 rounded-xl border transition-all duration-150 text-sm sm:text-base flex items-start gap-3 ${
                         isSelected
-                          ? "border-emerald-600 bg-emerald-50 text-emerald-900 font-medium ring-2 ring-emerald-500/20"
-                          : "border-gray-200 bg-white/50 hover:bg-emerald-50/40 text-gray-700"
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-950 font-medium ring-2 ring-emerald-500/25 shadow-2xs"
+                          : "border-gray-200 bg-white/60 hover:bg-emerald-50/40 text-gray-700 hover:border-emerald-300"
                       }`}
                     >
-                      {option}
+                      <span
+                        className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 border transition ${
+                          isSelected
+                            ? "bg-emerald-600 border-emerald-600 text-white shadow-2xs"
+                            : "bg-gray-100 text-gray-600 border-gray-200 group-hover:bg-emerald-100 group-hover:border-emerald-300 group-hover:text-emerald-800"
+                        }`}
+                      >
+                        {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
+                      </span>
+                      <span className="flex-1 wrap-break-word">{option}</span>
+                      <span className="text-[10px] font-mono text-gray-300 group-hover:text-gray-400 shrink-0">
+                        [{optionLetters[idx] ?? idx + 1}]
+                      </span>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="flex items-center gap-2 pt-3 sm:pt-4 border-t border-gray-100">
-                <button
-                  disabled={currentQuestionIndex === 0}
-                  onClick={() => setCurrentQuestionIndex((p) => p - 1)}
-                  className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm bg-white/50 transition"
-                >
-                  <ArrowLeft className="w-4 h-4" /> <span className="hidden xs:inline">පෙර</span>
-                </button>
+              {/* Navigation Action Buttons */}
+              <div className="flex items-center justify-between gap-2 pt-3 sm:pt-4 border-t border-gray-100 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={currentQuestionIndex === 0}
+                    onClick={() => setCurrentQuestionIndex((p) => p - 1)}
+                    className="justify-center flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm bg-white/50 transition font-medium"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> <span>පෙර (Previous)</span>
+                  </button>
 
-                {currentQuestionIndex < questions.length - 1 ? (
-                  <button
-                    onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition text-sm shadow-sm"
-                  >
-                    ඊළඟ <ArrowRight className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button
-                    disabled={isSubmitted || isSubmitting}
-                    onClick={handleManualSubmit}
-                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition disabled:opacity-50 text-sm shadow-sm"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
-                    Submit
-                  </button>
-                )}
+                  {currentQuestionIndex < questions.length - 1 && (
+                    <button
+                      onClick={() => setCurrentQuestionIndex((p) => p + 1)}
+                      className="justify-center flex items-center gap-1.5 px-4 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition text-sm font-bold shadow-sm"
+                    >
+                      <span>ඊළඟ (Next)</span> <ArrowRight className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  disabled={isSubmitted || isSubmitting}
+                  onClick={handleManualSubmit}
+                  className="ml-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-linear-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-bold rounded-xl transition disabled:opacity-50 text-sm shadow-md shadow-emerald-900/10"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Review & Submit</span>
+                </button>
+              </div>
+
+              {/* Keyboard helper hint */}
+              <div className="text-[11px] text-gray-400 text-center sm:text-left flex items-center justify-center sm:justify-start gap-3 flex-wrap pt-1">
+                <span>⌨️ Shortcuts: <strong>1-5</strong> or <strong>A-E</strong> (Select)</span>
+                <span>• <strong>← →</strong> (Navigate)</span>
+                <span>• <strong>F</strong> (Flag for review)</span>
               </div>
             </div>
 
-            <div className="hidden md:block bg-white/80 backdrop-blur-md p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
-              <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
-                Question Navigation
-              </h3>
+            {/* ── Desktop Question Palette Side Panel ── */}
+            <div className="hidden md:block bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">
+                  ප්‍රශ්න සිතියම
+                </h3>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  {answeredCount}/{questions.length}
+                </span>
+              </div>
+
+              {/* Palette filter tabs */}
+              <div className="grid grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg text-[10px] font-bold text-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setPaletteFilter("all")}
+                  className={`py-1 rounded text-center transition ${paletteFilter === "all" ? "bg-white text-emerald-800 shadow-2xs font-extrabold" : "hover:text-gray-900"}`}
+                >
+                  All ({questions.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaletteFilter("answered")}
+                  className={`py-1 rounded text-center transition ${paletteFilter === "answered" ? "bg-white text-blue-700 shadow-2xs font-extrabold" : "hover:text-gray-900"}`}
+                >
+                  Ans ({answeredCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaletteFilter("unanswered")}
+                  className={`py-1 rounded text-center transition ${paletteFilter === "unanswered" ? "bg-white text-gray-900 shadow-2xs font-extrabold" : "hover:text-gray-900"}`}
+                >
+                  Skip ({unansweredCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaletteFilter("flagged")}
+                  className={`py-1 rounded text-center transition ${paletteFilter === "flagged" ? "bg-white text-amber-800 shadow-2xs font-extrabold" : "hover:text-gray-900"}`}
+                >
+                  Flag ({flaggedCount})
+                </button>
+              </div>
+
+              {/* Grid of buttons */}
               <div className="grid grid-cols-4 gap-2">
                 {questions.map((_, idx) => {
+                  const isVisibleInFilter = filteredQuestionIndices.includes(idx);
                   const isAnswered = selectedAnswers[idx] !== undefined;
                   const isCurrent = currentQuestionIndex === idx;
+                  const isFlagged = Boolean(flaggedQuestions[idx]);
+
+                  let btnClass = "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200";
+                  if (isCurrent) {
+                    btnClass = "ring-2 ring-emerald-600 ring-offset-2 bg-emerald-600 text-white font-extrabold shadow-sm";
+                  } else if (isFlagged && isAnswered) {
+                    btnClass = "bg-blue-100 text-blue-900 border-2 border-amber-400 font-bold hover:bg-blue-200";
+                  } else if (isFlagged) {
+                    btnClass = "bg-amber-100 text-amber-900 border border-amber-300 font-bold hover:bg-amber-200";
+                  } else if (isAnswered) {
+                    btnClass = "bg-blue-100 text-blue-800 border border-blue-300 font-bold hover:bg-blue-200";
+                  }
+
                   return (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => setCurrentQuestionIndex(idx)}
-                      className={`w-10 h-10 rounded-lg text-sm font-semibold flex items-center justify-center transition ${
-                        isCurrent
-                          ? "ring-2 ring-emerald-600 ring-offset-2 bg-emerald-600 text-white"
-                          : isAnswered
-                            ? "bg-blue-100 text-blue-800 border border-blue-300"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
+                      style={{ opacity: isVisibleInFilter ? 1 : 0.3 }}
+                      className={`relative w-10 h-10 rounded-xl text-sm font-semibold flex items-center justify-center transition active:scale-95 ${btnClass}`}
                     >
                       {idx + 1}
+                      {isFlagged && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white" />
+                      )}
                     </button>
                   );
                 })}
               </div>
-              <div className="pt-3 border-t text-xs space-y-2 text-gray-500">
+
+              {/* Legend */}
+              <div className="pt-3 border-t text-xs space-y-1.5 text-gray-500 font-medium">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 bg-blue-100 border border-blue-300 rounded" />
-                  පිළිතුරු සපයා ඇත
+                  <span>පිළිතුරු දුන් ({answeredCount})</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-gray-100 rounded" /> නොකළ ප්‍රශ්න
+                  <span className="w-3 h-3 bg-amber-100 border border-amber-300 rounded" />
+                  <span>සලකුණු කළ / Review ({flaggedCount})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-gray-100 border border-gray-200 rounded" />
+                  <span>නොකළ ප්‍රශ්න ({unansweredCount})</span>
                 </div>
               </div>
             </div>
           </div>
         </>
+      )}
+
+      {/* ── Pre-Submission Confirmation Modal (Modern Cognitive-Safe UI/UX) ── */}
+      {showSubmitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 p-6 space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 leading-tight">
+                  Quiz එක Submit කිරීමට පෙර පරීක්ෂා කරන්න
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  කරුණාකර ඔබගේ පිළිතුරු සාරාංශය පරීක්ෂා කරන්න. Submit කිරීමෙන් පසු පිළිතුරු වෙනස් කළ නොහැක.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Stat Cards */}
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">පිළිතුරු දුන්</p>
+                <p className="text-xl font-extrabold text-emerald-900 mt-0.5">{answeredCount}</p>
+                <p className="text-[9px] text-emerald-600">/{questions.length}</p>
+              </div>
+              <div className={`p-3 rounded-xl border ${unansweredCount > 0 ? "bg-red-50 border-red-200 text-red-900" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
+                <p className={`text-[10px] font-bold uppercase ${unansweredCount > 0 ? "text-red-700" : "text-gray-500"}`}>නොකළ</p>
+                <p className={`text-xl font-extrabold mt-0.5 ${unansweredCount > 0 ? "text-red-700" : "text-gray-700"}`}>{unansweredCount}</p>
+                <p className="text-[9px] opacity-75">/{questions.length}</p>
+              </div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-[10px] font-bold text-amber-700 uppercase">Flagged</p>
+                <p className="text-xl font-extrabold text-amber-900 mt-0.5">{flaggedCount}</p>
+                <p className="text-[9px] text-amber-600">Review</p>
+              </div>
+            </div>
+
+            {/* Unanswered warning if any */}
+            {unansweredCount > 0 && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>
+                  අවධානයයි: ඔබ තවමත් <strong>ප්‍රශ්න {unansweredCount}</strong>කට පිළිතුරු සපයා නැත!
+                </span>
+              </div>
+            )}
+
+            {/* Quick jump to review buttons */}
+            <div className="space-y-2 pt-1">
+              {unansweredCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstUnanswered = questions.findIndex((_, idx) => selectedAnswers[idx] === undefined);
+                    if (firstUnanswered !== -1) setCurrentQuestionIndex(firstUnanswered);
+                    setShowSubmitModal(false);
+                  }}
+                  className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <HelpCircle className="w-4 h-4 text-gray-500" />
+                  නොකළ ප්‍රශ්න වෙත යන්න (Review Unanswered)
+                </button>
+              )}
+
+              {flaggedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstFlagged = questions.findIndex((_, idx) => Boolean(flaggedQuestions[idx]));
+                    if (firstFlagged !== -1) setCurrentQuestionIndex(firstFlagged);
+                    setShowSubmitModal(false);
+                  }}
+                  className="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-xl border border-amber-200 transition flex items-center justify-center gap-2"
+                >
+                  <Flag className="w-4 h-4 text-amber-600" />
+                  සලකුණු කළ ප්‍රශ්න වෙත යන්න (Review Flagged)
+                </button>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold transition"
+              >
+                තවදුරටත් සිතන්න (Cancel)
+              </button>
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => void finishQuiz()}
+                className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                තහවුරු කර Submit
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </QuizShell>
   );

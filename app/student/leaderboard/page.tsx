@@ -14,6 +14,9 @@ import {
   Dna,
   BookOpen,
   Monitor,
+  Shield,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -253,6 +256,20 @@ export default function LeaderboardPage() {
   const [loadingSchool, setLoadingSchool] = useState(true);
   const [loadingIndividual, setLoadingIndividual] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Student Privacy: Mask full names for screen sharing / classroom projection
+  const [privacyMode, setPrivacyMode] = useState(false);
+
+  const formatDisplayName = (fullName: string | null | undefined, rank: number, isMe: boolean) => {
+    if (isMe) return fullName || "You";
+    if (!fullName) return `Student #${rank}`;
+    if (!privacyMode) return fullName;
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 3) + "***";
+    const firstName = parts[0];
+    const lastInitial = parts[parts.length - 1][0]?.toUpperCase() ?? "";
+    return `${firstName} ${lastInitial}.`;
+  };
 
   // ------------------------------------------------------------
   // Auth gate
@@ -536,8 +553,8 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            {/* Tab toggle */}
-            <div className="relative px-5 sm:px-6 md:px-8 pb-5 sm:pb-6">
+            {/* Tab toggle & Privacy Mode */}
+            <div className="relative px-5 sm:px-6 md:px-8 pb-5 sm:pb-6 flex items-center justify-between gap-3 flex-wrap">
               <div className="inline-flex p-1 bg-black/40 backdrop-blur-md rounded-xl border border-teal-400/20 gap-1">
                 <button
                   onClick={() => setActiveTab("school")}
@@ -560,6 +577,32 @@ export default function LeaderboardPage() {
                   <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> ශිෂ්‍ය
                 </button>
               </div>
+
+              {/* Privacy Mode Toggle */}
+              {activeTab === "individual" && (
+                <button
+                  type="button"
+                  onClick={() => setPrivacyMode((p) => !p)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition backdrop-blur-md ${
+                    privacyMode
+                      ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-sm"
+                      : "bg-white/10 border-white/20 text-slate-300 hover:text-white hover:bg-white/15"
+                  }`}
+                  title="Toggle student name privacy masking for safe screen display"
+                >
+                  {privacyMode ? (
+                    <>
+                      <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Privacy Mode: Active</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Mask Names (Privacy)</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -896,7 +939,7 @@ export default function LeaderboardPage() {
                                     <div className="flex items-center gap-2">
                                       <Award className="w-4 h-4 text-emerald-600 shrink-0" />
                                       <span className="truncate">
-                                        {item.full_name}
+                                        {formatDisplayName(item.full_name, item.rank, isMe)}
                                       </span>
                                       {isMe && (
                                         <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
@@ -966,7 +1009,7 @@ export default function LeaderboardPage() {
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className="font-bold text-gray-900 leading-snug truncate">
-                                      {item.full_name}
+                                      {formatDisplayName(item.full_name, item.rank, isMe)}
                                     </h3>
                                     {isMe && (
                                       <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">

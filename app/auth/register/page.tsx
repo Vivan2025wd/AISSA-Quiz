@@ -510,24 +510,32 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* Address */}
+              {/* Address (Data Minimization: Optional for student privacy) */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                  ලිපිනය (Address)
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-gray-700 uppercase">
+                    ලිපිනය (Address)
+                  </label>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    අභිමතය පරිදි (Optional)
+                  </span>
+                </div>
                 <div className="relative">
                   <MapPin className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     name="address"
-                    placeholder="උදා: Gampaha, Sri Lanka"
+                    placeholder="උදා: Gampaha (අත්‍යවශ්‍ය නොවේ)"
                     value={formData.address}
                     onChange={handleChange}
-                    required
                     disabled={isSubmitting}
                     className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                   />
                 </div>
+                <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                  <span>🔒</span>
+                  <span>පුද්ගලිකත්ව ආරක්ෂාව: සිසුන්ගේ නිවසේ ලිපිනය අනිවාර්ය නොවේ. තරඟ සඳහා දිස්ත්‍රික්කය සහ පාසල පමණක් ප්‍රමාණවත් වේ.</span>
+                </p>
               </div>
 
               {/* Residential District */}
