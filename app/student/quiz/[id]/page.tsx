@@ -17,11 +17,12 @@ import {
   Flag,
   Maximize2,
   Minimize2,
-  Shield,
   ShieldAlert,
   Check,
   X,
   RotateCcw,
+  FileText,
+  HelpCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -179,7 +180,6 @@ function localizeQuestion(q: Question, medium: Medium) {
     option_5: pickByMedium(medium, q.option_5, q.option_5_en, q.option_5_ta),
     explanation: pickByMedium(medium, q.explanation, q.explanation_en, q.explanation_ta),
     image_url: q.image_url,
-    correct_option: q.correct_option,
   };
 }
 
@@ -524,14 +524,37 @@ export default function StudentQuizPage() {
           `aissa_draft_${quizId}`,
           JSON.stringify({ selectedAnswers, flaggedQuestions })
         );
-        setDraftSaved(true);
-        const timer = setTimeout(() => setDraftSaved(false), 2000);
-        return () => clearTimeout(timer);
+
+        let hideTimer: ReturnType<typeof setTimeout> | undefined;
+        const showTimer = setTimeout(() => {
+          setDraftSaved(true);
+          hideTimer = setTimeout(() => setDraftSaved(false), 2000);
+        }, 0);
+
+        return () => {
+          clearTimeout(showTimer);
+          if (hideTimer) clearTimeout(hideTimer);
+        };
       } catch {
         // ignore storage errors
       }
     }
   }, [quizId, selectedAnswers, flaggedQuestions, isSubmitted, loadingQuiz, windowStatus]);
+
+  const handleSelectOption = useCallback(
+    (i: number) => {
+      if (isSubmitted) return;
+      setSelectedAnswers((p) => {
+        if (p[currentQuestionIndex] === i) {
+          const copy = { ...p };
+          delete copy[currentQuestionIndex];
+          return copy;
+        }
+        return { ...p, [currentQuestionIndex]: i };
+      });
+    },
+    [currentQuestionIndex, isSubmitted],
+  );
 
   // ── Keyboard Navigation Shortcuts (1-5, Arrows, Flag) ──
   useEffect(() => {
@@ -573,7 +596,7 @@ export default function StudentQuizPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [windowStatus, isSubmitted, loadingQuiz, showSubmitModal, currentQuestionIndex, questions.length]);
+  }, [windowStatus, isSubmitted, loadingQuiz, showSubmitModal, currentQuestionIndex, questions.length, handleSelectOption]);
 
   // ── Privacy-Respecting Academic Integrity: Tab-Switch Monitoring ──
   useEffect(() => {
@@ -624,18 +647,6 @@ export default function StudentQuizPage() {
     const interval = setInterval(() => setTimeLeft((p) => p - 1), 1000);
     return () => clearInterval(interval);
   }, [timeLeft, isSubmitted, loadingQuiz, questions.length, finishQuiz, windowStatus, blockReason]);
-
-  const handleSelectOption = (i: number) => {
-    if (isSubmitted) return;
-    setSelectedAnswers((p) => {
-      if (p[currentQuestionIndex] === i) {
-        const copy = { ...p };
-        delete copy[currentQuestionIndex];
-        return copy;
-      }
-      return { ...p, [currentQuestionIndex]: i };
-    });
-  };
 
   const handleManualSubmit = () => {
     setShowSubmitModal(true);
@@ -1071,7 +1082,7 @@ export default function StudentQuizPage() {
                             : "bg-gray-100 text-gray-600 border-gray-200 group-hover:bg-emerald-100 group-hover:border-emerald-300 group-hover:text-emerald-800"
                         }`}
                       >
-                        {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
+                        {isSelected ? <Check className="w-3.5 h-3.5 stroke-3" /> : idx + 1}
                       </span>
                       <span className="flex-1 wrap-break-word">{option}</span>
                       <span className="text-[10px] font-mono text-gray-300 group-hover:text-gray-400 shrink-0">
