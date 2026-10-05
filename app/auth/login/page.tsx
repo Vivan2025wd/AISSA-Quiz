@@ -67,9 +67,17 @@ function LoginPageFallback() {
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/60 shadow-xl shadow-emerald-900/5 p-6 sm:p-8">
-          <div className="flex justify-center py-6">
-            <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black border border-slate-700/50 shadow-xl shadow-black/40 p-6 sm:p-8">
+          <div
+            className="absolute inset-0 opacity-[0.12] pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+            }}
+          />
+          <div className="relative flex justify-center py-6">
+            <Loader2 className="w-6 h-6 text-teal-400 animate-spin" />
           </div>
         </div>
       </div>
@@ -235,7 +243,7 @@ function StudentLoginPageInner() {
               backgroundSize: "22px 22px",
             }}
           />
-          {/* teal glows — matches logo color */}
+          {/* teal glows */}
           <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
           {/* decorative rings */}
@@ -281,126 +289,145 @@ function StudentLoginPageInner() {
           </div>
         </div>
 
-        {/* ═══════════ Main Card (white) ═══════════ */}
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/60 shadow-xl shadow-emerald-900/5 p-6 sm:p-8 space-y-5">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
-              <span>⚠️</span>
-              <span>{error}</span>
-            </div>
-          )}
+        {/* ═══════════ Login Card — now DARK, matching the banner ═══════════ */}
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50 p-6 sm:p-8">
+          {/* dot grid */}
+          <div
+            className="absolute inset-0 opacity-[0.12] pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+            }}
+          />
+          {/* teal glows */}
+          <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/15 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
+          {/* decorative rings */}
+          <div className="pointer-events-none absolute -bottom-20 -right-20 w-56 h-56 rounded-full border-[1.5px] border-teal-400/10" />
+          {/* shine */}
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-          {!needsAdminCode ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                  AISSA ID හෝ Email
-                </label>
-                <div className="relative">
-                  <IdCard className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="R25THENUMI-SBVC-AWC  හෝ  your@email.com"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    required
-                    disabled={isSubmitting}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:opacity-60 transition"
-                  />
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1">
-                  AISSA සාමාජිකයින්ට ID එකෙන්, අනිත් අයට Email එකෙන්.
-                </p>
+          <div className="relative space-y-5">
+            {error && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-200 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm backdrop-blur-sm">
+                <span>⚠️</span>
+                <span>{error}</span>
               </div>
+            )}
 
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase">
-                    මුරපදය (Password)
+            {!needsAdminCode ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5 tracking-wide">
+                    AISSA ID හෝ Email
                   </label>
-                  <a
-                    href="#"
-                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
-                  >
-                    Password අමතකද?
-                  </a>
+                  <div className="relative">
+                    <IdCard className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="R25THENUMI-SBVC-AWC  හෝ  your@email.com"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      required
+                      disabled={isSubmitting}
+                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-slate-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 outline-none disabled:opacity-60 transition backdrop-blur-sm"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    AISSA සාමාජිකයින්ට ID එකෙන්, අනිත් අයට Email එකෙන්.
+                  </p>
                 </div>
-                <div className="relative">
-                  <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wide">
+                      මුරපදය (Password)
+                    </label>
+                    <a
+                      href="#"
+                      className="text-xs font-semibold text-teal-300 hover:text-teal-200 hover:underline"
+                    >
+                      Password අමතකද?
+                    </a>
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={isSubmitting}
+                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 text-white placeholder-slate-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 outline-none disabled:opacity-60 transition backdrop-blur-sm"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold rounded-xl flex justify-center items-center gap-2 shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all mt-2 disabled:opacity-60 disabled:hover:scale-100"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      ඇතුළු වන්න (Login) <LogIn className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleAdminCodeSubmit} className="space-y-4">
+                <div className="p-4 bg-teal-500/10 border border-teal-400/25 rounded-xl space-y-1.5 backdrop-blur-sm">
+                  <label className="flex text-xs font-extrabold text-teal-100 uppercase items-center gap-1.5 tracking-wide">
+                    <KeyRound className="w-4 h-4 text-teal-300" /> Admin Access Code
+                  </label>
                   <input
                     type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={adminCode}
+                    onChange={(e) => setAdminCode(e.target.value)}
                     required
+                    autoFocus
                     disabled={isSubmitting}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:opacity-60 transition"
+                    placeholder="••••••••"
+                    className="w-full px-3 py-3 bg-white/5 border border-teal-400/30 rounded-xl font-bold text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 outline-none placeholder:font-normal placeholder:text-slate-500 disabled:opacity-60 transition"
                   />
+                  <p className="text-[11px] text-teal-200/80 font-medium">
+                    * ඔබට Admin Access Code එක ලබාදී ඇති නම් පමණක් ඉදිරියට යන්න.
+                  </p>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition mt-2 disabled:opacity-60"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    ඇතුළු වන්න (Login) <LogIn className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleAdminCodeSubmit} className="space-y-4">
-              <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1.5">
-                <label className="flex text-xs font-extrabold text-emerald-900 uppercase items-center gap-1.5">
-                  <KeyRound className="w-4 h-4 text-emerald-600" /> Admin Access Code
-                </label>
-                <input
-                  type="password"
-                  value={adminCode}
-                  onChange={(e) => setAdminCode(e.target.value)}
-                  required
-                  autoFocus
+                <button
+                  type="submit"
                   disabled={isSubmitting}
-                  placeholder="••••••••"
-                  className="w-full px-3 py-3 bg-white border border-emerald-300 rounded-xl font-bold text-sm text-emerald-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none placeholder:font-normal placeholder:text-gray-400 disabled:opacity-60"
-                />
-                <p className="text-[11px] text-emerald-700 font-medium">
-                  * ඔබට Admin Access Code එක ලබාදී ඇති නම් පමණක් ඉදිරියට යන්න.
-                </p>
+                  className="w-full py-3.5 bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold rounded-xl flex justify-center items-center gap-2 shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 disabled:hover:scale-100"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      තහවුරු කර ඇතුළත් වන්න <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {!needsAdminCode && (
+              <div className="pt-4 border-t border-white/10 text-center text-xs text-slate-400">
+                ගිණුමක් තවම නැද්ද?{" "}
+                <Link
+                  href="/auth/register"
+                  className="font-bold text-teal-300 hover:text-teal-200 hover:underline inline-flex items-center gap-0.5"
+                >
+                  ලියාපදිංචි වන්න <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    තහවුරු කර ඇතුළත් වන්න <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-          {!needsAdminCode && (
-            <div className="pt-4 border-t border-gray-100 text-center text-xs text-gray-600">
-              ගිණුමක් තවම නැද්ද?{" "}
-              <Link
-                href="/auth/register"
-                className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-              >
-                ලියාපදිංචි වන්න <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
