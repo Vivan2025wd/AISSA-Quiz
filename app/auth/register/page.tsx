@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   Loader2,
-  GraduationCap,
   Map,
   AlertCircle,
   IdCard,
@@ -39,19 +38,13 @@ const sriLankanDistricts = [
   "Anuradhapura","Polonnaruwa","Badulla","Monaragala","Ratnapura","Kegalle",
 ];
 
-// ============================================================
-// Streams + Subjects
-// ============================================================
 type StreamKey = "Biological Science" | "Maths";
 type SubjectCode = "physics" | "chemistry" | "biology" | "ict";
 
 const streams = ["Biological Science", "Maths"] as const;
 
-// Bio stream subjects (fixed)
 const BIO_SUBJECTS: SubjectCode[] = ["physics", "chemistry", "biology"];
 
-// Maths stream electives — student picks ONE of these
-// (Physics is mandatory common to both streams)
 const MATHS_ELECTIVES: { code: SubjectCode; label: string }[] = [
   { code: "chemistry", label: "Chemistry" },
   { code: "ict", label: "ICT" },
@@ -87,13 +80,10 @@ export default function StudentRegisterPage() {
     confirmPassword: "",
   });
 
-  // ✅ Maths elective — "chemistry" or "ict"
   const [mathsElective, setMathsElective] = useState<SubjectCode>("chemistry");
 
-  // ✅ Compute final subjects list to save
   const finalSubjects: SubjectCode[] = useMemo(() => {
     if (formData.stream === "Biological Science") return BIO_SUBJECTS;
-    // Maths: Physics (mandatory) + one elective (Chemistry OR ICT)
     return ["physics", mathsElective];
   }, [formData.stream, mathsElective]);
 
@@ -258,7 +248,6 @@ export default function StudentRegisterPage() {
     e.preventDefault();
     setError("");
 
-    // ✅ Maths stream requires an elective (Chemistry OR ICT)
     if (formData.stream === "Maths" && !mathsElective) {
       setError("Maths stream එකට Chemistry හෝ ICT දෙකෙන් එකක් තෝරන්න.");
       return;
@@ -319,7 +308,6 @@ export default function StudentRegisterPage() {
           student_number: isAissaMember
             ? null
             : Number(formData.studentNumber) || null,
-          // ✅ NEW: comma-separated subject codes
           subjects: finalSubjects.join(","),
         },
       },
@@ -364,7 +352,7 @@ export default function StudentRegisterPage() {
   };
 
   return (
-    // ============ Modern green/white background ============
+    // ═══════════ LIGHT PAGE BACKGROUND ═══════════
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4 py-8">
       {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
@@ -372,54 +360,61 @@ export default function StudentRegisterPage() {
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-xl">
-        {/* ============ Header banner ============ */}
-        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20 mb-4">
+        {/* ═══════════ DARK BANNER — like login ═══════════ */}
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50 mb-4">
+          {/* dot grid */}
           <div
-            className="absolute inset-0 opacity-[0.08] pointer-events-none"
+            className="absolute inset-0 opacity-[0.15] pointer-events-none"
             style={{
               backgroundImage:
-                "radial-gradient(circle, white 1px, transparent 1px)",
+                "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
               backgroundSize: "22px 22px",
             }}
           />
-          <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+          {/* teal glows — matches logo color */}
+          <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+          {/* decorative rings */}
+          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+          <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+          {/* shine */}
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-          <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="shrink-0">
-              <div className="relative">
-                <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                  <GraduationCap className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
-                </div>
+          <div className="relative flex flex-col items-center text-center px-5 sm:px-6 py-6 sm:py-7 space-y-3">
+            {/* ✨ AISSA Logo */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/aissa-logo.png"
+                  alt="AISSA Logo"
+                  className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                />
               </div>
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  AISSA
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
-                  <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse" />
-                  New Registration
-                </span>
-              </div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
-                AISSA සාමාජික ලියාපදිංචිය
-              </h1>
-              <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
-                AISSA ID එකක් ඇත්නම් හෝ නොමැති නම් — දෙකටම ලියාපදිංචි විය හැක.
-              </p>
+            {/* Badges */}
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                AISSA
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
+                New Registration
+              </span>
             </div>
+
+            {/* Description */}
+            <p className="text-slate-300 text-sm sm:text-base font-semibold leading-snug max-w-xs">
+              AISSA ID එකක් ඇත්නම් හෝ නොමැති නම් — දෙකටම ලියාපදිංචි විය හැක.
+            </p>
           </div>
         </div>
 
-        {/* ============ Main Card (glass) ============ */}
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-xl p-5 sm:p-8 space-y-5">
+        {/* ═══════════ Main Card (white) ═══════════ */}
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-xl shadow-emerald-900/5 p-5 sm:p-8 space-y-5">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -449,7 +444,7 @@ export default function StudentRegisterPage() {
             </div>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
-              {/* ---------- Mode Toggle ---------- */}
+              {/* Mode Toggle */}
               <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
                 <button
                   type="button"
@@ -475,7 +470,7 @@ export default function StudentRegisterPage() {
                 </button>
               </div>
 
-              {/* ---------- Full Name ---------- */}
+              {/* Full Name */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   නම (Name)
@@ -495,7 +490,7 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* ---------- Email ---------- */}
+              {/* Email */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   විද්‍යුත් තැපෑල (Email)
@@ -515,7 +510,7 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* ---------- Address ---------- */}
+              {/* Address */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   ලිපිනය (Address)
@@ -535,7 +530,7 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* ---------- Residential District ---------- */}
+              {/* Residential District */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   පදිංචි දිස්ත්‍රික්කය (Residential District)
@@ -556,7 +551,7 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* ---------- School (autocomplete) ---------- */}
+              {/* School */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   පාසල (School)
@@ -572,7 +567,7 @@ export default function StudentRegisterPage() {
                 </p>
               </div>
 
-              {/* ---------- Stream ---------- */}
+              {/* Stream */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   විෂය ධාරාව (Stream)
@@ -590,14 +585,13 @@ export default function StudentRegisterPage() {
                 </select>
               </div>
 
-              {/* ---------- Subject Combination ---------- */}
+              {/* Subject Combination */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   ඔබ කරන විෂයන් (Your Subjects)
                 </label>
 
                 {formData.stream === "Biological Science" ? (
-                  // Bio stream: fixed subjects
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                     <div className="flex flex-wrap gap-2">
                       {["Physics", "Chemistry", "Biology"].map((s) => (
@@ -614,7 +608,6 @@ export default function StudentRegisterPage() {
                     </p>
                   </div>
                 ) : (
-                  // Maths stream: Physics (fixed) + one elective (Chemistry OR ICT)
                   <div className="p-3 bg-cyan-50/70 border border-cyan-200 rounded-xl space-y-3">
                     <div className="flex items-center gap-2 text-xs">
                       <span className="px-3 py-1.5 bg-white border border-cyan-300 text-cyan-800 font-bold rounded-lg">
@@ -657,7 +650,7 @@ export default function StudentRegisterPage() {
                 )}
               </div>
 
-              {/* ---------- Medium ---------- */}
+              {/* Medium */}
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-1.5">
                   <Languages className="w-4 h-4 text-emerald-600" />
@@ -692,9 +685,7 @@ export default function StudentRegisterPage() {
                 </p>
               </div>
 
-              {/* ============================================================ */}
-              {/* AISSA ID / Non-AISSA BLOCK                                   */}
-              {/* ============================================================ */}
+              {/* AISSA / Non-AISSA ID */}
               {idMode === "has-aissa" ? (
                 <div
                   className={`p-4 border rounded-xl space-y-1.5 ${
@@ -848,7 +839,7 @@ export default function StudentRegisterPage() {
                     <p className="mt-1 font-mono font-extrabold text-sm text-teal-900 break-all">
                       {finalAisId || (
                         <span className="text-teal-300 font-sans font-medium">
-                          නම, පාසල, වර්ෂය සහ අංකය පිරවූ පසු මෙහි දිස්වේ...
+                          නම, පාසල, වර්ෂය පිරවූ පසු මෙහි දිස්වේ...
                         </span>
                       )}
                     </p>
@@ -856,7 +847,7 @@ export default function StudentRegisterPage() {
                 </div>
               )}
 
-              {/* ---------- Password ---------- */}
+              {/* Password */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">

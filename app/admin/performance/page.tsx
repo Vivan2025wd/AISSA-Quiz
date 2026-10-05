@@ -248,43 +248,48 @@ export default function AdminPerformancePage() {
   };
 
   return (
-    // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md-[28rem] bg-emerald-200/50 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
 
-          {/* ============ Header Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          {/* ═══════════ Header Banner — DARK THEME + LOGO ═══════════ */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
             {/* dot grid */}
             <div
-              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
+                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* glows */}
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
+            {/* teal glows */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
             {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
             {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-start gap-4 min-w-0 flex-1">
-                {/* Logo */}
+                {/* ✨ AISSA Logo — no box */}
                 <div className="shrink-0">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                      <BarChart3 className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
+                    <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/aissa-logo.png"
+                        alt="AISSA Logo"
+                        className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                      />
                     </div>
                   </div>
                 </div>
@@ -294,21 +299,21 @@ export default function AdminPerformancePage() {
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     <Link
                       href="/admin/quizzes"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15 hover:bg-white/25 transition"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200 hover:bg-teal-500/25 transition"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       Back to Quizzes
                     </Link>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/25 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-300/30">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       Admin
                     </span>
                   </div>
                   <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
-                    <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300 shrink-0" />
+                    <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-teal-300 shrink-0" />
                     Student Performance Analytics
                   </h1>
-                  <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
+                  <p className="text-slate-300 text-[11px] sm:text-xs mt-1">
                     සියලුම සිසුන්ගේ ප්‍රශ්න පත්‍ර ලකුණු, ප්‍රගතිය සහ විස්තර මෙතැනින් පරීක්ෂා කරන්න.
                   </p>
                 </div>
@@ -318,7 +323,7 @@ export default function AdminPerformancePage() {
               <div className="flex items-center gap-2 shrink-0 self-start">
                 <button
                   onClick={fetchData}
-                  className="p-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white rounded-xl transition border border-white/20"
+                  className="p-2.5 bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-200 rounded-xl transition border border-teal-400/30"
                   title="Refresh Data"
                 >
                   <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
@@ -327,7 +332,7 @@ export default function AdminPerformancePage() {
                 <button
                   onClick={exportToCSV}
                   disabled={filteredAttempts.length === 0}
-                  className="px-4 py-2.5 bg-white text-emerald-900 hover:bg-emerald-50 font-bold rounded-xl transition flex items-center gap-2 text-sm shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2.5 bg-teal-500 text-slate-900 hover:bg-teal-400 font-bold rounded-xl transition flex items-center gap-2 text-sm shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4" /> Export CSV
                 </button>
@@ -441,7 +446,6 @@ export default function AdminPerformancePage() {
               </div>
             ) : (
               <>
-                {/* ===== Scrollable table with fade shadow ===== */}
                 <div className="relative">
                   <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
                     <table className="w-full text-left border-collapse text-sm">
@@ -475,7 +479,6 @@ export default function AdminPerformancePage() {
                                 {item.student_name}
                               </td>
 
-                              {/* AISSA ID badge — R=emerald, N=teal, N/A=gray */}
                               <td className="py-4 px-6">
                                 <span
                                   className={`inline-block font-mono text-[11px] font-bold px-2 py-1 rounded-md border ${
@@ -551,11 +554,9 @@ export default function AdminPerformancePage() {
                     </table>
                   </div>
 
-                  {/* Bottom fade — indicates more content below */}
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                 </div>
 
-                {/* Footer hint */}
                 <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[11px] text-gray-500 text-center">
                   ප්‍රතිඵල{" "}
                   <strong className="text-gray-700">

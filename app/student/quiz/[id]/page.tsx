@@ -14,7 +14,6 @@ import {
   Hourglass,
   Sparkles,
   Trophy,
-  GraduationCap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -83,7 +82,7 @@ type StudentResult = {
 type MyAnswersMap = Record<string, number | null>;
 
 // ------------------------------------------------------------
-// Subject colors
+// Subject colors — used INSIDE QuizShell on the dark banner
 // ------------------------------------------------------------
 function subjectBadgeStyle(subject: string | null | undefined): string {
   const s = (subject ?? "").toLowerCase();
@@ -94,8 +93,8 @@ function subjectBadgeStyle(subject: string | null | undefined): string {
   if (s.includes("biology"))
     return "bg-emerald-500/20 text-emerald-100 border-emerald-300/30";
   if (s.includes("ict") || s.includes("information"))
-    return "bg-cyan-500/20 text-cyan-100 border-cyan-300/30";  // ✅ ICT
-  return "bg-white/15 text-white border-white/20";
+    return "bg-cyan-500/20 text-cyan-100 border-cyan-300/30";
+  return "bg-teal-500/20 text-teal-100 border-teal-300/30";
 }
 
 // ------------------------------------------------------------
@@ -103,8 +102,6 @@ function subjectBadgeStyle(subject: string | null | undefined): string {
 //   • Biology             → Bio Science stream only
 //   • ICT                 → Maths (Physical Science) stream only
 //   • Physics / Chemistry → Common (all science streams)
-//
-//   Returns a reason object when blocked, otherwise null.
 // ------------------------------------------------------------
 type BlockReason = {
   subject: string;
@@ -125,7 +122,6 @@ function getBlockReasonForStream(
   const isBio = s.includes("bio");
   const isMaths = s.includes("physical") || s.includes("maths");
 
-  // ✅ Biology → Bio Science only
   if (subj.includes("biology") && !isBio) {
     return {
       subject: quizSubject,
@@ -135,7 +131,6 @@ function getBlockReasonForStream(
     };
   }
 
-  // ✅ ICT → Maths (Physical Science) only
   if ((subj.includes("ict") || subj.includes("information")) && !isMaths) {
     return {
       subject: quizSubject,
@@ -211,7 +206,6 @@ export default function StudentQuizPage() {
   const [medium, setMedium] = useState<Medium>("sinhala");
   const [studentStream, setStudentStream] = useState<string | null>(null);
 
-  // ✅ Changed from boolean to reason object
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -225,9 +219,6 @@ export default function StudentQuizPage() {
 
   const [reviewIndex, setReviewIndex] = useState(0);
 
-  // ------------------------------------------------------------
-  // Load quiz + profile + my result/answers
-  // ------------------------------------------------------------
   useEffect(() => {
     if (!quizId) return;
     let cancelled = false;
@@ -286,7 +277,6 @@ export default function StudentQuizPage() {
         return;
       }
 
-      // ✅ Check block reason (Biology → Bio only, ICT → Maths only)
       const reason = getBlockReasonForStream(quizData.subject, localStream);
       if (reason) {
         setQuiz(quizData as Quiz);
@@ -297,7 +287,6 @@ export default function StudentQuizPage() {
 
       setQuiz(quizData as Quiz);
 
-      // ✅ TIMER FIX: countdown = scheduled_at + duration - NOW
       const durationSec = (quizData.duration_minutes || 30) * 60;
       if (quizData.scheduled_at) {
         const startMs = new Date(quizData.scheduled_at).getTime();
@@ -345,9 +334,6 @@ export default function StudentQuizPage() {
     };
   }, [quizId]);
 
-  // ------------------------------------------------------------
-  // Quiz window status
-  // ------------------------------------------------------------
   const windowStatus = useMemo(
     () =>
       quiz
@@ -473,7 +459,7 @@ export default function StudentQuizPage() {
   useEffect(() => {
     if (windowStatus !== "active") return;
     if (isSubmitted || loadingQuiz || questions.length === 0) return;
-    if (blockReason) return;   // ✅ use blockReason instead of streamBlocked
+    if (blockReason) return;
 
     if (timeLeft <= 0) {
       const t = setTimeout(() => {
@@ -508,8 +494,16 @@ export default function StudentQuizPage() {
   if (loadingQuiz) {
     return (
       <ThemedShell>
-        <div className="flex items-center justify-center gap-2 text-gray-500 text-sm py-16">
-          <Loader2 className="w-5 h-5 animate-spin text-emerald-600" /> Loading Quiz...
+        <div className="flex flex-col items-center justify-center gap-4 text-gray-500 text-sm py-16">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/loading-screen.png"
+            alt="AISSA"
+            className="w-20 h-20 sm:w-24 sm:h-24 object-contain animate-pulse"
+          />
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin text-emerald-600" /> Loading Quiz...
+          </div>
         </div>
       </ThemedShell>
     );
@@ -534,9 +528,6 @@ export default function StudentQuizPage() {
     );
   }
 
-  // ============================================================
-  // STREAM BLOCKED — dynamic based on subject
-  // ============================================================
   if (blockReason) {
     return (
       <ThemedShell>
@@ -594,9 +585,6 @@ export default function StudentQuizPage() {
     );
   }
 
-  // ============================================================
-  // UPCOMING
-  // ============================================================
   if (windowStatus === "upcoming") {
     const ms = msUntilStart({
       scheduled_at: quiz.scheduled_at,
@@ -637,9 +625,6 @@ export default function StudentQuizPage() {
     );
   }
 
-  // ============================================================
-  // EXPIRED — Review mode
-  // ============================================================
   if (windowStatus === "expired") {
     return (
       <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
@@ -717,7 +702,7 @@ export default function StudentQuizPage() {
         </div>
       ) : (
         <>
-          {/* -------- Mobile palette -------- */}
+          {/* Mobile palette */}
           <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
             <div className="flex items-center justify-between text-xs text-gray-600">
               <span className="font-semibold">ප්‍රශ්න</span>
@@ -752,7 +737,6 @@ export default function StudentQuizPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
-            {/* -------- Question panel -------- */}
             <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-4 sm:space-y-6">
               <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
                 {currentQuestionIndex + 1}. {localized.question_text}
@@ -821,7 +805,6 @@ export default function StudentQuizPage() {
               </div>
             </div>
 
-            {/* -------- Desktop palette -------- */}
             <div className="hidden md:block bg-white/80 backdrop-blur-md p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
               <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
                 Question Navigation
@@ -881,7 +864,7 @@ function ThemedShell({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
-// Shell with banner header
+// QuizShell with DARK banner + AISSA logo
 // ---------------------------------------------------------------------------
 function QuizShell({
   title,
@@ -902,26 +885,38 @@ function QuizShell({
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          {/* ═══════════ DARK BANNER with AISSA LOGO ═══════════ */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
+            {/* dot grid */}
             <div
-              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
+                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
                 backgroundSize: "22px 22px",
               }}
             />
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+            {/* teal glows */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+            {/* rings */}
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+            {/* shine */}
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+              {/* ✨ AISSA Logo — no box, sits directly on dark bg */}
               <div className="shrink-0">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
-                  <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                    <GraduationCap className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
+                  <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/aissa-logo.png"
+                      alt="AISSA Logo"
+                      className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                    />
                   </div>
                 </div>
               </div>
@@ -936,7 +931,7 @@ function QuizShell({
                     {subject}
                   </span>
                   {stream && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
                       {stream}
                     </span>
                   )}

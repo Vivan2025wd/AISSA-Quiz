@@ -70,13 +70,12 @@ function isSubjectAllowedForStream(
   subject: string | null | undefined,
   quizStream: string | null | undefined,
   studentStream: string | null | undefined,
-  studentSubjects?: string | null,   // ✅ new
+  studentSubjects?: string | null,
 ): boolean {
   if (!subject) return false;
 
   const subj = subject.toLowerCase();
 
-  // ✅ Priority 1: explicit subjects list (from registration)
   if (studentSubjects && studentSubjects.trim()) {
     const codes = studentSubjects
       .split(",")
@@ -90,7 +89,6 @@ function isSubjectAllowedForStream(
     return false;
   }
 
-  // Fallback: stream defaults
   const s = (studentStream ?? "").toLowerCase();
 
   if (s.includes("bio")) {
@@ -240,7 +238,7 @@ export default function LeaderboardPage() {
 
   const [studentId, setStudentId] = useState<string | null>(null);
   const [studentStream, setStudentStream] = useState<string | null>(null);
-  const [studentSubjects, setStudentSubjects] = useState<string | null>(null);  // ✅ new
+  const [studentSubjects, setStudentSubjects] = useState<string | null>(null);
   const [studentSchool, setStudentSchool] = useState<string | null>(null);
 
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
@@ -274,7 +272,7 @@ export default function LeaderboardPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, stream, school, subjects")   // ✅ add subjects
+        .select("id, stream, school, subjects")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -288,7 +286,7 @@ export default function LeaderboardPage() {
 
       setStudentId(profile.id ?? null);
       setStudentStream(profile.stream ?? null);
-      setStudentSubjects(profile.subjects ?? null);   // ✅ new
+      setStudentSubjects(profile.subjects ?? null);
       setStudentSchool(profile.school ?? null);
     }
 
@@ -331,7 +329,7 @@ export default function LeaderboardPage() {
             row.subject,
             row.stream,
             studentStream,
-            studentSubjects,   // ✅ pass subjects
+            studentSubjects,
           )
         ) {
           set.add(row.subject);
@@ -358,7 +356,7 @@ export default function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [studentStream, studentSubjects]);   // ✅ add studentSubjects to deps
+  }, [studentStream, studentSubjects]);
 
   // ------------------------------------------------------------
   // School leaderboard — load once
@@ -466,7 +464,6 @@ export default function LeaderboardPage() {
     activeTab === "school" ? loadingSchool : loadingIndividual;
 
   return (
-    // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
       {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
@@ -475,28 +472,38 @@ export default function LeaderboardPage() {
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-          {/* ============ Header Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          {/* ═══════════ Header Banner — DARK THEME + LOGO ═══════════ */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
+            {/* dot grid */}
             <div
-              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
+                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
                 backgroundSize: "22px 22px",
               }}
             />
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+            {/* teal glows */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+            {/* rings */}
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+            {/* shine */}
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              {/* ✨ AISSA Logo — no box, sits directly on dark bg */}
               <div className="shrink-0">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-amber-300/30 blur-xl rounded-full" />
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                    <Trophy className="w-9 h-9 sm:w-11 sm:h-11 text-amber-300 drop-shadow" />
+                  <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/aissa-logo.png"
+                      alt="AISSA Logo"
+                      className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                    />
                   </div>
                 </div>
               </div>
@@ -505,23 +512,23 @@ export default function LeaderboardPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Link
                     href="/student/dashboard"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15 hover:bg-white/25 transition"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200 hover:bg-teal-500/25 transition"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     Dashboard
                   </Link>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
-                    <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                    <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
                     Live Rankings
                   </span>
                 </div>
 
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold mt-2.5 leading-tight tracking-tight flex items-center gap-2">
-                  <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300" />
+                  <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-teal-300" />
                   AISSA Leaderboard
                 </h1>
 
-                <p className="text-emerald-50/90 text-xs sm:text-sm mt-2">
+                <p className="text-slate-300 text-xs sm:text-sm mt-2">
                   {activeTab === "school"
                     ? `Top ${TOP_SCHOOLS} පාසල් පමණක් · ඔබේ පාසල ඊට යටින්`
                     : `Top ${TOP_INDIVIDUALS} සිසුන් · විෂය අනුව · ඔබේ තැන ඊට යටින්`}
@@ -529,14 +536,15 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
+            {/* Tab toggle */}
             <div className="relative px-5 sm:px-6 md:px-8 pb-5 sm:pb-6">
-              <div className="inline-flex p-1 bg-black/20 backdrop-blur-md rounded-xl border border-white/15 gap-1">
+              <div className="inline-flex p-1 bg-black/40 backdrop-blur-md rounded-xl border border-teal-400/20 gap-1">
                 <button
                   onClick={() => setActiveTab("school")}
                   className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 ${
                     activeTab === "school"
-                      ? "bg-white text-emerald-900 shadow-sm"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
+                      ? "bg-teal-500 text-slate-900 shadow-sm"
+                      : "text-slate-300 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   <School className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> පාසල්
@@ -545,8 +553,8 @@ export default function LeaderboardPage() {
                   onClick={() => setActiveTab("individual")}
                   className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 ${
                     activeTab === "individual"
-                      ? "bg-white text-emerald-900 shadow-sm"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
+                      ? "bg-teal-500 text-slate-900 shadow-sm"
+                      : "text-slate-300 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> ශිෂ්‍ය
@@ -562,9 +570,7 @@ export default function LeaderboardPage() {
             </div>
           )}
 
-          {/* ============================================================ */}
-          {/* SCHOOL VIEW                                                    */}
-          {/* ============================================================ */}
+          {/* ═══════════ SCHOOL VIEW ═══════════ */}
           {activeTab === "school" && (
             <>
               {loadingSchool ? (
@@ -801,9 +807,7 @@ export default function LeaderboardPage() {
             </>
           )}
 
-          {/* ============================================================ */}
-          {/* INDIVIDUAL VIEW                                                */}
-          {/* ============================================================ */}
+          {/* ═══════════ INDIVIDUAL VIEW ═══════════ */}
           {activeTab === "individual" && (
             <div className="space-y-4">
               {loadingSubjects ? (

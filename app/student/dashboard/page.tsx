@@ -21,7 +21,6 @@ import {
   Dna,
   Award,
   RefreshCw,
-  GraduationCap,
   Monitor,
 } from "lucide-react";
 import {
@@ -57,7 +56,7 @@ type Profile = {
   stream?: string | null;
   medium?: Medium | null;
   is_admin?: boolean | null;
-  subjects?: string | null;   // ✅ comma-separated codes (physics,chemistry / physics,ict)
+  subjects?: string | null;
 };
 
 type StudentStats = {
@@ -92,9 +91,6 @@ type PastQuizRow = {
   } | null;
 };
 
-// ------------------------------------------------------------
-// Dashboard RPC response shape
-// ------------------------------------------------------------
 type DashboardBundle = {
   profile?: Profile | null;
   stats?: StudentStats | null;
@@ -105,15 +101,12 @@ type DashboardBundle = {
 };
 
 // ------------------------------------------------------------
-// Stream + Subjects → Allowed subjects
-//   • Priority 1: explicit subjects list (from registration)
-//   • Fallback:   stream defaults
+// Helpers (unchanged)
 // ------------------------------------------------------------
 function allowedSubjectsForStream(
   stream: string | null | undefined,
   subjectsRaw?: string | null,
 ): RealSubjectKey[] {
-  // ✅ Priority 1: explicit subjects list saved during registration
   if (subjectsRaw && subjectsRaw.trim()) {
     const codes = subjectsRaw
       .split(",")
@@ -124,17 +117,13 @@ function allowedSubjectsForStream(
     if (codes.length > 0) return codes;
   }
 
-  // Fallback: stream-based defaults
   const s = (stream ?? "").toLowerCase();
   if (s.includes("bio")) return ["physics", "chemistry", "biology"];
   if (s.includes("physical") || s.includes("maths"))
-    return ["physics", "chemistry"];   // safe fallback: no ICT
+    return ["physics", "chemistry"];
   return ["physics", "chemistry", "biology"];
 }
 
-// ------------------------------------------------------------
-// Helpers
-// ------------------------------------------------------------
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -218,7 +207,7 @@ function subjectTabClass(k: SubjectKey, isActive: boolean): string {
 
 function canStudentSeeQuiz(
   studentStream: string | null | undefined,
-  studentSubjects: string | null | undefined,   // ✅ new param
+  studentSubjects: string | null | undefined,
   quizSubject: string | null | undefined,
 ): boolean {
   if (!quizSubject) return true;
@@ -227,9 +216,6 @@ function canStudentSeeQuiz(
   return allowedSubjectsForStream(studentStream, studentSubjects).includes(key);
 }
 
-// ------------------------------------------------------------
-// Live countdown hook
-// ------------------------------------------------------------
 function useLiveCountdown(
   computeMs: () => number | null,
   deps: React.DependencyList,
@@ -274,8 +260,6 @@ export default function StudentDashboard() {
 
   const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("all");
 
-  // Parent re-render every 10s — used so quizzes actually MOVE
-  // from "upcoming" → "active" → "expired" without a manual refresh.
   const [, setTick] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 10_000);
@@ -297,7 +281,6 @@ export default function StudentDashboard() {
       return;
     }
 
-    // ✅ එකම RPC call එකෙන් හැම දත්තම (7 queries → 1)
     const { data: bundleRaw, error: bundleError } = await supabase.rpc(
       "get_dashboard_data",
     );
@@ -317,7 +300,6 @@ export default function StudentDashboard() {
       return;
     }
 
-    // ─── Profile ───
     setProfile(bundle.profile);
 
     if (bundle.profile.is_admin) {
@@ -326,10 +308,8 @@ export default function StudentDashboard() {
       );
     }
 
-    // ─── Overall stats ───
     setStats(bundle.stats ?? null);
 
-    // ─── Subject stats ───
     if (Array.isArray(bundle.subject_stats)) {
       const map: Record<string, SubjectStats> = {};
       for (const row of bundle.subject_stats) {
@@ -341,7 +321,6 @@ export default function StudentDashboard() {
       setSubjectStats({});
     }
 
-    // ─── Past results ───
     if (Array.isArray(bundle.past_results)) {
       const merged: PastQuizRow[] = bundle.past_results.map((r) => ({
         id: r.id,
@@ -357,7 +336,6 @@ export default function StudentDashboard() {
       setPastQuizzes([]);
     }
 
-    // ─── Live quizzes ───
     setQuizzes(Array.isArray(bundle.live_quizzes) ? bundle.live_quizzes : []);
 
     setLoading(false);
@@ -373,9 +351,6 @@ export default function StudentDashboard() {
     };
   }, [load]);
 
-  // ------------------------------------------------------------
-  // Derived
-  // ------------------------------------------------------------
   const allowedSubjects = useMemo<RealSubjectKey[]>(
     () => allowedSubjectsForStream(profile?.stream, profile?.subjects),
     [profile?.stream, profile?.subjects],
@@ -433,13 +408,19 @@ export default function StudentDashboard() {
     );
   }, [pastQuizzes, selectedSubject]);
 
-  // ------------------------------------------------------------
-  // Render states
-  // ------------------------------------------------------------
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center gap-2 text-gray-500 text-sm">
-        <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" /> Loading Dashboard...
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col items-center justify-center gap-4 text-gray-500 text-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/loading-screen.png"
+          alt="AISSA"
+          className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-pulse"
+        />
+        <div className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+          Loading Dashboard...
+        </div>
       </div>
     );
   }
@@ -447,10 +428,21 @@ export default function StudentDashboard() {
   if (guardError) {
     return (
       <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-6 text-center space-y-3">
-          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
-          <p className="text-red-600 font-medium">{guardError}</p>
-          <Link href="/auth/login" className="text-sm text-emerald-600 hover:underline">
+        <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-6 text-center space-y-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/aissa-logo.png"
+            alt="AISSA"
+            className="w-20 h-20 sm:w-24 sm:h-24 object-contain mx-auto opacity-90"
+          />
+          <div className="flex items-center justify-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-red-600 font-medium text-sm">{guardError}</p>
+          </div>
+          <Link
+            href="/auth/login"
+            className="inline-block text-sm font-semibold text-emerald-600 hover:underline"
+          >
             ← නැවත Login වෙත
           </Link>
         </div>
@@ -497,36 +489,47 @@ export default function StudentDashboard() {
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-5 sm:space-y-8">
-          {/* ============ Welcome Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          {/* ============ Welcome Banner — DARK THEME ============ */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
+            {/* dot grid */}
             <div
-              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
+                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
                 backgroundSize: "22px 22px",
               }}
             />
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-white/10 hidden md:block" />
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+            {/* teal glows — matches logo color */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+            {/* ring */}
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+            {/* shine */}
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              {/* ✨ AISSA Logo — NO BOX, sits directly on dark bg */}
               <div className="shrink-0">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                    <GraduationCap className="w-9 h-9 sm:w-11 sm:h-11 text-white drop-shadow" />
+                  {/* subtle teal glow behind the logo */}
+                  <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/aissa-logo.png"
+                      alt="AISSA Logo"
+                      className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
-                    <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                    <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
                     AISSA Quiz Engine
                   </span>
                 </div>
@@ -535,16 +538,16 @@ export default function StudentDashboard() {
                   ආයුබෝවන්, {profile?.full_name || "Student"}! 👋
                 </h1>
 
-                <div className="text-emerald-50/90 text-xs sm:text-sm mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                <div className="text-slate-300 text-xs sm:text-sm mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
                   <span className="inline-flex items-center gap-1.5 wrap-break-word">
-                    <span className="w-1.5 h-1.5 bg-emerald-300/80 rounded-full" />
+                    <span className="w-1.5 h-1.5 bg-teal-400/80 rounded-full" />
                     {profile?.school || "—"}
                   </span>
                   <span className="text-white/30">|</span>
                   <span>{profile?.stream || "Bio Science"}</span>
                   {profile?.medium && (
                     <span
-                      className="inline-flex items-center px-2 py-0.5 bg-white/15 backdrop-blur-sm rounded-md text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-white/15"
+                      className="inline-flex items-center px-2 py-0.5 bg-teal-500/15 backdrop-blur-sm rounded-md text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-teal-400/30 text-teal-200"
                       title={mediumFullLabel(profile.medium)}
                     >
                       {mediumLabel(profile.medium)}
@@ -555,9 +558,9 @@ export default function StudentDashboard() {
 
               <Link
                 href="/student/leaderboard"
-                className="relative self-stretch sm:self-auto sm:shrink-0 px-4 sm:px-5 py-3 bg-white text-emerald-900 font-bold rounded-xl hover:bg-emerald-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm group"
+                className="relative self-stretch sm:self-auto sm:shrink-0 px-4 sm:px-5 py-3 bg-teal-500 text-slate-900 font-bold rounded-xl hover:bg-teal-400 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm group"
               >
-                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 group-hover:rotate-12 transition-transform" />
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-slate-900 group-hover:rotate-12 transition-transform" />
                 Leaderboard
                 <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
               </Link>
@@ -924,7 +927,7 @@ export default function StudentDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// Building blocks
+// Building blocks (unchanged)
 // ---------------------------------------------------------------------------
 
 function StatCard({
@@ -1121,9 +1124,6 @@ function SubjectMiniCard({
   );
 }
 
-// ---------------------------------------------------------------------------
-// ActiveQuizCard — 1s countdown
-// ---------------------------------------------------------------------------
 function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
   const endsIn = useLiveCountdown(() => msUntilEnd(quiz), [quiz]);
 
@@ -1166,9 +1166,6 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// UpcomingQuizCard — 1s countdown
-// ---------------------------------------------------------------------------
 function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
   const startsIn = useLiveCountdown(() => msUntilStart(quiz), [quiz]);
 
@@ -1213,7 +1210,7 @@ function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
         disabled
         className="w-full py-2.5 bg-gray-200/80 text-gray-500 font-semibold rounded-lg flex justify-center items-center gap-2 cursor-not-allowed text-sm"
       >
-        <Hourglass className="w-4 h-4" /> තවම ආරම්භ වී නැත
+        <Hourglass className="w-4 h-4" /> තවම ආරම්භ වී නෑ
       </button>
     </div>
   );

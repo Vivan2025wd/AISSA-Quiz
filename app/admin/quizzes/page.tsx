@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Plus,
-  BookOpen,
   Trash2,
   BarChart3,
   Clock,
@@ -18,16 +17,17 @@ import {
   Globe2,
   ShieldCheck,
   GraduationCap,
+  RefreshCw,
+  Edit3,
+  Save,
+  AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionEditModal";
 import QuestionBankSelectorModal from "@/components/QuestionBankSelectorModal";
 
 // ------------------------------------------------------------
-// Stream rules:
-//   • Physics / Chemistry → Common (null) — all science streams
-//   • Biology             → Bio Science only
-//   • ICT                 → Maths stream only
+// Stream rules
 // ------------------------------------------------------------
 const BIO_STREAM = "Bio Science";
 const MATHS_STREAM = "Maths";
@@ -35,13 +35,10 @@ const MATHS_STREAM = "Maths";
 function derivedStreamForSubject(subject: string): string | null {
   if (subject === "Biology") return BIO_STREAM;
   if (subject === "ICT") return MATHS_STREAM;
-  return null; // Physics, Chemistry → Common
+  return null;
 }
 
-// ------------------------------------------------------------
-// ✅ Default date / time helpers — CURRENT value with buffer
-// ------------------------------------------------------------
-const START_BUFFER_MINUTES = 5;   // start time default = now + 5 min
+const START_BUFFER_MINUTES = 5;
 
 function getDefaultDate(): string {
   const d = new Date();
@@ -56,6 +53,27 @@ function getDefaultTime(): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+/**
+ * Convert an ISO timestamp into local `YYYY-MM-DD` + `HH:MM`
+ * so they can be dropped directly into date/time inputs.
+ */
+function isoToLocalDateTime(iso: string | null | undefined): {
+  date: string;
+  time: string;
+} {
+  if (!iso) return { date: getDefaultDate(), time: getDefaultTime() };
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return { date: getDefaultDate(), time: getDefaultTime() };
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+
+  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${min}` };
 }
 
 interface Quiz {
@@ -77,8 +95,6 @@ type QuizQuestionRow = {
   questions: EditableQuestion | null;
 };
 
-// ─── Shared column list for question fetches ───
-// ✅ `quiz_id` removed — no longer exists on questions table
 const QUESTION_COLUMNS = `
   id, subject, stream, topic, image_url, correct_option,
   question_text, option_1, option_2, option_3, option_4, option_5, explanation,
@@ -95,6 +111,9 @@ export default function AdminQuizzesPage() {
   const [quizQuestions, setQuizQuestions] = useState<EditableQuestion[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<EditableQuestion | null>(null);
+
+  // ✅ NEW: quiz-level edit modal state
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
 
   const [subject, setSubject] = useState("Physics");
   const [topic, setTopic] = useState("");
@@ -167,7 +186,6 @@ export default function AdminQuizzesPage() {
     setLoadingQuestions(true);
 
     try {
-      // ✅ Single source of truth: quiz_questions junction table
       const { data: qqData, error: qqError } = await supabase
         .from("quiz_questions")
         .select(`question_id, order_index, questions(${QUESTION_COLUMNS})`)
@@ -198,7 +216,6 @@ export default function AdminQuizzesPage() {
     )
       return;
 
-    // ✅ Only delete the junction row — question itself stays in bank
     await supabase
       .from("quiz_questions")
       .delete()
@@ -276,8 +293,29 @@ export default function AdminQuizzesPage() {
     fetchQuizzes();
   };
 
+  // ============================================================
+  // Loading Screen
+  // ============================================================
+  if (loading && quizzes.length === 0) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col items-center justify-center gap-4 text-gray-500 text-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/loading-screen.png"
+          alt="AISSA"
+          className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-pulse"
+        />
+        <div className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+          Loading Quizzes...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
+      {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
@@ -285,48 +323,53 @@ export default function AdminQuizzesPage() {
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-5 sm:space-y-6">
 
-          {/* ============ Header Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          {/* ============ Header Banner — DARK THEME ============ */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
             <div
-              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
+                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
                 backgroundSize: "22px 22px",
               }}
             />
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-7 space-y-5">
               <div className="flex items-start gap-4">
                 <div className="shrink-0">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                      <BookOpen className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
+                    <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/aissa-logo.png"
+                        alt="AISSA Logo"
+                        className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
                       <GraduationCap className="w-3.5 h-3.5" />
                       AISSA
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/25 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-300/30">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       Admin
                     </span>
                   </div>
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
-                    <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300 shrink-0" />
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
                     AISSA Quiz Management
                   </h1>
-                  <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
+                  <p className="text-slate-300 text-[11px] sm:text-xs mt-1">
                     ප්‍රශ්න පත්‍ර සාදන්න, Question Bank එකෙන් ප්‍රශ්න (උපරිම 20) තෝරන්න, සහ සිසුන්ගේ ප්‍රගතිය බලන්න.
                   </p>
                 </div>
@@ -335,7 +378,7 @@ export default function AdminQuizzesPage() {
               <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <Link
                   href="/admin/questions"
-                  className="px-3 sm:px-4 py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-semibold rounded-xl text-xs sm:text-sm transition border border-white/20 flex items-center justify-center gap-2"
+                  className="px-3 sm:px-4 py-2.5 bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-100 font-semibold rounded-xl text-xs sm:text-sm transition border border-teal-400/30 flex items-center justify-center gap-2"
                 >
                   <FileQuestion className="w-4 h-4 shrink-0" />
                   <span className="truncate">Question Bank</span>
@@ -343,7 +386,7 @@ export default function AdminQuizzesPage() {
 
                 <Link
                   href="/admin/performance"
-                  className="px-3 sm:px-4 py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-semibold rounded-xl text-xs sm:text-sm transition border border-white/20 flex items-center justify-center gap-2"
+                  className="px-3 sm:px-4 py-2.5 bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-100 font-semibold rounded-xl text-xs sm:text-sm transition border border-teal-400/30 flex items-center justify-center gap-2"
                 >
                   <BarChart3 className="w-4 h-4 shrink-0" />
                   <span className="truncate">Performance</span>
@@ -353,8 +396,8 @@ export default function AdminQuizzesPage() {
                   onClick={() => setShowForm((v) => !v)}
                   className={`col-span-2 sm:col-auto px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm ${
                     showForm
-                      ? "bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/20"
-                      : "bg-white text-emerald-900 hover:bg-emerald-50 hover:shadow-md hover:scale-[1.01]"
+                      ? "bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-100 border border-teal-400/30"
+                      : "bg-teal-500 text-slate-900 hover:bg-teal-400 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.01]"
                   }`}
                 >
                   {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -390,7 +433,6 @@ export default function AdminQuizzesPage() {
               )}
 
               <form onSubmit={handleSchedule} className="space-y-5 sm:space-y-6">
-                {/* ---- Subject + auto stream indicator ---- */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
@@ -412,7 +454,6 @@ export default function AdminQuizzesPage() {
                     </select>
                   </div>
 
-                  {/* Stream — auto-derived, read-only */}
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
                       <Globe2 className="w-3.5 h-3.5" /> Stream (Auto)
@@ -427,9 +468,7 @@ export default function AdminQuizzesPage() {
                       }`}
                     >
                       {derivedStream === null ? (
-                        <span className="font-bold">
-                          Common — All Science Streams
-                        </span>
+                        <span className="font-bold">Common — All Science Streams</span>
                       ) : derivedStream === BIO_STREAM ? (
                         <span className="font-bold">Bio Science only</span>
                       ) : (
@@ -441,7 +480,7 @@ export default function AdminQuizzesPage() {
                         ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
                         : derivedStream === BIO_STREAM
                           ? "* Biology Bio Science stream එකට විතරයි."
-                          : "* ICT Maths stream එකට විතරයි (Physics + Chemistry හෝ Physics + ICT)."}
+                          : "* ICT Maths stream එකට විතරයි."}
                     </p>
                   </div>
                 </div>
@@ -488,9 +527,6 @@ export default function AdminQuizzesPage() {
                       disabled={isSubmitting}
                       className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                     />
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      * Auto — අද දිනය ලෙස set වේ
-                    </p>
                   </div>
 
                   <div>
@@ -505,9 +541,6 @@ export default function AdminQuizzesPage() {
                       disabled={isSubmitting}
                       className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                     />
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      * Auto — දැන් + විනාඩි {START_BUFFER_MINUTES}
-                    </p>
                   </div>
 
                   <div>
@@ -677,9 +710,11 @@ export default function AdminQuizzesPage() {
                                 {quiz.scheduled_at && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3.5 h-3.5" />
-                                    {new Date(quiz.scheduled_at).toLocaleDateString("en-GB", {
+                                    {new Date(quiz.scheduled_at).toLocaleString("en-GB", {
                                       day: "2-digit",
                                       month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
                                     })}
                                   </span>
                                 )}
@@ -696,6 +731,14 @@ export default function AdminQuizzesPage() {
                                   className="text-xs font-bold text-teal-600 hover:text-teal-800 flex items-center gap-1 transition"
                                 >
                                   <Eye className="w-3.5 h-3.5" /> View ({quiz.total_questions ?? 0})
+                                </button>
+
+                                {/* ✅ NEW: Edit button — schedule / date / time edit */}
+                                <button
+                                  onClick={() => setEditingQuiz(quiz)}
+                                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" /> Edit
                                 </button>
 
                                 <Link
@@ -853,6 +896,19 @@ export default function AdminQuizzesPage() {
         </div>
       )}
 
+      {/* ============================================================ */}
+      {/* ✅ NEW: Quiz Edit Modal — date / time / duration / title */}
+      {/* ============================================================ */}
+      <QuizEditModal
+        key={editingQuiz?.id ?? "empty"}
+        quiz={editingQuiz}
+        onClose={() => setEditingQuiz(null)}
+        onSaved={() => {
+          setEditingQuiz(null);
+          fetchQuizzes();
+        }}
+      />
+
       <QuestionBankSelectorModal
         isOpen={showBankSelector}
         onClose={() => setShowBankSelector(false)}
@@ -872,6 +928,307 @@ export default function AdminQuizzesPage() {
           fetchQuizzes();
         }}
       />
+    </div>
+  );
+}
+
+// ============================================================
+// ✅ Quiz Edit Modal — Edit scheduled date/time/duration/title
+// ============================================================
+function QuizEditModal({
+  quiz,
+  onClose,
+  onSaved,
+}: {
+  quiz: Quiz | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const getInitialFormState = (currentQuiz: Quiz | null) => {
+    if (!currentQuiz) {
+      return {
+        title: "",
+        description: "",
+        subject: "Physics",
+        date: getDefaultDate(),
+        time: getDefaultTime(),
+        duration: "45",
+        isLive: true,
+      };
+    }
+
+    const { date: d, time: t } = isoToLocalDateTime(currentQuiz.scheduled_at);
+
+    return {
+      title: currentQuiz.title ?? "",
+      description: currentQuiz.description ?? "",
+      subject: currentQuiz.subject ?? "Physics",
+      date: d,
+      time: t,
+      duration: String(currentQuiz.duration_minutes ?? 45),
+      isLive: currentQuiz.is_live ?? true,
+    };
+  };
+
+  const initialForm = getInitialFormState(quiz);
+  const [title, setTitle] = useState(initialForm.title);
+  const [description, setDescription] = useState(initialForm.description);
+  const [subject, setSubject] = useState(initialForm.subject);
+  const [date, setDate] = useState(initialForm.date);
+  const [time, setTime] = useState(initialForm.time);
+  const [duration, setDuration] = useState(initialForm.duration);
+  const [isLive, setIsLive] = useState(initialForm.isLive);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!quiz) return null;
+
+  const derivedStream = derivedStreamForSubject(subject);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSaving(true);
+
+    const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
+
+    const { error: updateError } = await supabase
+      .from("quizzes")
+      .update({
+        title: title.trim(),
+        description: description.trim() || null,
+        subject,
+        stream: derivedStream,
+        scheduled_at: scheduledAt,
+        duration_minutes: parseInt(duration, 10),
+        is_live: isLive,
+      })
+      .eq("id", quiz.id);
+
+    setIsSaving(false);
+
+    if (updateError) {
+      setError("Update Error: " + updateError.message);
+      return;
+    }
+
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full sm:max-w-2xl bg-white/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-white/70 overflow-hidden max-h-[92vh] sm:my-8 flex flex-col">
+
+        {/* ---- Header (dark banner style) ---- */}
+        <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-slate-700/50 shrink-0">
+          <div
+            className="absolute inset-0 opacity-[0.15] pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+            }}
+          />
+          <div className="pointer-events-none absolute -top-16 -right-20 w-56 h-56 bg-teal-500/20 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl" />
+
+          <div className="relative px-4 sm:px-6 py-4 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 p-2 bg-teal-500/15 rounded-xl border border-teal-400/30">
+                <Edit3 className="w-5 h-5 text-teal-200" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-bold truncate">
+                  Edit Quiz Schedule
+                </h3>
+                <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5 truncate">
+                  දිනය · වේලාව · කාලය · විස්තර වෙනස් කරන්න
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isSaving}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition shrink-0 disabled:opacity-60"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* ---- Body ---- */}
+        <form onSubmit={handleSave} className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Subject + auto stream */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                විෂය (Subject)
+              </label>
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                disabled={isSaving}
+                className="w-full p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+              >
+                <option value="Physics">Physics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Biology">Biology</option>
+                <option value="ICT">ICT</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
+                <Globe2 className="w-3.5 h-3.5" /> Stream (Auto)
+              </label>
+              <div
+                className={`w-full p-3 rounded-xl font-medium text-sm border ${
+                  derivedStream === null
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : derivedStream === BIO_STREAM
+                      ? "bg-purple-50 border-purple-200 text-purple-800"
+                      : "bg-cyan-50 border-cyan-200 text-cyan-800"
+                }`}
+              >
+                {derivedStream === null ? (
+                  <span className="font-bold">Common</span>
+                ) : derivedStream === BIO_STREAM ? (
+                  <span className="font-bold">Bio Science only</span>
+                ) : (
+                  <span className="font-bold">Maths stream only</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              Quiz Topic
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              disabled={isSaving}
+              className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              විස්තරය (Optional)
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isSaving}
+              placeholder="Optional short description"
+              className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+            />
+          </div>
+
+          {/* Date / Time / Duration */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="flex items-center gap-1 text-xs font-bold text-gray-700 uppercase mb-2">
+                <Calendar className="w-3.5 h-3.5" /> දිනය
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                disabled={isSaving}
+                className="w-full p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1 text-xs font-bold text-gray-700 uppercase mb-2">
+                <Clock className="w-3.5 h-3.5" /> ආරම්භය
+              </label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+                disabled={isSaving}
+                className="w-full p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1 text-xs font-bold text-gray-700 uppercase mb-2">
+                <Clock className="w-3.5 h-3.5" /> මිනිත්තු
+              </label>
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                required
+                min={1}
+                disabled={isSaving}
+                className="w-full p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+              />
+            </div>
+          </div>
+
+          {/* Live toggle */}
+          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="editIsLive"
+              checked={isLive}
+              onChange={(e) => setIsLive(e.target.checked)}
+              disabled={isSaving}
+              className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 disabled:opacity-60"
+            />
+            <label
+              htmlFor="editIsLive"
+              className="text-xs font-bold text-emerald-900 uppercase"
+            >
+              Quiz එක Live කරන්න (students can access)
+            </label>
+          </div>
+        </form>
+
+        {/* ---- Footer ---- */}
+        <div className="px-4 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/80 backdrop-blur-sm flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="order-2 sm:order-1 px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl border border-gray-200 transition disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="order-1 sm:order-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Save Changes
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

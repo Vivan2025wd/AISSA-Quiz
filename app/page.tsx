@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  GraduationCap,
   Trophy,
   LayoutDashboard,
   UserPlus,
@@ -73,7 +72,7 @@ export default function HomePage() {
   return (
     // 1. Modern Soft Gradient & Blob Background
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col justify-center items-center p-4 sm:p-6 text-center relative overflow-hidden">
-      
+
       {/* Decorative floating blobs for a modern "Aurora" effect */}
       <div className="absolute top-[-10%] left-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -81,18 +80,27 @@ export default function HomePage() {
 
       {/* 2. Glassmorphism Card */}
       <div className="relative w-full max-w-2xl bg-white/80 backdrop-blur-md p-6 sm:p-8 md:p-10 rounded-3xl shadow-xl border border-white/60 space-y-5 sm:space-y-6">
-        
-        <div className="inline-flex p-3 sm:p-4 bg-emerald-50 text-emerald-600 rounded-2xl shadow-sm">
-          <GraduationCap className="w-10 h-10 sm:w-12 sm:h-12" />
+
+        {/* ✨ 1 to 50 Logo */}
+        <div className="relative flex justify-center pt-2">
+          <div className="relative">
+            {/* Soft emerald glow behind logo */}
+            <div className="absolute inset-0 bg-emerald-300/30 blur-2xl rounded-full scale-110" />
+            <div className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/aissa-logo.png"
+                alt="AISSA 1 to 50"
+                className="w-full h-full object-contain drop-shadow-xl"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
             All Island School Science Association
           </h1>
-          <p className="text-emerald-600 font-semibold text-xs sm:text-sm tracking-wide uppercase">
-            AISSA Quiz Platform
-          </p>
         </div>
 
         <p className="text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed">

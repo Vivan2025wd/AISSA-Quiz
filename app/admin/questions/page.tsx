@@ -18,14 +18,8 @@ import { supabase } from "@/lib/supabaseClient";
 import QuestionEntryForm from "@/components/QuestionEntryForm";
 import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionEditModal";
 
-// ------------------------------------------------------------
-// Filters
-//   • "Common"     = Physics / Chemistry (stream IS NULL in DB)
-//   • "Bio Science"= Biology only
-//   • "Maths"      = ICT only
-// ------------------------------------------------------------
 const subjectFilters = ["All", "Physics", "Chemistry", "Biology", "ICT"];
-const streamFilters = ["All", "Common", "Bio Science", "Maths"];   // ✅ Maths added
+const streamFilters = ["All", "Common", "Bio Science", "Maths"];
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
@@ -98,6 +92,26 @@ export default function QuestionsPage() {
     return qText.includes(search) || topicText.includes(search);
   });
 
+  // ============================================================
+  // Loading Screen
+  // ============================================================
+  if (loading && questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col items-center justify-center gap-4 text-gray-500 text-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/loading-screen.png"
+          alt="AISSA"
+          className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-pulse"
+        />
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+          Question Bank එක Load වෙමින්...
+        </div>
+      </div>
+    );
+  }
+
   return (
     // ============ Modern green/white background ============
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
@@ -109,33 +123,39 @@ export default function QuestionsPage() {
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-5 sm:space-y-6">
 
-          {/* ============ Header Banner ============ */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-xl shadow-emerald-900/20">
+          {/* ============ Header Banner — DARK THEME ============ */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
             {/* dot grid */}
             <div
-              className="absolute inset-0 opacity-[0.08] pointer-events-none"
+              className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
+                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* glows */}
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-300/25 rounded-full blur-3xl" />
+            {/* teal glows */}
+            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
             {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-white/5" />
+            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
             {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/8" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-start gap-4 min-w-0 flex-1">
-                {/* Logo */}
+                {/* ✨ AISSA Logo — no box, sits directly on dark bg */}
                 <div className="shrink-0">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-emerald-300/40 blur-xl rounded-full" />
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white/15 backdrop-blur-md rounded-2xl border border-white/25 shadow-lg flex items-center justify-center overflow-hidden">
-                      <FileQuestion className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
+                    <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/aissa-logo.png"
+                        alt="AISSA Logo"
+                        className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                      />
                     </div>
                   </div>
                 </div>
@@ -143,20 +163,20 @@ export default function QuestionsPage() {
                 {/* Title */}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
                       <GraduationCap className="w-3.5 h-3.5" />
                       AISSA
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/25 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-300/30">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       Admin
                     </span>
                   </div>
                   <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
-                    <FileQuestion className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300 shrink-0" />
+                    <FileQuestion className="w-6 h-6 sm:w-7 sm:h-7 text-teal-300 shrink-0" />
                     Central Question Bank
                   </h1>
-                  <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
+                  <p className="text-slate-300 text-[11px] sm:text-xs mt-1">
                     සියලුම MCQs මෙහි ගබඩා කර ඇත. Quiz සාදන විට මෙම ප්‍රශ්න බැංකුවෙන් උපරිම 20ක් තෝරාගත හැක.
                   </p>
                 </div>
@@ -165,10 +185,10 @@ export default function QuestionsPage() {
               {/* Add button */}
               <button
                 onClick={() => setShowAddForm((prev) => !prev)}
-                className={`self-start shrink-0 px-5 py-2.5 font-bold rounded-xl text-sm transition shadow-sm flex items-center gap-2 ${
+                className={`self-start shrink-0 px-5 py-2.5 font-bold rounded-xl text-sm transition shadow-lg flex items-center gap-2 ${
                   showAddForm
-                    ? "bg-white/15 hover:bg-white/25 backdrop-blur-md text-white border border-white/20"
-                    : "bg-white text-emerald-900 hover:bg-emerald-50 hover:shadow-md hover:scale-[1.01]"
+                    ? "bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-200 border border-teal-400/30"
+                    : "bg-teal-500 text-slate-900 hover:bg-teal-400 hover:shadow-teal-500/30 hover:scale-[1.01]"
                 }`}
               >
                 {showAddForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -273,10 +293,6 @@ export default function QuestionsPage() {
                           opt !== null && opt !== undefined && opt.trim() !== "",
                       );
 
-                      // ✅ Stream badge color per stream:
-                      //    null → emerald ("Common")
-                      //    Bio Science → purple
-                      //    Maths → cyan
                       const streamBadgeClass = !q.stream
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                         : q.stream === "Bio Science"
@@ -301,7 +317,6 @@ export default function QuestionsPage() {
                                     {q.subject}
                                   </span>
                                 )}
-                                {/* Stream badge */}
                                 <span
                                   className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${streamBadgeClass}`}
                                 >
@@ -396,7 +411,6 @@ export default function QuestionsPage() {
                     })}
                   </div>
 
-                  {/* Bottom fade — indicates more content below */}
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                 </div>
 
