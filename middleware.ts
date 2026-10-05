@@ -21,8 +21,8 @@ export async function middleware(request: NextRequest) {
           response = NextResponse.next({
             request,
           });
-          cookiesToSet.forEach(({ name, value }) =>
-            response.cookies.set(name, value)
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
           );
         },
       },
@@ -33,7 +33,12 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /admin routes
+  // ── Protect /admin routes ──────────────────────────────────────────────────
+  // NOTE: The is_admin check here reads from the profiles table.
+  // The CRITICAL privilege-escalation fix is the column-level REVOKE in
+  // supabase_security_migration.sql — that removes UPDATE(is_admin) from
+  // authenticated users so this field can no longer be self-promoted.
+  // The middleware check is defence-in-depth only.
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
@@ -63,6 +68,15 @@ export async function middleware(request: NextRequest) {
     if (!profile.is_admin) {
       return NextResponse.redirect(new URL("/student/dashboard", request.url));
     }
+  }
+
+  // ── Protect /student routes ────────────────────────────────────────────────
+  if (request.nextUrl.pathname.startsWith("/student")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+    // No further checks needed for student routes — individual pages
+    // (dashboard, quiz, leaderboard) verify authentication themselves.
   }
 
   return response;

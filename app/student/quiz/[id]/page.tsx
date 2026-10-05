@@ -43,7 +43,8 @@ type Question = {
   id: string;
   quiz_id: string;
   image_url: string | null;
-  correct_option: number;
+  // correct_option is intentionally absent — it is stripped by the API
+  // to prevent client-side cheating. Grading is done server-side.
   topic: string | null;
 
   question_text: string;
@@ -214,6 +215,11 @@ export default function StudentQuizPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Stores per-question correctness returned by the /api/grade endpoint.
+  // question_id → true/false. Only populated after grading.
+  const [isCorrectMap, setIsCorrectMap] = useState<Record<string, boolean>>({});
+  // Server-confirmed score (from /api/grade response).
+  const [confirmedScore, setConfirmedScore] = useState<number | null>(null);
 
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
 
@@ -345,16 +351,13 @@ export default function StudentQuizPage() {
     [quiz],
   );
 
-  const calculateScore = useCallback(() => {
-    let correct = 0;
-    questions.forEach((q, idx) => {
-      if (selectedAnswers[idx] === q.correct_option) correct++;
-    });
-    return correct;
-  }, [questions, selectedAnswers]);
-
+  /**
+   * Submits the student's answers to the server for grading.
+   * All correctness checking happens on the server — correct_option
+   * is never sent to the client.
+   */
   const submitQuizResult = useCallback(
-    async (finalScore: number, totalMarks: number, timeSpent: number) => {
+    async (timeSpent: number) => {
       setIsSubmitting(true);
       setSubmitError(null);
 
@@ -369,56 +372,48 @@ export default function StudentQuizPage() {
         return;
       }
 
-      const { data: resultRow, error: resultErr } = await supabase
-        .from("quiz_results")
-        .insert([
-          {
-            student_id: user.id,
-            quiz_id: quizId,
-            score: finalScore,
-            total_marks: totalMarks,
-            time_spent_seconds: timeSpent,
-          },
-        ])
-        .select("id")
-        .single();
+      // Build the answer payload (question_id + selected_option index).
+      const answers = questions.map((q, idx) => ({
+        question_id: q.id,
+        selected_option: selectedAnswers[idx] !== undefined ? selectedAnswers[idx] : null,
+      }));
 
-      if (resultErr || !resultRow) {
+      // POST to the server-side grading endpoint.
+      const res = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quiz_id: quizId,
+          answers,
+          time_spent_seconds: timeSpent,
+        }),
+      });
+
+      if (!res.ok) {
         setIsSubmitting(false);
-        setSubmitError(
-          "Result save කිරීමේදී දෝෂයක්: " + (resultErr?.message ?? "unknown"),
-        );
+        setSubmitError("Result save කිරීමේදී දෝෂයක් (" + res.status + ").");
         return;
       }
 
-      const answerRows = questions.map((q, idx) => {
-        const sel = selectedAnswers[idx];
-        return {
-          result_id: resultRow.id,
-          student_id: user.id,
-          quiz_id: quizId,
-          question_id: q.id,
-          selected_option: sel === undefined ? null : sel,
-          is_correct: sel !== undefined && sel === q.correct_option,
-        };
-      });
+      const result = (await res.json()) as {
+        score?: number;
+        total_marks?: number;
+        already_submitted?: boolean;
+        per_question?: Array<{ question_id: string; is_correct: boolean }>;
+      };
 
-      if (answerRows.length > 0) {
-        const { error: answersErr } = await supabase
-          .from("quiz_answers")
-          .insert(answerRows);
+      setConfirmedScore(result.score ?? 0);
 
-        if (answersErr) {
-          console.error("quiz_answers insert failed:", answersErr);
-          setSubmitError(
-            "Answers save කිරීමේදී දෝෂයක් (result save විය): " +
-              answersErr.message,
-          );
+      // Store per-question correctness map for review mode.
+      if (result.per_question) {
+        const map: Record<string, boolean> = {};
+        for (const pq of result.per_question) {
+          map[pq.question_id] = pq.is_correct;
         }
+        setIsCorrectMap(map);
       }
 
-      setIsSubmitting(false);
-
+      // Re-fetch the student's stored result and answers for the review screen.
       const { data: resultData } = await supabase
         .from("quiz_results")
         .select("id, score, total_marks, time_spent_seconds, submitted_at")
@@ -429,18 +424,26 @@ export default function StudentQuizPage() {
 
       const { data: ansData } = await supabase
         .from("quiz_answers")
-        .select("question_id, selected_option")
+        .select("question_id, selected_option, is_correct")
         .eq("student_id", user.id)
         .eq("quiz_id", quizId);
 
       if (ansData) {
-        const map: MyAnswersMap = {};
-        for (const a of ansData as { question_id: string; selected_option: number | null }[]) {
-          map[a.question_id] = a.selected_option;
+        const map2: MyAnswersMap = {};
+        const corrMap: Record<string, boolean> = {};
+        for (const a of ansData as {
+          question_id: string;
+          selected_option: number | null;
+          is_correct: boolean;
+        }[]) {
+          map2[a.question_id] = a.selected_option;
+          corrMap[a.question_id] = a.is_correct;
         }
-        setMyAnswers(map);
+        setMyAnswers(map2);
+        setIsCorrectMap(corrMap);
       }
 
+      setIsSubmitting(false);
       router.push("/student/leaderboard");
     },
     [quizId, router, questions, selectedAnswers],
@@ -448,13 +451,13 @@ export default function StudentQuizPage() {
 
   const finishQuiz = useCallback(async () => {
     setIsSubmitted(true);
-    const finalScore = calculateScore();
-    const totalMarks = questions.length;
     const actualSeconds = startedAtMs
       ? Math.floor((Date.now() - startedAtMs) / 1000)
       : 0;
-    await submitQuizResult(finalScore, totalMarks, Math.max(0, actualSeconds));
-  }, [calculateScore, questions.length, startedAtMs, submitQuizResult]);
+    await submitQuizResult(Math.max(0, actualSeconds));
+  }, [startedAtMs, submitQuizResult]);
+
+
 
   useEffect(() => {
     if (windowStatus !== "active") return;
@@ -634,6 +637,7 @@ export default function StudentQuizPage() {
           medium={medium}
           myResult={myResult}
           myAnswers={myAnswers}
+          isCorrectMap={isCorrectMap}
           reviewIndex={reviewIndex}
           setReviewIndex={setReviewIndex}
           onBack={() => router.push("/student/dashboard")}
@@ -692,7 +696,7 @@ export default function StudentQuizPage() {
             Quiz එක සම්පූර්ණ කර ඇත
           </h2>
           <p className="text-gray-600 text-sm">
-            ලකුණු: {calculateScore()} / {questions.length}
+            ලකුණු: {confirmedScore !== null ? confirmedScore : "…"} / {questions.length}
           </p>
           {isSubmitting && (
             <p className="text-xs sm:text-sm text-gray-400 flex items-center justify-center gap-2">
@@ -958,6 +962,7 @@ function ReviewMode({
   medium,
   myResult,
   myAnswers,
+  isCorrectMap,
   reviewIndex,
   setReviewIndex,
   onBack,
@@ -967,6 +972,8 @@ function ReviewMode({
   medium: Medium;
   myResult: StudentResult | null;
   myAnswers: MyAnswersMap;
+  /** Server-confirmed correctness map: question_id → is_correct */
+  isCorrectMap: Record<string, boolean>;
   reviewIndex: number;
   setReviewIndex: (i: number) => void;
   onBack: () => void;
@@ -1020,7 +1027,8 @@ function ReviewMode({
             const isCurrent = reviewIndex === idx;
             const sel = myAnswers[question.id];
             const answered = sel !== undefined && sel !== null;
-            const correct = answered && sel === question.correct_option;
+            // Use server-confirmed correctness — no client-side correct_option needed.
+            const correct = answered && isCorrectMap[question.id] === true;
             const wrong = answered && !correct;
 
             let colorCls = "bg-gray-100 text-gray-600 border border-gray-200";
@@ -1075,21 +1083,19 @@ function ReviewMode({
 
           <div className="space-y-2">
             {optionsList.map((opt, idx) => {
-              const isCorrect = localized.correct_option === idx;
               const studentPicked = studentAnswered && studentSel === idx;
-              const studentWrong = studentPicked && !isCorrect;
+              // We know this answer is correct if the student picked it and isCorrectMap says so.
+              const studentPickedCorrectly = studentPicked && isCorrectMap[q.id] === true;
+              const studentWrong = studentPicked && !studentPickedCorrectly;
 
-              let cardCls =
-                "bg-white/60 border-gray-200 text-gray-700";
-              if (isCorrect)
-                cardCls =
-                  "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold";
+              let cardCls = "bg-white/60 border-gray-200 text-gray-700";
+              if (studentPickedCorrectly)
+                cardCls = "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold";
               else if (studentWrong)
-                cardCls =
-                  "bg-red-50 border-red-300 text-red-900 font-bold";
+                cardCls = "bg-red-50 border-red-300 text-red-900 font-bold";
 
               let badgeCls = "bg-gray-200 text-gray-700";
-              if (isCorrect) badgeCls = "bg-emerald-600 text-white";
+              if (studentPickedCorrectly) badgeCls = "bg-emerald-600 text-white";
               else if (studentWrong) badgeCls = "bg-red-600 text-white";
 
               return (
@@ -1100,7 +1106,7 @@ function ReviewMode({
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5 ${badgeCls}`}
                   >
-                    {isCorrect ? (
+                    {studentPickedCorrectly ? (
                       <CheckCircle2 className="w-4 h-4" />
                     ) : studentWrong ? (
                       <XCircle className="w-4 h-4" />
@@ -1110,14 +1116,14 @@ function ReviewMode({
                   </span>
                   <span className="flex-1 wrap-break-word">{opt}</span>
 
-                  {isCorrect && (
+                  {studentPickedCorrectly && (
                     <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
-                      Correct
+                      Correct ✓
                     </span>
                   )}
                   {studentWrong && (
                     <span className="hidden sm:inline px-2 py-0.5 bg-red-200 text-red-900 text-[10px] font-bold rounded shrink-0">
-                      Your answer
+                      Your answer ✗
                     </span>
                   )}
                 </div>
@@ -1172,7 +1178,8 @@ function ReviewMode({
               const isCurrent = reviewIndex === idx;
               const sel = myAnswers[question.id];
               const answered = sel !== undefined && sel !== null;
-              const correct = answered && sel === question.correct_option;
+              // Use server-confirmed correctness.
+              const correct = answered && isCorrectMap[question.id] === true;
               const wrong = answered && !correct;
 
               let colorCls = "bg-gray-100 text-gray-600 border border-gray-200";

@@ -1,7 +1,40 @@
 import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    // ─────────────────────────────────────────────────────────────
+    // Auth gate: only an authenticated user who JUST registered
+    // should be calling this.  This prevents unauthenticated
+    // actors from spamming the endpoint to send arbitrary emails.
+    // ─────────────────────────────────────────────────────────────
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {
+            // Route Handlers cannot set cookies; this is intentional.
+          },
+        },
+      },
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { email, fullName, aisId } = body as {
       email?: string;
@@ -9,10 +42,19 @@ export async function POST(req: Request) {
       aisId?: string;
     };
 
+    // ── Validate: the email in the request MUST match the
+    //    authenticated user's email — no sending to third parties.
     if (!email || !aisId) {
       return NextResponse.json(
         { error: "Missing email or aisId" },
         { status: 400 },
+      );
+    }
+
+    if (email.toLowerCase().trim() !== user.email?.toLowerCase().trim()) {
+      return NextResponse.json(
+        { error: "Forbidden: email mismatch" },
+        { status: 403 },
       );
     }
 
@@ -82,8 +124,9 @@ export async function POST(req: Request) {
     if (!res.ok) {
       const errBody = await res.text();
       console.error("[send-id] Brevo error:", res.status, errBody);
+      // Do not forward third-party error body to clients.
       return NextResponse.json(
-        { error: "Email send failed", detail: errBody },
+        { error: "Email send failed" },
         { status: 500 },
       );
     }
