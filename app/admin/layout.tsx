@@ -13,7 +13,6 @@ import {
   Menu,
   X,
   Crown,
-  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { clearAdminSession } from "@/lib/admin-session";
@@ -241,7 +240,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col md:flex-row relative">
       {/* ============ MOBILE TOP BAR — DARK THEME ============ */}
-      <header className="md:hidden sticky top-0 z-30 relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-slate-700/50 flex items-center justify-between px-4 py-3 shrink-0 shadow-lg shadow-black/40">
+      <header className="md:hidden sticky top-0 z-30 overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-slate-700/50 flex items-center justify-between px-4 py-3 shrink-0 shadow-lg shadow-black/40">
         {/* dot grid */}
         <div
           className="absolute inset-0 opacity-[0.15] pointer-events-none"
@@ -306,7 +305,7 @@ export default function AdminLayout({
             aria-hidden
           />
           {/* Drawer panel */}
-          <aside className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-slate-200 border-r border-slate-700/50 flex flex-col shadow-2xl shadow-black/60 animate-in slide-in-from-left duration-200">
+          <aside className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-slate-200 border-r border-slate-700/50 flex flex-col shadow-2xl shadow-black/60 animate-in slide-in-from-left duration-200">
             {/* Ambient glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-56 h-56 bg-teal-500/15 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute bottom-0 -left-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl" />

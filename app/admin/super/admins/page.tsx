@@ -102,9 +102,10 @@ export default function AdminsPage() {
   }, [profiles, search, filter]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-amber-500/20">
+    // ── Outer shell: locked height on desktop so only the list scrolls ──
+    <div className="max-w-6xl mx-auto md:max-h-[calc(100vh-3rem)] flex flex-col gap-4 sm:gap-5">
+      {/* ═══ Header — shrink-0 so it never collapses ═══ */}
+      <div className="shrink-0 relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-amber-500/20">
         <div
           className="absolute inset-0 opacity-[0.15] pointer-events-none"
           style={{
@@ -137,9 +138,10 @@ export default function AdminsPage() {
         </div>
       </div>
 
+      {/* ═══ Toast — shrink-0 ═══ */}
       {toast && (
         <div
-          className={`p-3 text-xs font-semibold rounded-xl flex items-start gap-2 border ${
+          className={`shrink-0 p-3 text-xs font-semibold rounded-xl flex items-start gap-2 border ${
             toast.kind === "ok"
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
               : "bg-red-50 border-red-200 text-red-700"
@@ -154,8 +156,8 @@ export default function AdminsPage() {
         </div>
       )}
 
-      {/* Filter bar */}
-      <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/70 shadow-sm space-y-3">
+      {/* ═══ Filter bar — shrink-0 ═══ */}
+      <div className="shrink-0 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/70 shadow-sm space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="relative sm:col-span-2">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
@@ -202,19 +204,19 @@ export default function AdminsPage() {
         </div>
       </div>
 
-      {/* List */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden">
+      {/* ═══ List — flex-1 + min-h-0 so ONLY this scrolls ═══ */}
+      <div className="flex-1 min-h-0 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden flex flex-col">
         {loading ? (
-          <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 text-sm">
             <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
             Loading users...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-gray-400 text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 text-sm">
             No users match your filters.
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100">
             {filtered.map((p) => {
               const isSelf = p.id === currentUserId;
               const busy = actionId === p.id;

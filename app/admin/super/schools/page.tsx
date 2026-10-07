@@ -119,9 +119,10 @@ export default function SchoolsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-amber-500/20">
+    // ── Outer shell: locked height on desktop so only the list scrolls ──
+    <div className="max-w-6xl mx-auto md:max-h-[calc(100vh-3rem)] flex flex-col gap-4 sm:gap-5">
+      {/* ═══ Header — shrink-0 so it never collapses ═══ */}
+      <div className="shrink-0 relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-amber-500/20">
         <div
           className="absolute inset-0 opacity-[0.15] pointer-events-none"
           style={{
@@ -163,9 +164,10 @@ export default function SchoolsPage() {
         </div>
       </div>
 
+      {/* ═══ Toast — shrink-0 ═══ */}
       {toast && (
         <div
-          className={`p-3 text-xs font-semibold rounded-xl flex items-start gap-2 border ${
+          className={`shrink-0 p-3 text-xs font-semibold rounded-xl flex items-start gap-2 border ${
             toast.kind === "ok"
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
               : "bg-red-50 border-red-200 text-red-700"
@@ -180,8 +182,8 @@ export default function SchoolsPage() {
         </div>
       )}
 
-      {/* Filter bar */}
-      <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-3">
+      {/* ═══ Filter bar — shrink-0 ═══ */}
+      <div className="shrink-0 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
           <input
@@ -202,9 +204,9 @@ export default function SchoolsPage() {
         </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+      {/* ═══ Table — flex-1 + min-h-0 so ONLY this scrolls ═══ */}
+      <div className="flex-1 min-h-0 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden flex flex-col">
+        <div className="shrink-0 px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
           <h2 className="text-base font-bold text-gray-900">
             Schools{" "}
             <span className="text-amber-600">
@@ -214,59 +216,57 @@ export default function SchoolsPage() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 text-sm">
             <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
             Loading schools...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-gray-400 text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 text-sm">
             No schools match your search.
           </div>
         ) : (
-          <div className="overflow-y-auto max-h-[65vh]">
-            <ul className="divide-y divide-gray-100">
-              {filtered.map((s) => {
-                const key = s.name.toLowerCase();
-                const count = counts[key] ?? 0;
-                return (
-                  <li
-                    key={s.id}
-                    className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-amber-50/20 transition"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate">
-                        {s.name}
-                      </p>
-                      <p className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <MapPin className="w-3 h-3" />
-                        {s.district ?? "—"}
-                        {count > 0 && (
-                          <span className="inline-flex items-center gap-1 text-amber-700 font-semibold ml-2">
-                            <UsersIcon className="w-3 h-3" /> {count} student{count === 1 ? "" : "s"}
-                          </span>
-                        )}
-                      </p>
-                    </div>
+          <ul className="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100">
+            {filtered.map((s) => {
+              const key = s.name.toLowerCase();
+              const count = counts[key] ?? 0;
+              return (
+                <li
+                  key={s.id}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-amber-50/20 transition"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 text-sm truncate">
+                      {s.name}
+                    </p>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <MapPin className="w-3 h-3" />
+                      {s.district ?? "—"}
+                      {count > 0 && (
+                        <span className="inline-flex items-center gap-1 text-amber-700 font-semibold ml-2">
+                          <UsersIcon className="w-3 h-3" /> {count} student{count === 1 ? "" : "s"}
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setEditing(s)}
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition flex items-center gap-1 border border-amber-200"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" /> Edit
-                      </button>
-                      <button
-                        onClick={() => void handleDelete(s)}
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center gap-1 border border-red-200"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setEditing(s)}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition flex items-center gap-1 border border-amber-200"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(s)}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center gap-1 border border-red-200"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
 
@@ -291,7 +291,7 @@ export default function SchoolsPage() {
 }
 
 // ============================================================
-// Add / Edit modal
+// Add / Edit modal — unchanged
 // ============================================================
 function SchoolFormModal({
   school,

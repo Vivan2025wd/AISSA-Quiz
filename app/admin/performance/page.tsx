@@ -16,6 +16,7 @@ import {
   RefreshCw,
   BookOpen,
   ShieldCheck,
+  Calendar,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -247,327 +248,391 @@ export default function AdminPerformancePage() {
     document.body.removeChild(link);
   };
 
+  // Helper to render the percentage pill consistently
+  const renderPctPill = (pct: number) => (
+    <span
+      className={`inline-flex items-center gap-1 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold ${
+        pct >= 75
+          ? "bg-emerald-100 text-emerald-800"
+          : pct >= 50
+            ? "bg-teal-100 text-teal-800"
+            : pct >= 35
+              ? "bg-amber-100 text-amber-800"
+              : "bg-red-100 text-red-800"
+      }`}
+    >
+      {pct >= 50 ? (
+        <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+      ) : (
+        <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+      )}
+      {pct}%
+    </span>
+  );
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
-      {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+    <div className="max-w-7xl mx-auto md:max-h-[calc(100vh-3rem)] flex flex-col gap-4 sm:gap-5">
 
-      <div className="relative p-3 sm:p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
+      {/* ═══ Header Banner — MOBILE-TIGHTENED ═══ */}
+      <div className="shrink-0 relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
+        <div
+          className="absolute inset-0 opacity-[0.15] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+          }}
+        />
+        <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+        <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-          {/* ═══════════ Header Banner — DARK THEME + LOGO ═══════════ */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
-            {/* dot grid */}
-            <div
-              className="absolute inset-0 opacity-[0.15] pointer-events-none"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
-                backgroundSize: "22px 22px",
-              }}
-            />
-            {/* teal glows */}
-            <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
-            {/* rings */}
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
-            <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
-            {/* shine */}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
-
-            <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex items-start gap-4 min-w-0 flex-1">
-                {/* ✨ AISSA Logo — no box */}
-                <div className="shrink-0">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
-                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/aissa-logo.png"
-                        alt="AISSA Logo"
-                        className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                    <Link
-                      href="/admin/quizzes"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200 hover:bg-teal-500/25 transition"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      Back to Quizzes
-                    </Link>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      Admin
-                    </span>
-                  </div>
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
-                    <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-teal-300 shrink-0" />
-                    Student Performance Analytics
-                  </h1>
-                  <p className="text-slate-300 text-[11px] sm:text-xs mt-1">
-                    සියලුම සිසුන්ගේ ප්‍රශ්න පත්‍ර ලකුණු, ප්‍රගතිය සහ විස්තර මෙතැනින් පරීක්ෂා කරන්න.
-                  </p>
+        <div className="relative p-4 sm:p-6 md:p-7">
+          {/* Top row: logo + title + refresh */}
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="shrink-0">
+              <div className="relative">
+                <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                <div className="relative w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/aissa-logo.png"
+                    alt="AISSA Logo"
+                    className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 shrink-0 self-start">
-                <button
-                  onClick={fetchData}
-                  className="p-2.5 bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-200 rounded-xl transition border border-teal-400/30"
-                  title="Refresh Data"
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1.5">
+                <Link
+                  href="/admin/quizzes"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200 hover:bg-teal-500/25 transition"
                 >
-                  <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
-                </button>
-
-                <button
-                  onClick={exportToCSV}
-                  disabled={filteredAttempts.length === 0}
-                  className="px-4 py-2.5 bg-teal-500 text-slate-900 hover:bg-teal-400 font-bold rounded-xl transition flex items-center gap-2 text-sm shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Download className="w-4 h-4" /> Export CSV
-                </button>
+                  <ArrowLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  Back
+                </Link>
+                <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
+                  <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  Admin
+                </span>
               </div>
+              <h1 className="text-base sm:text-xl md:text-2xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 sm:w-7 sm:h-7 text-teal-300 shrink-0" />
+                <span className="truncate">
+                  Student Performance
+                </span>
+              </h1>
+              <p className="text-slate-300 text-[11px] sm:text-xs mt-1 leading-snug hidden sm:block">
+                සියලුම සිසුන්ගේ ප්‍රශ්න පත්‍ර ලකුණු, ප්‍රගතිය සහ විස්තර මෙතැනින් පරීක්ෂා කරන්න.
+              </p>
             </div>
           </div>
 
-          {fetchWarning && (
-            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
-              <span>⚠️</span>
-              <span>{fetchWarning}</span>
-            </div>
-          )}
+          {/* Action row — refresh + export, both compact */}
+          <div className="flex items-center gap-2 mt-4 sm:mt-5">
+            <button
+              onClick={fetchData}
+              className="p-2.5 bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-200 rounded-xl transition border border-teal-400/30 shrink-0"
+              title="Refresh Data"
+            >
+              <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${loading ? "animate-spin" : ""}`} />
+            </button>
 
-          {/* ============ Summary Cards ============ */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="bg-white/80 backdrop-blur-md p-5 sm:p-6 rounded-2xl border border-white/70 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-              <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
-                <BookOpen className="w-7 h-7" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase text-gray-400">
-                  Total Attempts
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {totalSubmissions}
-                </h3>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-md p-5 sm:p-6 rounded-2xl border border-white/70 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-              <div className="p-3.5 bg-teal-50 text-teal-600 rounded-2xl shrink-0">
-                <Award className="w-7 h-7" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase text-gray-400">
-                  Average Marks
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {avgPercentage}%
-                </h3>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-md p-5 sm:p-6 rounded-2xl border border-white/70 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-              <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
-                <Trophy className="w-7 h-7" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase text-gray-400">
-                  Top Performer
-                </p>
-                <h3 className="text-base font-bold text-gray-900 truncate">
-                  {topScorer ? topScorer.student_name : "N/A"}
-                </h3>
-                {topScorer && (
-                  <p className="text-xs text-amber-600 font-medium">
-                    Score: {topScorer.score}/{topScorer.total_marks}
-                  </p>
-                )}
-              </div>
-            </div>
+            <button
+              onClick={exportToCSV}
+              disabled={filteredAttempts.length === 0}
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 bg-teal-500 text-slate-900 hover:bg-teal-400 font-bold rounded-xl transition flex items-center justify-center gap-2 text-xs sm:text-sm shadow-lg shadow-teal-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4 shrink-0" />
+              <span>Export CSV</span>
+              <span className="hidden sm:inline">
+                ({filteredAttempts.length})
+              </span>
+            </button>
           </div>
+        </div>
+      </div>
 
-          {/* ============ Filters ============ */}
-          <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search name, AISSA ID, school..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-white/60 border border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 focus:bg-white transition"
-              />
-            </div>
+      {fetchWarning && (
+        <div className="shrink-0 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+          <span>⚠️</span>
+          <span>{fetchWarning}</span>
+        </div>
+      )}
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-              <select
-                value={selectedQuiz}
-                onChange={(e) => setSelectedQuiz(e.target.value)}
-                className="w-full sm:w-64 py-2.5 px-3 text-sm bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition font-medium text-gray-700"
-              >
-                <option value="ALL">All Quizzes</option>
-                {quizzes.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* ═══ Summary Cards — 3-col on mobile ═══ */}
+      <div className="shrink-0 grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white/80 backdrop-blur-md p-2.5 sm:p-6 rounded-xl sm:rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 hover:shadow-md transition">
+          <div className="p-1.5 sm:p-3.5 bg-emerald-50 text-emerald-600 rounded-lg sm:rounded-2xl shrink-0 w-fit">
+            <BookOpen className="w-4 h-4 sm:w-7 sm:h-7" />
           </div>
+          <div className="min-w-0">
+            <p className="text-[9px] sm:text-xs font-semibold uppercase text-gray-400 leading-tight">
+              Attempts
+            </p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">
+              {totalSubmissions}
+            </h3>
+          </div>
+        </div>
 
-          {/* ============ Results Table ============ */}
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="p-12 text-center text-gray-500 font-medium">
-                <RefreshCw className="w-8 h-8 animate-spin mx-auto text-emerald-600 mb-3" />
-                Loading student results...
-              </div>
-            ) : filteredAttempts.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
-                <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                <p className="font-semibold text-lg text-gray-700">
-                  No attempts found
-                </p>
-                <p className="text-sm text-gray-400 mt-1">
-                  තවම කිසිදු ශිෂ්‍යයෙක් මෙම Quiz එක සඳහා මුහුණ දී නැත.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="relative">
-                  <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
-                    <table className="w-full text-left border-collapse text-sm">
-                      <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0]">
-                        <tr className="text-emerald-900 font-semibold uppercase text-xs">
-                          <th className="py-4 px-6">Student</th>
-                          <th className="py-4 px-6">AISSA ID</th>
-                          <th className="py-4 px-6">School / District</th>
-                          <th className="py-4 px-6">Quiz Title</th>
-                          <th className="py-4 px-6 text-center">Score</th>
-                          <th className="py-4 px-6 text-center">Percentage</th>
-                          <th className="py-4 px-6 text-right">Date & Time</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {filteredAttempts.map((item) => {
-                          const pct =
-                            item.total_marks > 0
-                              ? Math.round((item.score / item.total_marks) * 100)
-                              : 0;
+        <div className="bg-white/80 backdrop-blur-md p-2.5 sm:p-6 rounded-xl sm:rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 hover:shadow-md transition">
+          <div className="p-1.5 sm:p-3.5 bg-teal-50 text-teal-600 rounded-lg sm:rounded-2xl shrink-0 w-fit">
+            <Award className="w-4 h-4 sm:w-7 sm:h-7" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] sm:text-xs font-semibold uppercase text-gray-400 leading-tight">
+              Avg
+            </p>
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">
+              {avgPercentage}%
+            </h3>
+          </div>
+        </div>
 
-                          const hasId = item.ais_id && item.ais_id !== "N/A";
-                          const isAissaMember = hasId && item.ais_id!.startsWith("R");
-
-                          return (
-                            <tr
-                              key={item.id}
-                              className="hover:bg-emerald-50/30 transition"
-                            >
-                              <td className="py-4 px-6 font-semibold text-gray-900">
-                                {item.student_name}
-                              </td>
-
-                              <td className="py-4 px-6">
-                                <span
-                                  className={`inline-block font-mono text-[11px] font-bold px-2 py-1 rounded-md border ${
-                                    !hasId
-                                      ? "bg-gray-50 text-gray-400 border-gray-200"
-                                      : isAissaMember
-                                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                        : "bg-teal-50 text-teal-800 border-teal-200"
-                                  }`}
-                                  title={
-                                    !hasId
-                                      ? "No ID on file"
-                                      : isAissaMember
-                                        ? "AISSA Member ID"
-                                        : "Non-AISSA Quiz ID"
-                                  }
-                                >
-                                  {item.ais_id}
-                                </span>
-                              </td>
-
-                              <td className="py-4 px-6 text-gray-600">
-                                <div className="font-medium text-gray-800">
-                                  {item.school}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {item.district}
-                                </div>
-                              </td>
-
-                              <td className="py-4 px-6 font-medium text-gray-700 max-w-xs truncate">
-                                {item.quiz_title}
-                              </td>
-
-                              <td className="py-4 px-6 text-center font-bold text-gray-900">
-                                {item.score} / {item.total_marks}
-                              </td>
-
-                              <td className="py-4 px-6 text-center">
-                                <span
-                                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
-                                    pct >= 75
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : pct >= 50
-                                        ? "bg-teal-100 text-teal-800"
-                                        : pct >= 35
-                                          ? "bg-amber-100 text-amber-800"
-                                          : "bg-red-100 text-red-800"
-                                  }`}
-                                >
-                                  {pct >= 50 ? (
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                  ) : (
-                                    <XCircle className="w-3.5 h-3.5" />
-                                  )}
-                                  {pct}%
-                                </span>
-                              </td>
-
-                              <td className="py-4 px-6 text-right text-xs text-gray-500 font-mono">
-                                {new Date(item.submitted_at).toLocaleString("en-GB", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
-                </div>
-
-                <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[11px] text-gray-500 text-center">
-                  ප්‍රතිඵල{" "}
-                  <strong className="text-gray-700">
-                    {filteredAttempts.length}
-                  </strong>
-                  ක් පෙන්වයි · scroll කරලා බලන්න
-                </div>
-              </>
+        <div className="bg-white/80 backdrop-blur-md p-2.5 sm:p-6 rounded-xl sm:rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 hover:shadow-md transition">
+          <div className="p-1.5 sm:p-3.5 bg-amber-50 text-amber-600 rounded-lg sm:rounded-2xl shrink-0 w-fit">
+            <Trophy className="w-4 h-4 sm:w-7 sm:h-7" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] sm:text-xs font-semibold uppercase text-gray-400 leading-tight">
+              Top
+            </p>
+            <h3 className="text-[11px] sm:text-base font-bold text-gray-900 truncate leading-tight">
+              {topScorer ? topScorer.student_name : "N/A"}
+            </h3>
+            {topScorer && (
+              <p className="text-[9px] sm:text-xs text-amber-600 font-medium hidden sm:block">
+                Score: {topScorer.score}/{topScorer.total_marks}
+              </p>
             )}
           </div>
         </div>
+      </div>
+
+      {/* ═══ Filters — MOBILE-TIGHTENED ═══ */}
+      <div className="shrink-0 bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-2.5 sm:gap-4 sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-3 sm:top-3.5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search name, ID, school..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2.5 text-xs sm:text-sm bg-white/60 border border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 focus:bg-white transition"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-gray-400 shrink-0" />
+          <select
+            value={selectedQuiz}
+            onChange={(e) => setSelectedQuiz(e.target.value)}
+            className="w-full sm:w-64 py-2.5 px-3 text-xs sm:text-sm bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 transition font-medium text-gray-700"
+          >
+            <option value="ALL">All Quizzes</option>
+            {quizzes.map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ═══ Results Table — flex-1 + min-h-0 ═══ */}
+      <div className="flex-1 min-h-0 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden flex flex-col">
+        {loading ? (
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-gray-500 font-medium gap-3">
+            <RefreshCw className="w-7 h-7 sm:w-8 sm:h-8 animate-spin text-emerald-600" />
+            <span className="text-xs sm:text-sm">Loading student results...</span>
+          </div>
+        ) : filteredAttempts.length === 0 ? (
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-gray-500 px-4">
+            <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mb-3" />
+            <p className="font-semibold text-sm sm:text-lg text-gray-700">
+              No attempts found
+            </p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1 text-center">
+              තවම කිසිදු ශිෂ්‍යයෙක් මෙම Quiz එක සඳහා මුහුණ දී නැත.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* ──────── DESKTOP: table ──────── */}
+            <div className="hidden md:block flex-1 min-h-0 overflow-auto">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0]">
+                  <tr className="text-emerald-900 font-semibold uppercase text-xs">
+                    <th className="py-4 px-6">Student</th>
+                    <th className="py-4 px-6">AISSA ID</th>
+                    <th className="py-4 px-6">School / District</th>
+                    <th className="py-4 px-6">Quiz Title</th>
+                    <th className="py-4 px-6 text-center">Score</th>
+                    <th className="py-4 px-6 text-center">Percentage</th>
+                    <th className="py-4 px-6 text-right">Date & Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredAttempts.map((item) => {
+                    const pct =
+                      item.total_marks > 0
+                        ? Math.round((item.score / item.total_marks) * 100)
+                        : 0;
+
+                    const hasId = item.ais_id && item.ais_id !== "N/A";
+                    const isAissaMember = hasId && item.ais_id!.startsWith("R");
+
+                    return (
+                      <tr key={item.id} className="hover:bg-emerald-50/30 transition">
+                        <td className="py-4 px-6 font-semibold text-gray-900">
+                          {item.student_name}
+                        </td>
+
+                        <td className="py-4 px-6">
+                          <span
+                            className={`inline-block font-mono text-[11px] font-bold px-2 py-1 rounded-md border ${
+                              !hasId
+                                ? "bg-gray-50 text-gray-400 border-gray-200"
+                                : isAissaMember
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : "bg-teal-50 text-teal-800 border-teal-200"
+                            }`}
+                            title={
+                              !hasId
+                                ? "No ID on file"
+                                : isAissaMember
+                                  ? "AISSA Member ID"
+                                  : "Non-AISSA Quiz ID"
+                            }
+                          >
+                            {item.ais_id}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-6 text-gray-600">
+                          <div className="font-medium text-gray-800">
+                            {item.school}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {item.district}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-6 font-medium text-gray-700 max-w-xs truncate">
+                          {item.quiz_title}
+                        </td>
+
+                        <td className="py-4 px-6 text-center font-bold text-gray-900">
+                          {item.score} / {item.total_marks}
+                        </td>
+
+                        <td className="py-4 px-6 text-center">
+                          {renderPctPill(pct)}
+                        </td>
+
+                        <td className="py-4 px-6 text-right text-xs text-gray-500 font-mono">
+                          {new Date(item.submitted_at).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ──────── MOBILE: cards ──────── */}
+            <div className="md:hidden flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
+              {filteredAttempts.map((item) => {
+                const pct =
+                  item.total_marks > 0
+                    ? Math.round((item.score / item.total_marks) * 100)
+                    : 0;
+
+                const hasId = item.ais_id && item.ais_id !== "N/A";
+                const isAissaMember = hasId && item.ais_id!.startsWith("R");
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-3 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl space-y-2 hover:shadow-sm transition"
+                  >
+                    {/* Row 1: name + percentage */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {item.student_name}
+                        </p>
+                        <p className="text-[10px] text-gray-500 truncate">
+                          {item.school}
+                          {item.district && item.district !== "N/A"
+                            ? ` · ${item.district}`
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="shrink-0">{renderPctPill(pct)}</div>
+                    </div>
+
+                    {/* Row 2: AISSA ID chip */}
+                    <div>
+                      <span
+                        className={`inline-block font-mono text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                          !hasId
+                            ? "bg-gray-50 text-gray-400 border-gray-200"
+                            : isAissaMember
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : "bg-teal-50 text-teal-800 border-teal-200"
+                        }`}
+                      >
+                        {item.ais_id}
+                      </span>
+                    </div>
+
+                    {/* Row 3: quiz title */}
+                    <p className="text-[11px] text-gray-600 font-medium truncate">
+                      {item.quiz_title}
+                    </p>
+
+                    {/* Row 4: score + date */}
+                    <div className="flex items-center justify-between gap-2 text-[10px] text-gray-500 pt-1 border-t border-gray-100">
+                      <span className="font-bold text-gray-800">
+                        {item.score} / {item.total_marks}
+                      </span>
+                      <span className="flex items-center gap-1 font-mono">
+                        <Calendar className="w-3 h-3 shrink-0" />
+                        {new Date(item.submitted_at).toLocaleString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer hint */}
+            <div className="shrink-0 px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[10px] sm:text-[11px] text-gray-500 text-center">
+              ප්‍රතිඵල{" "}
+              <strong className="text-gray-700">
+                {filteredAttempts.length}
+              </strong>
+              ක් පෙන්වයි · scroll කරලා බලන්න
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
