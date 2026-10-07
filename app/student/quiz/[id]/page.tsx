@@ -52,8 +52,6 @@ type Question = {
   id: string;
   quiz_id: string;
   image_url: string | null;
-  // correct_option is intentionally absent — it is stripped by the API
-  // to prevent client-side cheating. Grading is done server-side.
   topic: string | null;
 
   question_text: string;
@@ -79,6 +77,14 @@ type Question = {
   option_4_ta?: string | null;
   option_5_ta?: string | null;
   explanation_ta?: string | null;
+
+  // ✱ Shared explanation diagram (language-agnostic)
+  explanation_image_url?: string | null;
+
+  // ✱ Present only when the server has decided the answer key can be
+  //   revealed (quiz window closed, OR student already submitted).
+  //   Undefined while the exam is still open and unsent.
+  correct_option?: number;
 };
 
 type StudentResult = {
@@ -109,9 +115,6 @@ function subjectBadgeStyle(subject: string | null | undefined): string {
 
 // ------------------------------------------------------------
 // Stream → Subject rules
-//   • Biology             → Bio Science stream only
-//   • ICT                 → Maths (Physical Science) stream only
-//   • Physics / Chemistry → Common (all science streams)
 // ------------------------------------------------------------
 type BlockReason = {
   subject: string;
@@ -179,6 +182,8 @@ function localizeQuestion(q: Question, medium: Medium) {
     option_4: pickByMedium(medium, q.option_4, q.option_4_en, q.option_4_ta),
     option_5: pickByMedium(medium, q.option_5, q.option_5_en, q.option_5_ta),
     explanation: pickByMedium(medium, q.explanation, q.explanation_en, q.explanation_ta),
+    // ✱ explanation image is language-agnostic — no pickByMedium
+    explanation_image_url: q.explanation_image_url ?? null,
     image_url: q.image_url,
   };
 }
@@ -223,24 +228,15 @@ export default function StudentQuizPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Stores per-question correctness returned by the /api/grade endpoint.
-  // question_id → true/false. Only populated after grading.
   const [isCorrectMap, setIsCorrectMap] = useState<Record<string, boolean>>({});
-  // Server-confirmed score (from /api/grade response).
   const [confirmedScore, setConfirmedScore] = useState<number | null>(null);
 
-  // Modern UI/UX: Flag / Mark for Review
   const [flaggedQuestions, setFlaggedQuestions] = useState<{ [key: number]: boolean }>({});
-  // Palette Filter: all, answered, unanswered, flagged
   const [paletteFilter, setPaletteFilter] = useState<"all" | "answered" | "unanswered" | "flagged">("all");
-  // Pre-submission review modal
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  // Focus Mode / Fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false);
-  // Privacy-friendly integrity tracking (tab-switch detection)
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
-  // Draft auto-save indicator
   const [draftSaved, setDraftSaved] = useState(false);
 
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
@@ -338,18 +334,27 @@ export default function StudentQuizPage() {
 
         if (!cancelled) setMyResult(resultData ?? null);
 
+        // ✱ FIX 2: include `is_correct` so red/green highlighting
+        //   survives page reloads (previously only set on submit).
         const { data: ansData } = await supabase
           .from("quiz_answers")
-          .select("question_id, selected_option")
+          .select("question_id, selected_option, is_correct")
           .eq("student_id", user.id)
           .eq("quiz_id", quizId);
 
         if (!cancelled && ansData) {
           const map: MyAnswersMap = {};
-          for (const a of ansData as { question_id: string; selected_option: number | null }[]) {
+          const corrMap: Record<string, boolean> = {};
+          for (const a of ansData as {
+            question_id: string;
+            selected_option: number | null;
+            is_correct: boolean;
+          }[]) {
             map[a.question_id] = a.selected_option;
+            corrMap[a.question_id] = a.is_correct;
           }
           setMyAnswers(map);
+          setIsCorrectMap(corrMap);
         }
 
         // ── Restore active draft if user hasn't submitted yet ──
@@ -391,11 +396,6 @@ export default function StudentQuizPage() {
     [quiz],
   );
 
-  /**
-   * Submits the student's answers to the server for grading.
-   * All correctness checking happens on the server — correct_option
-   * is never sent to the client.
-   */
   const submitQuizResult = useCallback(
     async (timeSpent: number) => {
       setIsSubmitting(true);
@@ -412,13 +412,11 @@ export default function StudentQuizPage() {
         return;
       }
 
-      // Build the answer payload (question_id + selected_option index).
       const answers = questions.map((q, idx) => ({
         question_id: q.id,
         selected_option: selectedAnswers[idx] !== undefined ? selectedAnswers[idx] : null,
       }));
 
-      // POST to the server-side grading endpoint.
       const res = await fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -444,7 +442,6 @@ export default function StudentQuizPage() {
 
       setConfirmedScore(result.score ?? 0);
 
-      // Store per-question correctness map for review mode.
       if (result.per_question) {
         const map: Record<string, boolean> = {};
         for (const pq of result.per_question) {
@@ -453,7 +450,6 @@ export default function StudentQuizPage() {
         setIsCorrectMap(map);
       }
 
-      // Re-fetch the student's stored result and answers for the review screen.
       const { data: resultData } = await supabase
         .from("quiz_results")
         .select("id, score, total_marks, time_spent_seconds, submitted_at")
@@ -483,7 +479,6 @@ export default function StudentQuizPage() {
         setIsCorrectMap(corrMap);
       }
 
-      // Clear draft storage upon submission
       if (typeof window !== "undefined") {
         try {
           sessionStorage.removeItem(`aissa_draft_${quizId}`);
@@ -556,31 +551,27 @@ export default function StudentQuizPage() {
     [currentQuestionIndex, isSubmitted],
   );
 
-  // ── Keyboard Navigation Shortcuts (1-5, Arrows, Flag) ──
+  // ── Keyboard Navigation Shortcuts ──
   useEffect(() => {
     if (windowStatus !== "active" || isSubmitted || loadingQuiz || showSubmitModal) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      // 1 to 5 numeric keys
       if (["1", "2", "3", "4", "5"].includes(e.key)) {
         const optIdx = parseInt(e.key, 10) - 1;
         handleSelectOption(optIdx);
       }
-      // a to e letter keys
       if (["a", "b", "c", "d", "e"].includes(e.key.toLowerCase())) {
         const charMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3, e: 4 };
         handleSelectOption(charMap[e.key.toLowerCase()]);
       }
-      // Left and right arrow navigation
       if (e.key === "ArrowLeft" && currentQuestionIndex > 0) {
         setCurrentQuestionIndex((prev) => prev - 1);
       }
       if (e.key === "ArrowRight" && currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex((prev) => prev + 1);
       }
-      // Flag question shortcut: 'f' or 'm'
       if (e.key.toLowerCase() === "f" || e.key.toLowerCase() === "m") {
         e.preventDefault();
         setFlaggedQuestions((prev) => ({
@@ -588,7 +579,6 @@ export default function StudentQuizPage() {
           [currentQuestionIndex]: !prev[currentQuestionIndex],
         }));
       }
-      // Escape closes modal
       if (e.key === "Escape" && showSubmitModal) {
         setShowSubmitModal(false);
       }
@@ -598,7 +588,7 @@ export default function StudentQuizPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [windowStatus, isSubmitted, loadingQuiz, showSubmitModal, currentQuestionIndex, questions.length, handleSelectOption]);
 
-  // ── Privacy-Respecting Academic Integrity: Tab-Switch Monitoring ──
+  // ── Tab-Switch Monitoring ──
   useEffect(() => {
     if (windowStatus !== "active" || isSubmitted || loadingQuiz) return;
 
@@ -840,7 +830,7 @@ export default function StudentQuizPage() {
 
   return (
     <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
-      {/* ── Tab Switch Integrity Notice (Privacy-Respecting Warning) ── */}
+      {/* ── Tab Switch Integrity Notice ── */}
       {showTabSwitchWarning && (
         <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 sm:p-4 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-sm backdrop-blur-sm animate-in fade-in duration-200">
           <div className="flex items-start gap-2.5">
@@ -887,7 +877,6 @@ export default function StudentQuizPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Focus / Fullscreen button */}
             <button
               type="button"
               onClick={toggleFullscreen}
@@ -907,7 +896,6 @@ export default function StudentQuizPage() {
               )}
             </button>
 
-            {/* Timer Badge */}
             <div
               className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-base sm:text-lg font-bold shrink-0 transition-all ${
                 timeLeft < 300
@@ -921,7 +909,6 @@ export default function StudentQuizPage() {
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
           <div
             className="bg-linear-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-300 ease-out"
@@ -1015,7 +1002,6 @@ export default function StudentQuizPage() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Mark for review toggle */}
                   <button
                     type="button"
                     onClick={() => toggleFlag(currentQuestionIndex)}
@@ -1030,7 +1016,6 @@ export default function StudentQuizPage() {
                     <span>{isCurrentFlagged ? "Flagged (සලකුණු කළා)" : "Mark for Review"}</span>
                   </button>
 
-                  {/* Clear answer button (if answered) */}
                   {isCurrentAnswered && (
                     <button
                       type="button"
@@ -1045,7 +1030,6 @@ export default function StudentQuizPage() {
                 </div>
               </div>
 
-              {/* Question Text */}
               <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
                 {currentQuestionIndex + 1}. {localized.question_text}
               </h2>
@@ -1059,7 +1043,6 @@ export default function StudentQuizPage() {
                 />
               )}
 
-              {/* Option Choice List */}
               <div className="space-y-2.5 sm:space-y-3">
                 {currentOptions.map((option, idx) => {
                   const isSelected = selectedAnswers[currentQuestionIndex] === idx;
@@ -1093,7 +1076,6 @@ export default function StudentQuizPage() {
                 })}
               </div>
 
-              {/* Navigation Action Buttons */}
               <div className="flex items-center justify-between gap-2 pt-3 sm:pt-4 border-t border-gray-100 flex-wrap">
                 <div className="flex items-center gap-2">
                   <button
@@ -1124,7 +1106,6 @@ export default function StudentQuizPage() {
                 </button>
               </div>
 
-              {/* Keyboard helper hint */}
               <div className="text-[11px] text-gray-400 text-center sm:text-left flex items-center justify-center sm:justify-start gap-3 flex-wrap pt-1">
                 <span>⌨️ Shortcuts: <strong>1-5</strong> or <strong>A-E</strong> (Select)</span>
                 <span>• <strong>← →</strong> (Navigate)</span>
@@ -1143,7 +1124,6 @@ export default function StudentQuizPage() {
                 </span>
               </div>
 
-              {/* Palette filter tabs */}
               <div className="grid grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg text-[10px] font-bold text-gray-600">
                 <button
                   type="button"
@@ -1175,7 +1155,6 @@ export default function StudentQuizPage() {
                 </button>
               </div>
 
-              {/* Grid of buttons */}
               <div className="grid grid-cols-4 gap-2">
                 {questions.map((_, idx) => {
                   const isVisibleInFilter = filteredQuestionIndices.includes(idx);
@@ -1211,7 +1190,6 @@ export default function StudentQuizPage() {
                 })}
               </div>
 
-              {/* Legend */}
               <div className="pt-3 border-t text-xs space-y-1.5 text-gray-500 font-medium">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 bg-blue-100 border border-blue-300 rounded" />
@@ -1231,7 +1209,7 @@ export default function StudentQuizPage() {
         </>
       )}
 
-      {/* ── Pre-Submission Confirmation Modal (Modern Cognitive-Safe UI/UX) ── */}
+      {/* ── Pre-Submission Confirmation Modal ── */}
       {showSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 p-6 space-y-5 animate-in zoom-in-95 duration-150">
@@ -1253,7 +1231,6 @@ export default function StudentQuizPage() {
               </button>
             </div>
 
-            {/* Stat Cards */}
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                 <p className="text-[10px] font-bold text-emerald-700 uppercase">පිළිතුරු දුන්</p>
@@ -1272,7 +1249,6 @@ export default function StudentQuizPage() {
               </div>
             </div>
 
-            {/* Unanswered warning if any */}
             {unansweredCount > 0 && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -1282,7 +1258,6 @@ export default function StudentQuizPage() {
               </div>
             )}
 
-            {/* Quick jump to review buttons */}
             <div className="space-y-2 pt-1">
               {unansweredCount > 0 && (
                 <button
@@ -1315,7 +1290,6 @@ export default function StudentQuizPage() {
               )}
             </div>
 
-            {/* Bottom Actions */}
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <button
                 type="button"
@@ -1383,9 +1357,7 @@ function QuizShell({
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-          {/* ═══════════ DARK BANNER with AISSA LOGO ═══════════ */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
-            {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
@@ -1394,17 +1366,13 @@ function QuizShell({
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* teal glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
-            {/* rings */}
             <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
-            {/* shine */}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
             <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
-              {/* ✨ AISSA Logo — no box, sits directly on dark bg */}
               <div className="shrink-0">
                 <div className="relative">
                   <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
@@ -1521,7 +1489,6 @@ function ReviewMode({
             const isCurrent = reviewIndex === idx;
             const sel = myAnswers[question.id];
             const answered = sel !== undefined && sel !== null;
-            // Use server-confirmed correctness — no client-side correct_option needed.
             const correct = answered && isCorrectMap[question.id] === true;
             const wrong = answered && !correct;
 
@@ -1575,64 +1542,118 @@ function ReviewMode({
             </div>
           )}
 
+          {/* ✱ FIX 4: Correct/incorrect colour coding.
+              Uses `q.correct_option` (revealed by the server post-quiz)
+              with a fallback to `isCorrectMap` (populated from
+              quiz_answers on every load and from /api/grade on submit).
+              Guarantees: correct answer → green, wrong pick → red,
+              missed question → green correct answer still shown. */}
           <div className="space-y-2">
             {optionsList.map((opt, idx) => {
               const studentPicked = studentAnswered && studentSel === idx;
-              // We know this answer is correct if the student picked it and isCorrectMap says so.
-              const studentPickedCorrectly = studentPicked && isCorrectMap[q.id] === true;
-              const studentWrong = studentPicked && !studentPickedCorrectly;
+              const hasAnswerKey = typeof q.correct_option === "number";
 
+              // ── Correctness resolution ──────────────────────────
+              const isCorrectOption = hasAnswerKey
+                ? q.correct_option === idx
+                : studentPicked && isCorrectMap[q.id] === true;
+
+              const isWrongPick = hasAnswerKey
+                ? studentPicked && !isCorrectOption
+                : studentPicked && isCorrectMap[q.id] === false;
+
+              // ── Card colours ────────────────────────────────────
               let cardCls = "bg-white/60 border-gray-200 text-gray-700";
-              if (studentPickedCorrectly)
-                cardCls = "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold";
-              else if (studentWrong)
-                cardCls = "bg-red-50 border-red-300 text-red-900 font-bold";
+              if (isCorrectOption)
+                cardCls =
+                  "bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold ring-1 ring-emerald-400/25";
+              else if (isWrongPick)
+                cardCls =
+                  "bg-red-50 border-red-400 text-red-900 font-semibold ring-1 ring-red-400/25";
 
               let badgeCls = "bg-gray-200 text-gray-700";
-              if (studentPickedCorrectly) badgeCls = "bg-emerald-600 text-white";
-              else if (studentWrong) badgeCls = "bg-red-600 text-white";
+              if (isCorrectOption) badgeCls = "bg-emerald-600 text-white";
+              else if (isWrongPick) badgeCls = "bg-red-600 text-white";
+
+              // ── Right-side label ────────────────────────────────
+              let label: React.ReactNode = null;
+              if (isCorrectOption && studentPicked) {
+                label = (
+                  <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
+                    Your Answer ✓
+                  </span>
+                );
+              } else if (isCorrectOption) {
+                label = (
+                  <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
+                    Correct Answer
+                  </span>
+                );
+              } else if (isWrongPick) {
+                label = (
+                  <span className="hidden sm:inline px-2 py-0.5 bg-red-200 text-red-900 text-[10px] font-bold rounded shrink-0">
+                    Your Answer ✗
+                  </span>
+                );
+              }
+
+              // ── Left circular badge ─────────────────────────────
+              let badgeIcon: React.ReactNode;
+              if (isCorrectOption) badgeIcon = <CheckCircle2 className="w-4 h-4" />;
+              else if (isWrongPick) badgeIcon = <XCircle className="w-4 h-4" />;
+              else badgeIcon = idx + 1;
 
               return (
                 <div
                   key={idx}
-                  className={`p-3 sm:p-3.5 rounded-lg border flex items-start gap-2.5 sm:gap-3 text-sm ${cardCls}`}
+                  className={`p-3 sm:p-3.5 rounded-lg border flex items-start gap-2.5 sm:gap-3 text-sm transition ${cardCls}`}
                 >
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5 ${badgeCls}`}
                   >
-                    {studentPickedCorrectly ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : studentWrong ? (
-                      <XCircle className="w-4 h-4" />
-                    ) : (
-                      idx + 1
-                    )}
+                    {badgeIcon}
                   </span>
                   <span className="flex-1 wrap-break-word">{opt}</span>
-
-                  {studentPickedCorrectly && (
-                    <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
-                      Correct ✓
-                    </span>
-                  )}
-                  {studentWrong && (
-                    <span className="hidden sm:inline px-2 py-0.5 bg-red-200 text-red-900 text-[10px] font-bold rounded shrink-0">
-                      Your answer ✗
-                    </span>
-                  )}
+                  {label}
                 </div>
               );
             })}
           </div>
 
-          {localized.explanation && (
-            <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <p className="font-bold text-amber-950 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-600" /> Explanation
-              </p>
-              <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
-                {localized.explanation}
-              </p>
+          {/* ✱ Explanation text + optional shared diagram */}
+          {(localized.explanation || localized.explanation_image_url) && (
+            <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+              {localized.explanation && (
+                <div>
+                  <p className="font-bold text-amber-950 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-600" /> Explanation
+                  </p>
+                  <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+                    {localized.explanation}
+                  </p>
+                </div>
+              )}
+
+              {localized.explanation_image_url && (
+                <div className={localized.explanation ? "pt-1 border-t border-amber-200/60" : ""}>
+                  <p className="font-bold text-amber-950 text-[10px] sm:text-xs mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Explanation Diagram
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={localized.explanation_image_url}
+                    alt="Explanation illustration"
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-72 sm:max-h-96 rounded-lg border border-amber-200 bg-white mx-auto object-contain"
+                    onError={(e) => {
+                      const el = e.target as HTMLImageElement;
+                      el.onerror = null;
+                      el.style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1672,7 +1693,6 @@ function ReviewMode({
               const isCurrent = reviewIndex === idx;
               const sel = myAnswers[question.id];
               const answered = sel !== undefined && sel !== null;
-              // Use server-confirmed correctness.
               const correct = answered && isCorrectMap[question.id] === true;
               const wrong = answered && !correct;
 

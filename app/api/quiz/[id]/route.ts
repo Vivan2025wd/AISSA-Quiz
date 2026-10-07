@@ -21,7 +21,9 @@ type QuestionRow = {
   quiz_id: string | null;
   question_text: string;
   image_url: string | null;
-  correct_option: number; // stripped before response
+  // ✱ shared explanation diagram (language-agnostic)
+  explanation_image_url?: string | null;
+  correct_option: number; // stripped before response unless reveal is allowed
   topic: string | null;
   option_1: string;
   option_2: string;
@@ -47,13 +49,38 @@ type QuestionRow = {
   explanation_ta?: string | null;
 };
 
-// Answer key is stripped before sending to the client.
-type PublicQuestionRow = Omit<QuestionRow, "correct_option">;
+/**
+ * What actually goes over the wire.
+ *   • `correct_option` is optional — present only when the server
+ *     has decided the answer key can be revealed to this caller
+ *     (quiz window closed OR the student already submitted).
+ *   • While the exam is still live and unsent, the field is absent
+ *     and the client cannot reconstruct the answer key.
+ */
+type PublicQuestionRow = Omit<QuestionRow, "correct_option"> & {
+  correct_option?: number;
+};
 
 type QuizQuestionLink = {
   order_index: number;
   questions: QuestionRow | QuestionRow[] | null;
 };
+
+/**
+ * Removes `correct_option` from a question row, unless `reveal` is
+ * true — in which case the answer key is passed through.
+ *
+ * Using a helper (rather than an inline destructure) keeps the
+ * mapping code below readable and gives us one place to reason
+ * about the reveal rule.
+ */
+function toPublicQuestion(
+  row: QuestionRow,
+  reveal: boolean,
+): PublicQuestionRow {
+  const { correct_option, ...rest } = row;
+  return reveal ? { ...rest, correct_option } : rest;
+}
 
 export async function GET(
   _req: Request,
@@ -106,28 +133,37 @@ export async function GET(
     auth: { persistSession: false },
   });
 
-  // ── Quiz + questions (2 ක්‍රමයකින් — එකවර) ──
-  const [quizRes, quizQuestionsRes, directQuestionsRes] = await Promise.all([
-    adminClient
-      .from("quizzes")
-      .select("id, title, subject, stream, duration_minutes, scheduled_at")
-      .eq("id", quizId)
-      .maybeSingle(),
+  // ── Quiz + questions + prior attempt (all in parallel) ──
+  const [quizRes, quizQuestionsRes, directQuestionsRes, existingResultRes] =
+    await Promise.all([
+      adminClient
+        .from("quizzes")
+        .select("id, title, subject, stream, duration_minutes, scheduled_at")
+        .eq("id", quizId)
+        .maybeSingle(),
 
-    // ක්‍රමය 1: quiz_questions link table
-    adminClient
-      .from("quiz_questions")
-      .select("order_index, questions(*)")
-      .eq("quiz_id", quizId)
-      .order("order_index", { ascending: true }),
+      // ක්‍රමය 1: quiz_questions link table
+      adminClient
+        .from("quiz_questions")
+        .select("order_index, questions(*)")
+        .eq("quiz_id", quizId)
+        .order("order_index", { ascending: true }),
 
-    // ක්‍රමය 2: direct questions.quiz_id
-    adminClient
-      .from("questions")
-      .select("*")
-      .eq("quiz_id", quizId)
-      .order("created_at", { ascending: true }),
-  ]);
+      // ක්‍රමය 2: direct questions.quiz_id
+      adminClient
+        .from("questions")
+        .select("*")
+        .eq("quiz_id", quizId)
+        .order("created_at", { ascending: true }),
+
+      // Has this student already submitted? — decides answer-key reveal.
+      adminClient
+        .from("quiz_results")
+        .select("id")
+        .eq("student_id", user.id)
+        .eq("quiz_id", quizId)
+        .maybeSingle(),
+    ]);
 
   if (quizRes.error) {
     console.error("[api/quiz] Quiz query error:", quizRes.error);
@@ -168,6 +204,27 @@ export async function GET(
     source = "direct";
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // Decide whether to reveal `correct_option` to this caller.
+  //
+  // We reveal it if EITHER:
+  //   • The quiz window has already closed, OR
+  //   • This student has already submitted their attempt.
+  //
+  // This preserves exam integrity (no answer key while the window
+  // is open and the student hasn't submitted) while enabling full
+  // colour-coded review afterwards.
+  // ─────────────────────────────────────────────────────────────
+  const endsAtMs = quiz.scheduled_at
+    ? new Date(quiz.scheduled_at).getTime() +
+      (quiz.duration_minutes || 30) * 60 * 1000
+    : null;
+
+  const windowExpired = endsAtMs !== null && Date.now() > endsAtMs;
+  const hasSubmitted =
+    !existingResultRes.error && !!existingResultRes.data;
+  const canRevealAnswerKey = windowExpired || hasSubmitted;
+
   console.log(
     "[api/quiz] ✅ Success:",
     quiz.title,
@@ -175,22 +232,25 @@ export async function GET(
     rawQuestions.length,
     "questions | source:",
     source,
+    "| reveal answer key:",
+    canRevealAnswerKey,
+    `(windowExpired=${windowExpired}, hasSubmitted=${hasSubmitted})`,
   );
 
   // ─────────────────────────────────────────────────────────────
-  // Strip correct_option before sending to the client.
-  // The answer key never leaves the server; grading must be
-  // performed via a server-side RPC, not by the client.
+  // Build the public payload.
+  // The answer key only ships when the server has decided it's
+  // safe — see `canRevealAnswerKey` above.
   // ─────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const publicQuestions: PublicQuestionRow[] = rawQuestions.map(
-    ({ correct_option: _stripped, ...rest }) => rest,
+  const publicQuestions: PublicQuestionRow[] = rawQuestions.map((row) =>
+    toPublicQuestion(row, canRevealAnswerKey),
   );
 
   return NextResponse.json(
     {
       quiz,
       questions: publicQuestions,
+      answerKeyRevealed: canRevealAnswerKey,
     },
     {
       headers: {

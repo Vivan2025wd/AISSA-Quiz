@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,7 +22,9 @@ import {
   Languages,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import SchoolAutocomplete from "@/components/SchoolAutocomplete";
+import SchoolAutocomplete, {
+  type SchoolSuggestion,
+} from "@/components/SchoolAutocomplete";
 import {
   AISSA_DISTRICT_CODES,
   AISSA_DISTRICT_LABELS,
@@ -42,7 +44,6 @@ type StreamKey = "Biological Science" | "Maths";
 type SubjectCode = "physics" | "chemistry" | "biology" | "ict";
 
 const streams = ["Biological Science", "Maths"] as const;
-
 const BIO_SUBJECTS: SubjectCode[] = ["physics", "chemistry", "biology"];
 
 const MATHS_ELECTIVES: { code: SubjectCode; label: string }[] = [
@@ -51,7 +52,7 @@ const MATHS_ELECTIVES: { code: SubjectCode; label: string }[] = [
 ];
 
 type IdMode = "has-aissa" | "no-aissa";
-type Medium  = "sinhala" | "english" | "tamil";
+type Medium = "sinhala" | "english" | "tamil";
 
 const MEDIUM_OPTIONS: { value: Medium; label: string; short: string }[] = [
   { value: "sinhala", label: "සිංහල",  short: "SI" },
@@ -63,6 +64,10 @@ export default function StudentRegisterPage() {
   const router = useRouter();
 
   const [idMode, setIdMode] = useState<IdMode>("has-aissa");
+
+  // ★ NEW: track the confirmed school object, not just the free-text name.
+  const [confirmedSchool, setConfirmedSchool] =
+    useState<SchoolSuggestion | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -121,10 +126,7 @@ export default function StudentRegisterPage() {
         formData.fullName,
         formData.school,
         formData.aissaDistrict,
-        {
-          year: yearNum,
-          studentNumber: formData.studentNumber,
-        },
+        { year: yearNum, studentNumber: formData.studentNumber },
       );
     } catch {
       return "";
@@ -144,10 +146,12 @@ export default function StudentRegisterPage() {
     return formData.aissaDistrict;
   }, [idMode, aissaValidation, formData.aissaDistrict]);
 
+  // ★ Auto-number lookup now keyed off the CONFIRMED school only.
   useEffect(() => {
     if (idMode !== "no-aissa") return;
+    if (!confirmedSchool) return;
 
-    const school = formData.school.trim();
+    const school = confirmedSchool.name.trim();
     const yearStr = formData.schoolYear.trim();
     const yearNum = Number(yearStr);
 
@@ -196,7 +200,7 @@ export default function StudentRegisterPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [idMode, formData.school, formData.schoolYear]);
+  }, [idMode, confirmedSchool, formData.schoolYear]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -213,16 +217,29 @@ export default function StudentRegisterPage() {
     }));
   };
 
-  const handleSchoolChange = (value: string) => {
+  // ★ onChange — free-text edits clear the auto-number.
+  const handleSchoolChange = useCallback((value: string) => {
     setFormData((prev) => ({ ...prev, school: value, studentNumber: "" }));
-  };
+  }, []);
+
+  // ★ onConfirm — called with the SchoolSuggestion (or null).
+  const handleSchoolConfirm = useCallback((school: SchoolSuggestion | null) => {
+    setConfirmedSchool(school);
+    if (!school) {
+      // Value was edited / cleared → drop the auto-number too.
+      setFormData((prev) => ({ ...prev, studentNumber: "" }));
+      setNextNumber(null);
+      setNumberError(null);
+    }
+  }, []);
 
   const handleAissaIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, aissaIdInput: e.target.value.toUpperCase() }));
   };
 
   const refreshNextNumber = async () => {
-    const school = formData.school.trim();
+    if (!confirmedSchool) return;
+    const school = confirmedSchool.name.trim();
     const yearNum = Number(formData.schoolYear.trim());
     if (!school || !Number.isFinite(yearNum)) return;
 
@@ -252,7 +269,6 @@ export default function StudentRegisterPage() {
       setError("Maths stream එකට Chemistry හෝ ICT දෙකෙන් එකක් තෝරන්න.");
       return;
     }
-
     if (formData.password !== formData.confirmPassword) {
       setError("ඇතුළත් කළ මුරපද (Passwords) දෙක සමාන නොවේ!");
       return;
@@ -261,8 +277,10 @@ export default function StudentRegisterPage() {
       setError("මුරපදය අඩුම තරමින් අක්ෂර 6ක් විය යුතුය!");
       return;
     }
-    if (!formData.school.trim()) {
-      setError("පාසලේ නම ඇතුළත් කරන්න.");
+
+    // ★ Block submit unless the school came from the dropdown.
+    if (!confirmedSchool) {
+      setError("කරුණාකර නිල පාසල් ලැයිස්තුවෙන් ඔබේ පාසල තෝරන්න.");
       return;
     }
 
@@ -289,6 +307,7 @@ export default function StudentRegisterPage() {
 
     setIsSubmitting(true);
     const isAissaMember = idMode === "has-aissa";
+    const schoolName = confirmedSchool.name; // ★ canonical name from DB
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
@@ -298,7 +317,8 @@ export default function StudentRegisterPage() {
           full_name: formData.fullName,
           address: formData.address,
           district: formData.district,
-          school: formData.school,
+          school: schoolName,
+          school_id: confirmedSchool.id,
           stream: formData.stream,
           medium: formData.medium,
           ais_id: finalAisId,
@@ -352,7 +372,6 @@ export default function StudentRegisterPage() {
   };
 
   return (
-    // ═══════════ LIGHT PAGE BACKGROUND ═══════════
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4 py-8">
       {/* Aurora blobs */}
       <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
@@ -360,9 +379,8 @@ export default function StudentRegisterPage() {
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-xl">
-        {/* ═══════════ DARK BANNER — like login ═══════════ */}
+        {/* DARK BANNER */}
         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50 mb-4">
-          {/* dot grid */}
           <div
             className="absolute inset-0 opacity-[0.15] pointer-events-none"
             style={{
@@ -371,17 +389,13 @@ export default function StudentRegisterPage() {
               backgroundSize: "22px 22px",
             }}
           />
-          {/* teal glows — matches logo color */}
           <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
-          {/* decorative rings */}
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
           <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
-          {/* shine */}
           <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
           <div className="relative flex flex-col items-center text-center px-5 sm:px-6 py-6 sm:py-7 space-y-3">
-            {/* ✨ AISSA Logo */}
             <div className="relative">
               <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
               <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
@@ -394,7 +408,6 @@ export default function StudentRegisterPage() {
               </div>
             </div>
 
-            {/* Badges */}
             <div className="flex items-center gap-2 flex-wrap justify-center">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -406,14 +419,13 @@ export default function StudentRegisterPage() {
               </span>
             </div>
 
-            {/* Description */}
             <p className="text-slate-300 text-sm sm:text-base font-semibold leading-snug max-w-xs">
               AISSA ID එකක් ඇත්නම් හෝ නොමැති නම් — දෙකටම ලියාපදිංචි විය හැක.
             </p>
           </div>
         </div>
 
-        {/* ═══════════ Main Card (white) ═══════════ */}
+        {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-xl shadow-emerald-900/5 p-5 sm:p-8 space-y-5">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
@@ -510,7 +522,7 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* Address (Data Minimization: Optional for student privacy) */}
+              {/* Address */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase">
@@ -559,7 +571,7 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* School */}
+              {/* School — ★ now strict + onConfirm wired up */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   පාසල (School)
@@ -567,11 +579,13 @@ export default function StudentRegisterPage() {
                 <SchoolAutocomplete
                   value={formData.school}
                   onChange={handleSchoolChange}
+                  onConfirm={handleSchoolConfirm}
+                  strict
                   disabled={isSubmitting}
                   placeholder="පාසලේ නම ලියන්න — උදා: Royal"
                 />
                 <p className="text-[11px] text-gray-500 mt-1">
-                  * Database එකේ ඇති පාසල් ලැයිස්තුවෙන් Suggestions පෙන්වයි.
+                  * ලැයිස්තුවෙන් පාසලක් තෝරා තහවුරු කරන තෙක් Auto-number ලැබෙන්නේ නැත.
                 </p>
               </div>
 
@@ -781,7 +795,9 @@ export default function StudentRegisterPage() {
                         <button
                           type="button"
                           onClick={refreshNextNumber}
-                          disabled={numberLoading || !formData.school || !formData.schoolYear}
+                          disabled={
+                            numberLoading || !confirmedSchool || !formData.schoolYear
+                          }
                           className="text-teal-600 hover:text-teal-800 disabled:opacity-40 transition"
                           title="Auto-number refresh"
                         >
@@ -898,8 +914,8 @@ export default function StudentRegisterPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition mt-2 disabled:opacity-60"
+                disabled={isSubmitting || !confirmedSchool}
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

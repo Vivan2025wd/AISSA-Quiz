@@ -39,7 +39,7 @@ export default function QuestionsPage() {
     let query = supabase
       .from("questions")
       .select(
-        `id, subject, stream, topic, image_url,
+        `id, subject, stream, topic, image_url, explanation_image_url,
          question_text, option_1, option_2, option_3, option_4, option_5, explanation, correct_option,
          question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
          question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta`,
@@ -398,12 +398,32 @@ export default function QuestionsPage() {
                             })}
                           </div>
 
-                          {q.explanation && (
-                            <div className="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-900">
-                              <span className="font-bold flex items-center gap-1 mb-0.5 text-amber-950">
-                                <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Explanation / Solution:
-                              </span>
-                              <span className="wrap-break-word">{q.explanation}</span>
+                          {/* Explanation + explanation diagram */}
+                          {(q.explanation || q.explanation_image_url) && (
+                            <div className="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-900 space-y-2">
+                              {q.explanation && (
+                                <div>
+                                  <span className="font-bold flex items-center gap-1 mb-0.5 text-amber-950">
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Explanation / Solution:
+                                  </span>
+                                  <span className="wrap-break-word">{q.explanation}</span>
+                                </div>
+                              )}
+                              {q.explanation_image_url && (
+                                <div className="pt-1">
+                                  <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1 mb-1">
+                                    <Sparkles className="w-3 h-3 text-amber-600" /> Explanation Diagram
+                                  </span>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={q.explanation_image_url}
+                                    alt="Explanation diagram"
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="max-h-40 rounded-lg border border-amber-200 bg-white object-contain"
+                                  />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

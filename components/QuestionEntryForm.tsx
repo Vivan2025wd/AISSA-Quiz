@@ -10,6 +10,7 @@ import {
   Languages,
   GraduationCap,
   FileQuestion,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import ImageUploadField from "@/components/ImageUploadField";
@@ -86,6 +87,7 @@ export default function QuestionEntryForm(props: Props) {
   const [subject, setSubject] = useState(subjects[0]);
   const [topic, setTopic] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [explanationImageUrl, setExplanationImageUrl] = useState("");
   const [correctAnswer, setCorrectAnswer] = useState(0);
 
   const [si, setSi] = useState<LanguageContent>(emptyContent());
@@ -130,6 +132,7 @@ export default function QuestionEntryForm(props: Props) {
   const resetForm = () => {
     setTopic("");
     setImageUrl("");
+    setExplanationImageUrl("");
     setCorrectAnswer(0);
     setSi(emptyContent());
     setEn(emptyContent());
@@ -195,14 +198,12 @@ export default function QuestionEntryForm(props: Props) {
         ta.questionText.trim() !== "" ||
         ta.options.some((o) => o.trim() !== "");
 
-      // ✅ Note: quiz_id is intentionally NOT sent here.
-      //    The `questions` table no longer has that column — the
-      //    question-to-quiz link lives in `quiz_questions`.
       const payload: Record<string, unknown> = {
         subject,
         stream: derivedStream,
         topic: topic.trim() || null,
         image_url: imageUrl.trim() || null,
+        explanation_image_url: explanationImageUrl.trim() || null,
         correct_option: correctAnswer,
 
         question_text: si.questionText.trim(),
@@ -242,7 +243,6 @@ export default function QuestionEntryForm(props: Props) {
         );
       }
 
-      // ✅ Link the question to the quiz via quiz_questions (junction table)
       if (isLocked) {
         const { error: linkError } = await supabase
           .from("quiz_questions")
@@ -282,73 +282,89 @@ export default function QuestionEntryForm(props: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-md border border-white/70 shadow-xl"
+      className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-md border border-white/70 shadow-xl shadow-emerald-900/5"
     >
-      {/* ═══════════════ HEADER BANNER ═══════════════ */}
-      <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white">
+      {/* ═══════════════ HEADER BANNER — DARK THEME (matches dashboard) ═══════════════ */}
+      <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-slate-700/50">
+        {/* dot grid */}
         <div
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+          className="absolute inset-0 opacity-[0.15] pointer-events-none"
           style={{
             backgroundImage:
-              "radial-gradient(circle, white 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
+              "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
           }}
         />
-        <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
+        {/* teal glows — matches logo color */}
+        <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+        {/* rings */}
+        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+        <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
+        {/* shine */}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-        <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
-          <div className="flex items-start gap-3 min-w-0 flex-1">
-            <div className="shrink-0 hidden sm:block">
-              <div className="relative">
-                <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
-                <div className="relative w-11 h-11 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg flex items-center justify-center">
-                  <FileQuestion className="w-5 h-5 text-amber-300" />
-                </div>
+        <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+          {/* ✨ AISSA Logo — no box, sits directly on dark bg */}
+          <div className="shrink-0">
+            <div className="relative">
+              <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/aissa-logo.png"
+                  alt="AISSA Logo"
+                  className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                />
               </div>
             </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  AISSA
-                </span>
-                {isLocked && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-white/15">
-                    <FileQuestion className="w-3.5 h-3.5" />
-                    Quiz Locked
-                  </span>
-                )}
-              </div>
-
-              <h3 className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
-                <FileQuestion className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
-                <span className="wrap-break-word">
-                  {isLocked
-                    ? "Quiz එකට නව ප්‍රශ්නයක් එකතු කරන්න"
-                    : "Question Bank එකට නව ප්‍රශ්නයක් එකතු කරන්න"}
-                </span>
-              </h3>
-              <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
-                {isLocked
-                  ? `ප්‍රශ්න සීමාව: ${currentCount} / ${maxLimit}`
-                  : "මෙහි එකතු කරන සියලුම ප්‍රශ්න Central Question Bank එකේ තැන්පත් වන අතර ඕනෑම Quiz එකකට තෝරාගත හැක."}
-              </p>
-            </div>
-
-            {isLocked && (
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs font-extrabold shrink-0 backdrop-blur-sm border ${
-                  isAtLimit
-                    ? "bg-amber-500/25 text-amber-100 border-amber-300/30"
-                    : "bg-white/15 text-white border-white/20"
-                }`}
-              >
-                {currentCount} / {maxLimit} Qs
-              </span>
-            )}
           </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                <GraduationCap className="w-3.5 h-3.5" />
+                AISSA
+              </span>
+              {isLocked ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
+                  <FileQuestion className="w-3.5 h-3.5" />
+                  Quiz Locked
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Question Bank
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-base sm:text-lg md:text-xl font-extrabold leading-tight tracking-tight flex items-center gap-2">
+              <FileQuestion className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300 shrink-0" />
+              <span className="wrap-break-word">
+                {isLocked
+                  ? "Quiz එකට නව ප්‍රශ්නයක් එකතු කරන්න"
+                  : "Question Bank එකට නව ප්‍රශ්නයක් එකතු කරන්න"}
+              </span>
+            </h3>
+            <p className="text-slate-300 text-[11px] sm:text-xs mt-1">
+              {isLocked
+                ? `ප්‍රශ්න සීමාව: ${currentCount} / ${maxLimit}`
+                : "මෙහි එකතු කරන සියලුම ප්‍රශ්න Central Question Bank එකේ තැන්පත් වන අතර ඕනෑම Quiz එකකට තෝරාගත හැක."}
+            </p>
+          </div>
+
+          {isLocked && (
+            <span
+              className={`self-start sm:self-center px-3 py-1.5 rounded-full text-xs font-extrabold shrink-0 backdrop-blur-sm border ${
+                isAtLimit
+                  ? "bg-amber-500/25 text-amber-100 border-amber-300/30"
+                  : "bg-teal-500/15 text-teal-200 border-teal-400/30"
+              }`}
+            >
+              {currentCount} / {maxLimit} Qs
+            </span>
+          )}
         </div>
       </div>
 
@@ -364,7 +380,7 @@ export default function QuestionEntryForm(props: Props) {
 
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
-            <span>⚠️</span>
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
@@ -453,7 +469,7 @@ export default function QuestionEntryForm(props: Props) {
           />
         </div>
 
-        {/* ---------- Diagram URL ---------- */}
+        {/* ---------- Question Diagram ---------- */}
         <ImageUploadField
           value={imageUrl}
           onChange={setImageUrl}
@@ -623,6 +639,17 @@ export default function QuestionEntryForm(props: Props) {
               </span>
             ))}
           </div>
+        </div>
+
+        {/* ── Explanation diagram (shared across all languages) ── */}
+        <div className="pt-2">
+          <ImageUploadField
+            value={explanationImageUrl}
+            onChange={setExplanationImageUrl}
+            disabled={isSubmitting || isAtLimit}
+            label="විස්තරයේ රූපසටහන (Explanation Diagram - Optional)"
+            hint="* මෙම රූපය Explanation එක සමඟ Review Screen එකේ පෙන්වයි. සියලු භාෂාවන්ට පොදුයි."
+          />
         </div>
 
         {/* ---------- Submit ---------- */}

@@ -23,6 +23,10 @@ interface Props {
   disabled?: boolean;
   /** Default mode when the field first appears */
   defaultMode?: "upload" | "url";
+  /** Optional header label override (defaults to the question-diagram label) */
+  label?: string;
+  /** Optional footer hint override */
+  hint?: string;
 }
 
 export default function ImageUploadField({
@@ -30,6 +34,8 @@ export default function ImageUploadField({
   onChange,
   disabled,
   defaultMode = "upload",
+  label,
+  hint,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,12 +44,10 @@ export default function ImageUploadField({
   const [error, setError] = useState("");
   const [previewError, setPreviewError] = useState(false);
 
-  // URL input draft (so we don't fire onChange on every keystroke)
   const [urlDraft, setUrlDraft] = useState(value);
   const [urlStatus, setUrlStatus] = useState<"idle" | "checking" | "ok" | "bad">("idle");
   const [previousValue, setPreviousValue] = useState(value);
 
-  // ---- Sync external value → URL draft ----
   if (value !== previousValue) {
     setPreviousValue(value);
     setUrlDraft(value);
@@ -51,16 +55,11 @@ export default function ImageUploadField({
     setUrlStatus("idle");
   }
 
-  // ---- If value is a Supabase URL, force "upload" mode look ----
   const isSupabaseImage = value.includes(`/storage/v1/object/public/${BUCKET}/`);
   const displayMode = isSupabaseImage ? "upload" : mode;
 
-  // ============================================================
-  // File Upload
-  // ============================================================
   const handleFile = async (file: File) => {
     setError("");
-
     if (!ALLOWED_TYPES.includes(file.type)) {
       setError("PNG · JPG · WEBP · GIF images විතරයි support කරන්නේ.");
       return;
@@ -95,9 +94,6 @@ export default function ImageUploadField({
     }
   };
 
-  // ============================================================
-  // URL validation (quick HEAD-like check via Image object)
-  // ============================================================
   const validateUrl = (url: string): Promise<boolean> =>
     new Promise((resolve) => {
       if (!/^https?:\/\//i.test(url)) return resolve(false);
@@ -123,7 +119,6 @@ export default function ImageUploadField({
       setUrlStatus("idle");
       return;
     }
-
     if (!/^https?:\/\//i.test(trimmed)) {
       setError("URL එක http:// හෝ https:// වලින් පටන් ගන්න ඕනේ.");
       setUrlStatus("bad");
@@ -143,9 +138,6 @@ export default function ImageUploadField({
     onChange(trimmed);
   };
 
-  // ============================================================
-  // Delete (also cleans up Supabase storage if applicable)
-  // ============================================================
   const handleDelete = async () => {
     if (!value) return;
     if (!confirm("මෙම image එක ඉවත් කරන්නද?")) return;
@@ -162,16 +154,16 @@ export default function ImageUploadField({
     setPreviewError(false);
   };
 
-  // ============================================================
-  // Render
-  // ============================================================
+  const headerLabel = label ?? "රූපසටහන (Diagram - Optional)";
+  const hintText =
+    hint ?? "* රූපය සියලු භාෂාවන්ට පොදුයි — එකම රූපය හැම භාෂාවටම පෙන්වයි.";
+
   return (
     <div className="space-y-3">
-      {/* -------- Header + Mode Toggle -------- */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase">
           <ImageIcon className="w-4 h-4 text-gray-500" />
-          රූපසටහන (Diagram - Optional)
+          {headerLabel}
         </label>
 
         <div className="flex gap-1 p-0.5 bg-gray-100 rounded-lg">
@@ -204,7 +196,6 @@ export default function ImageUploadField({
         </div>
       </div>
 
-      {/* -------- Upload Mode -------- */}
       {displayMode === "upload" && (
         <div>
           <input
@@ -258,7 +249,6 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {/* -------- URL Mode -------- */}
       {displayMode === "url" && (
         <div className="space-y-2">
           <div className="flex gap-2">
@@ -319,7 +309,6 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {/* -------- Error Message -------- */}
       {error && (
         <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-[11px] font-semibold rounded-lg flex items-start gap-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -327,7 +316,6 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {/* -------- Preview -------- */}
       {value && (
         <div className="relative p-2.5 bg-gray-50 rounded-xl border border-gray-200">
           <button
@@ -374,10 +362,7 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {/* -------- Hint -------- */}
-      <p className="text-[11px] text-gray-500">
-        * රූපය සියලු භාෂාවන්ට පොදුයි — එකම රූපය හැම භාෂාවටම පෙන්වයි.
-      </p>
+      <p className="text-[11px] text-gray-500">{hintText}</p>
     </div>
   );
 }

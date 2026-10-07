@@ -47,6 +47,9 @@ export type EditableQuestion = {
   option_4_ta?: string | null;
   option_5_ta?: string | null;
   explanation_ta?: string | null;
+
+  // ✱ NEW — shared explanation diagram (language-agnostic)
+  explanation_image_url?: string | null;
 };
 
 interface QuestionEditModalProps {
@@ -84,6 +87,7 @@ const getInitialFormState = (question: EditableQuestion | null) => ({
   subject: question?.subject ?? "Physics",
   topic: question?.topic ?? "",
   imageUrl: question?.image_url ?? "",
+  explanationImageUrl: question?.explanation_image_url ?? "", // ✱ NEW
   correctAnswer: question?.correct_option ?? 0,
 
   si: {
@@ -135,6 +139,9 @@ function QuestionEditorForm({
   const [subject, setSubject] = useState(initialState.subject);
   const [topic, setTopic] = useState(initialState.topic);
   const [imageUrl, setImageUrl] = useState(initialState.imageUrl);
+  const [explanationImageUrl, setExplanationImageUrl] = useState(
+    initialState.explanationImageUrl,
+  ); // ✱ NEW
   const [correctAnswer, setCorrectAnswer] = useState(initialState.correctAnswer);
 
   const [si, setSi] = useState<LanguageContent>(initialState.si);
@@ -236,6 +243,7 @@ function QuestionEditorForm({
         stream: derivedStream,
         topic: topic.trim() || null,
         image_url: imageUrl.trim() || null,
+        explanation_image_url: explanationImageUrl.trim() || null, // ✱ NEW
         correct_option: correctAnswer,
 
         // Sinhala (base columns)
@@ -262,8 +270,8 @@ function QuestionEditorForm({
         option_2_ta: taStarted ? ta.options[1].trim() : null,
         option_3_ta: taStarted ? ta.options[2].trim() : null,
         option_4_ta: taStarted ? ta.options[3].trim() : null,
-        option_5_ta: taStarted ? (ta.options[4].trim() || null) : null,
-        explanation_ta: taStarted ? (ta.explanation.trim() || null) : null,
+        option_5_ta: taStarted ? ta.options[4].trim() || null : null,
+        explanation_ta: taStarted ? ta.explanation.trim() || null : null,
       })
       .eq("id", question.id);
 
@@ -412,7 +420,7 @@ function QuestionEditorForm({
               />
             </div>
 
-            {/* Diagram URL (language-independent) */}
+            {/* ── Question Diagram (language-independent) ── */}
             <ImageUploadField
               value={imageUrl}
               onChange={setImageUrl}
@@ -551,6 +559,15 @@ function QuestionEditorForm({
                 </div>
               </div>
             </div>
+
+            {/* ── ✱ NEW: Explanation Diagram (shared across all languages) ── */}
+            <ImageUploadField
+              value={explanationImageUrl}
+              onChange={setExplanationImageUrl}
+              disabled={isSubmitting}
+              label="විස්තරයේ රූපසටහන (Explanation Diagram - Optional)"
+              hint="* Review Screen එකේ Explanation එක සමඟ පෙන්වයි. සියලු භාෂාවන්ට පොදුයි."
+            />
           </div>
 
           {/* ═══ FOOTER (fixed at bottom) ═══ */}
