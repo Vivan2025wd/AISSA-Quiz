@@ -63,7 +63,6 @@ export default function SchoolsPage() {
 
     setSchools((data as SchoolRow[]) ?? []);
 
-    // Count students per school (uses the RPC-restricted profile visibility)
     const { data: profileRows } = await supabase
       .from("profiles")
       .select("school_normalized")
@@ -120,8 +119,8 @@ export default function SchoolsPage() {
 
   return (
     // ── Outer shell: locked height on desktop so only the list scrolls ──
-    <div className="max-w-6xl mx-auto md:max-h-[calc(100vh-3rem)] flex flex-col gap-4 sm:gap-5">
-      {/* ═══ Header — shrink-0 so it never collapses ═══ */}
+    <div className="max-w-6xl mx-auto md:max-h-[calc(100vh-3rem)] flex flex-col gap-3.5 sm:gap-5">
+      {/* ═══ Header — MOBILE-TIGHTENED ═══ */}
       <div className="shrink-0 relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-amber-500/20">
         <div
           className="absolute inset-0 opacity-[0.15] pointer-events-none"
@@ -132,42 +131,44 @@ export default function SchoolsPage() {
           }}
         />
         <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl" />
-        <div className="relative p-5 sm:p-6 flex items-start gap-4">
+        <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
+
+        <div className="relative p-4 sm:p-6 flex items-start gap-3 sm:gap-4">
           <div className="shrink-0">
             <div className="relative">
               <div className="absolute inset-0 bg-amber-400/25 blur-2xl rounded-full scale-110" />
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-amber-500/15 rounded-2xl border border-amber-400/40 flex items-center justify-center">
-                <School className="w-7 h-7 text-amber-300" />
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-amber-500/15 rounded-2xl border border-amber-400/40 flex items-center justify-center">
+                <School className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300" />
               </div>
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200 mb-2">
-              <Crown className="w-3.5 h-3.5" /> Super Admin
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-500/20 rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200 mb-1.5 sm:mb-2">
+              <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Super Admin
             </span>
-            <h1 className="text-xl sm:text-2xl font-extrabold leading-tight">
+            <h1 className="text-base sm:text-2xl font-extrabold leading-tight">
               Schools Directory
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm mt-1">
+            <p className="text-slate-300 text-[11px] sm:text-sm mt-1 leading-snug hidden sm:block">
               Official schools list used during student registration.
             </p>
           </div>
         </div>
 
-        <div className="relative px-5 sm:px-6 pb-6">
+        <div className="relative px-4 sm:px-6 pb-4 sm:pb-6">
           <button
             onClick={() => setShowAdd(true)}
-            className="px-5 py-3 bg-amber-500 text-slate-900 hover:bg-amber-400 font-bold rounded-xl text-sm transition shadow-lg shadow-amber-500/20 hover:scale-[1.01] flex items-center justify-center gap-2 w-full sm:w-auto"
+            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-amber-500 text-slate-900 hover:bg-amber-400 font-bold rounded-xl text-[11px] sm:text-sm transition shadow-lg shadow-amber-500/20 hover:scale-[1.01] flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" /> Add New School
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Add New School
           </button>
         </div>
       </div>
 
-      {/* ═══ Toast — shrink-0 ═══ */}
+      {/* ═══ Toast — MOBILE-TIGHTENED ═══ */}
       {toast && (
         <div
-          className={`shrink-0 p-3 text-xs font-semibold rounded-xl flex items-start gap-2 border ${
+          className={`shrink-0 p-2.5 sm:p-3 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 border ${
             toast.kind === "ok"
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
               : "bg-red-50 border-red-200 text-red-700"
@@ -182,13 +183,13 @@ export default function SchoolsPage() {
         </div>
       )}
 
-      {/* ═══ Filter bar — shrink-0 ═══ */}
-      <div className="shrink-0 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-3">
+      {/* ═══ Filter bar — MOBILE-TIGHTENED ═══ */}
+      <div className="shrink-0 bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-3 top-3 sm:top-3.5" />
           <input
             type="text"
-            placeholder="Search schools by name or district..."
+            placeholder="Search by name or district..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition"
@@ -197,17 +198,17 @@ export default function SchoolsPage() {
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-60"
+          className="px-3 sm:px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* ═══ Table — flex-1 + min-h-0 so ONLY this scrolls ═══ */}
       <div className="flex-1 min-h-0 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden flex flex-col">
-        <div className="shrink-0 px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
-          <h2 className="text-base font-bold text-gray-900">
+        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900">
             Schools{" "}
             <span className="text-amber-600">
               ({filtered.length} / {schools.length})
@@ -216,12 +217,12 @@ export default function SchoolsPage() {
         </div>
 
         {loading ? (
-          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 text-sm">
-            <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 text-xs sm:text-sm">
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-amber-500" />
             Loading schools...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 text-xs sm:text-sm px-4 text-center">
             No schools match your search.
           </div>
         ) : (
@@ -232,35 +233,38 @@ export default function SchoolsPage() {
               return (
                 <li
                   key={s.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-amber-50/20 transition"
+                  className="p-3 sm:p-5 flex flex-col gap-2.5 sm:gap-3 hover:bg-amber-50/20 transition"
                 >
+                  {/* Row 1: school name + district + student count */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">
+                    <p className="font-bold text-gray-900 text-sm sm:text-base truncate">
                       {s.name}
                     </p>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <MapPin className="w-3 h-3" />
-                      {s.district ?? "—"}
+                    <p className="text-[10px] sm:text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{s.district ?? "—"}</span>
                       {count > 0 && (
-                        <span className="inline-flex items-center gap-1 text-amber-700 font-semibold ml-2">
+                        <span className="inline-flex items-center gap-1 text-amber-700 font-semibold ml-1 sm:ml-2 shrink-0">
                           <UsersIcon className="w-3 h-3" /> {count} student{count === 1 ? "" : "s"}
                         </span>
                       )}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* Row 2: action buttons — full-width on mobile */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 sm:justify-end">
                     <button
                       onClick={() => setEditing(s)}
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition flex items-center gap-1 border border-amber-200"
+                      className="flex-1 sm:flex-none text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition flex items-center justify-center gap-1 sm:gap-1.5 border border-amber-200"
                     >
-                      <Edit3 className="w-3.5 h-3.5" /> Edit
+                      <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Edit
                     </button>
                     <button
                       onClick={() => void handleDelete(s)}
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center gap-1 border border-red-200"
+                      className="flex-1 sm:flex-none text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center justify-center gap-1 sm:gap-1.5 border border-red-200"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                      <span className="sm:hidden">Delete</span>
                     </button>
                   </div>
                 </li>
@@ -291,7 +295,7 @@ export default function SchoolsPage() {
 }
 
 // ============================================================
-// Add / Edit modal — unchanged
+// Add / Edit modal — MOBILE-TIGHTENED
 // ============================================================
 function SchoolFormModal({
   school,
@@ -348,20 +352,22 @@ function SchoolFormModal({
               backgroundSize: "22px 22px",
             }}
           />
-          <div className="relative px-4 sm:px-6 py-4 flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="shrink-0 p-2 bg-amber-500/15 rounded-xl border border-amber-400/30">
+          <div className="pointer-events-none absolute -top-16 -right-20 w-56 h-56 bg-amber-500/20 rounded-full blur-3xl" />
+
+          <div className="relative px-3.5 sm:px-6 py-3.5 sm:py-4 flex items-start justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="shrink-0 p-1.5 sm:p-2 bg-amber-500/15 rounded-xl border border-amber-400/30">
                 {isEdit ? (
-                  <Edit3 className="w-5 h-5 text-amber-200" />
+                  <Edit3 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-200" />
                 ) : (
-                  <Plus className="w-5 h-5 text-amber-200" />
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-amber-200" />
                 )}
               </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold">
+              <div className="min-w-0">
+                <h3 className="text-sm sm:text-lg font-bold truncate">
                   {isEdit ? "Edit School" : "Add New School"}
                 </h3>
-                <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5">
+                <p className="text-slate-300 text-[10px] sm:text-xs mt-0.5 truncate">
                   Names are normalized automatically.
                 </p>
               </div>
@@ -369,24 +375,25 @@ function SchoolFormModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition disabled:opacity-60"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition disabled:opacity-60 shrink-0"
+              aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSave} className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+        <form onSubmit={handleSave} className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2">
+            <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+            <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
               School Name
             </label>
             <input
@@ -396,22 +403,25 @@ function SchoolFormModal({
               placeholder="e.g. Royal College, Colombo"
               required
               disabled={saving}
-              className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none disabled:opacity-60"
+              className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none disabled:opacity-60"
             />
-            <p className="text-[11px] text-gray-500 mt-1">
-              Format: <em>School Name, City</em> — e.g. <em>Ananda College, Colombo</em>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-snug">
+              Format: <em>School Name, City</em>
+              <span className="hidden sm:inline">
+                {" "}— e.g. <em>Ananda College, Colombo</em>
+              </span>
             </p>
           </div>
 
           <div>
-            <label className="flex items-center gap-1 text-xs font-bold text-gray-700 uppercase mb-2">
-              <MapPin className="w-3.5 h-3.5" /> District
+            <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> District
             </label>
             <select
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
               disabled={saving}
-              className="w-full p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none cursor-pointer disabled:opacity-60"
+              className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none cursor-pointer disabled:opacity-60"
             >
               {DISTRICTS.map((d) => (
                 <option key={d} value={d}>{d}</option>
@@ -421,12 +431,12 @@ function SchoolFormModal({
         </form>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/80 flex flex-col sm:flex-row sm:justify-end gap-2 shrink-0">
+        <div className="px-3.5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/80 flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="order-2 sm:order-1 px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl border border-gray-200 transition disabled:opacity-60"
+            className="flex-1 sm:flex-none px-4 sm:px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-700 text-[11px] sm:text-xs font-semibold rounded-xl border border-gray-200 transition disabled:opacity-60"
           >
             Cancel
           </button>
@@ -434,10 +444,14 @@ function SchoolFormModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="order-1 sm:order-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+            className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 text-[11px] sm:text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {isEdit ? "Save Changes" : "Add School"}
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 shrink-0" />
+            )}
+            <span>{isEdit ? "Save Changes" : "Add School"}</span>
           </button>
         </div>
       </div>

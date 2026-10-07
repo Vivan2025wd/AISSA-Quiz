@@ -78,12 +78,7 @@ type Question = {
   option_5_ta?: string | null;
   explanation_ta?: string | null;
 
-  // ✱ Shared explanation diagram (language-agnostic)
   explanation_image_url?: string | null;
-
-  // ✱ Present only when the server has decided the answer key can be
-  //   revealed (quiz window closed, OR student already submitted).
-  //   Undefined while the exam is still open and unsent.
   correct_option?: number;
 };
 
@@ -98,7 +93,7 @@ type StudentResult = {
 type MyAnswersMap = Record<string, number | null>;
 
 // ------------------------------------------------------------
-// Subject colors — used INSIDE QuizShell on the dark banner
+// Subject colors
 // ------------------------------------------------------------
 function subjectBadgeStyle(subject: string | null | undefined): string {
   const s = (subject ?? "").toLowerCase();
@@ -182,7 +177,6 @@ function localizeQuestion(q: Question, medium: Medium) {
     option_4: pickByMedium(medium, q.option_4, q.option_4_en, q.option_4_ta),
     option_5: pickByMedium(medium, q.option_5, q.option_5_en, q.option_5_ta),
     explanation: pickByMedium(medium, q.explanation, q.explanation_en, q.explanation_ta),
-    // ✱ explanation image is language-agnostic — no pickByMedium
     explanation_image_url: q.explanation_image_url ?? null,
     image_url: q.image_url,
   };
@@ -334,8 +328,6 @@ export default function StudentQuizPage() {
 
         if (!cancelled) setMyResult(resultData ?? null);
 
-        // ✱ FIX 2: include `is_correct` so red/green highlighting
-        //   survives page reloads (previously only set on submit).
         const { data: ansData } = await supabase
           .from("quiz_answers")
           .select("question_id, selected_option, is_correct")
@@ -357,7 +349,6 @@ export default function StudentQuizPage() {
           setIsCorrectMap(corrMap);
         }
 
-        // ── Restore active draft if user hasn't submitted yet ──
         if (!resultData && typeof window !== "undefined") {
           try {
             const draftRaw = sessionStorage.getItem(`aissa_draft_${quizId}`);
@@ -510,7 +501,6 @@ export default function StudentQuizPage() {
     await submitQuizResult(Math.max(0, actualSeconds));
   }, [startedAtMs, submitQuizResult, quizId]);
 
-  // ── Auto-save draft on answers/flags change ──
   useEffect(() => {
     if (!quizId || isSubmitted || loadingQuiz || windowStatus !== "active") return;
     if (Object.keys(selectedAnswers).length > 0 || Object.keys(flaggedQuestions).length > 0) {
@@ -551,7 +541,6 @@ export default function StudentQuizPage() {
     [currentQuestionIndex, isSubmitted],
   );
 
-  // ── Keyboard Navigation Shortcuts ──
   useEffect(() => {
     if (windowStatus !== "active" || isSubmitted || loadingQuiz || showSubmitModal) return;
 
@@ -588,7 +577,6 @@ export default function StudentQuizPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [windowStatus, isSubmitted, loadingQuiz, showSubmitModal, currentQuestionIndex, questions.length, handleSelectOption]);
 
-  // ── Tab-Switch Monitoring ──
   useEffect(() => {
     if (windowStatus !== "active" || isSubmitted || loadingQuiz) return;
 
@@ -671,7 +659,7 @@ export default function StudentQuizPage() {
   if (loadError || !quiz) {
     return (
       <ThemedShell>
-        <div className="max-w-md mx-auto text-center space-y-3 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm p-8">
+        <div className="max-w-md mx-auto text-center space-y-3 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm p-6 sm:p-8">
           <AlertTriangle className="w-10 h-10 text-red-500 mx-auto" />
           <p className="text-red-600 font-medium text-sm">
             {loadError ?? "Quiz not found!"}
@@ -690,7 +678,7 @@ export default function StudentQuizPage() {
   if (blockReason) {
     return (
       <ThemedShell>
-        <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
+        <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
           <div className="inline-flex p-3 bg-amber-50 text-amber-600 rounded-2xl">
             <AlertTriangle className="w-10 h-10" />
           </div>
@@ -727,7 +715,7 @@ export default function StudentQuizPage() {
   if (questions.length === 0) {
     return (
       <ThemedShell>
-        <div className="max-w-md mx-auto text-center space-y-3 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm p-8">
+        <div className="max-w-md mx-auto text-center space-y-3 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm p-6 sm:p-8">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
           <h2 className="text-base font-bold text-gray-800">{quiz.title}</h2>
           <p className="text-gray-500 text-sm">
@@ -752,7 +740,7 @@ export default function StudentQuizPage() {
     const startsIn = ms != null && ms > 0 ? formatCountdown(ms) : null;
     return (
       <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
-        <div className="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
+        <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-2xl shadow-sm border border-amber-200/70 text-center space-y-4">
           <Hourglass className="w-10 h-10 sm:w-12 sm:h-12 text-amber-500 mx-auto" />
           <h2 className="text-base sm:text-xl font-bold text-gray-900">
             මෙම Quiz එක තවම ආරම්භ වී නැත
@@ -830,86 +818,89 @@ export default function StudentQuizPage() {
 
   return (
     <QuizShell title={quiz.title} subject={quiz.subject} stream={quiz.stream}>
-      {/* ── Tab Switch Integrity Notice ── */}
+      {/* ── Tab Switch Integrity Notice — MOBILE-TIGHTENED ── */}
       {showTabSwitchWarning && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 sm:p-4 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-sm backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="flex items-start gap-2.5">
-            <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-xl p-3 sm:p-4 text-xs sm:text-sm flex items-start justify-between gap-2 sm:gap-3 shadow-sm backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex items-start gap-2 sm:gap-2.5">
+            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">අවධානයයි: වෙනත් Window / Tab එකකට මාරුවීම සටහන් විය (Tab Switch #{tabSwitchCount})</p>
-              <p className="text-amber-800/80 text-xs mt-0.5">
-                තරඟයේ සාධාරණත්වය සහ ආරක්ෂාව වෙනුවෙන් කරුණාකර Quiz එක අවසන් වන තෙක් මෙම තිරය තුළම රැඳී සිටින්න.
+              <p className="font-bold text-[11px] sm:text-sm">
+                අවධානයයි: Tab Switch #{tabSwitchCount}
+              </p>
+              <p className="text-amber-800/80 text-[10px] sm:text-xs mt-0.5">
+                තරඟයේ සාධාරණත්වය වෙනුවෙන් කරුණාකර Quiz එක අවසන් වන තෙක් මෙම තිරය තුළම රැඳී සිටින්න.
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowTabSwitchWarning(false)}
-            className="text-amber-700 hover:text-amber-900 text-xs font-bold px-2 py-1 hover:bg-amber-500/10 rounded-lg transition"
+            className="text-amber-700 hover:text-amber-900 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-1 hover:bg-amber-500/10 rounded-lg transition shrink-0"
           >
-            තේරුම් ගත්තා ✕
+            OK
           </button>
         </div>
       )}
 
-      {/* ── Top Bar: Progress, Timer & Controls ── */}
-      <div className="bg-white/80 backdrop-blur-md p-3.5 sm:p-4 rounded-xl shadow-sm border border-white/70 space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs sm:text-sm font-bold text-gray-800">
-                ප්‍රශ්නය {currentQuestionIndex + 1} / {questions.length}
+      {/* ── Top Bar: Progress, Timer & Controls — MOBILE-TIGHTENED ── */}
+      <div className="bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-xl shadow-sm border border-white/70 space-y-2.5 sm:space-y-3">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="text-[11px] sm:text-sm font-bold text-gray-800">
+                Q {currentQuestionIndex + 1}/{questions.length}
               </span>
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                {answeredCount} of {questions.length} කළා ({progressPct}%)
+              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
+                {answeredCount} ({progressPct}%)
               </span>
               {draftSaved && (
-                <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 animate-pulse">
-                  <Check className="w-3 h-3" /> Auto-saved
+                <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 flex items-center gap-1 animate-pulse">
+                  <Check className="w-3 h-3" />
+                  <span className="hidden sm:inline">Auto-saved</span>
                 </span>
               )}
             </div>
             {endsIn && (
-              <p className="text-[10px] sm:text-[11px] font-bold text-red-600 flex items-center gap-1.5 mt-0.5">
+              <p className="text-[9px] sm:text-[11px] font-bold text-red-600 flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                කාලය ඉතිරිව: {endsIn}
+                අවසන්: {endsIn}
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="p-2 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white/70 hover:bg-white text-gray-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+              className="p-1.5 sm:p-2 sm:px-3 sm:py-1.5 rounded-lg border border-gray-200 bg-white/70 hover:bg-white text-gray-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
               title={isFullscreen ? "Exit Fullscreen" : "Enter Focus Fullscreen"}
             >
               {isFullscreen ? (
                 <>
                   <Minimize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Exit Focus</span>
+                  <span className="hidden sm:inline">Exit</span>
                 </>
               ) : (
                 <>
                   <Maximize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Focus Mode</span>
+                  <span className="hidden sm:inline">Focus</span>
                 </>
               )}
             </button>
 
             <div
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-base sm:text-lg font-bold shrink-0 transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono text-sm sm:text-lg font-bold shrink-0 transition-all ${
                 timeLeft < 300
                   ? "bg-red-50 text-red-600 border border-red-200 shadow-sm shadow-red-100"
                   : "bg-emerald-50 text-emerald-700 border border-emerald-200"
               }`}
             >
-              <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${timeLeft < 300 ? "animate-pulse text-red-500" : ""}`} />
+              <Clock className={`w-3.5 h-3.5 sm:w-5 sm:h-5 ${timeLeft < 300 ? "animate-pulse text-red-500" : ""}`} />
               <span>{formatTime(timeLeft)}</span>
             </div>
           </div>
         </div>
 
-        <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+        <div className="w-full bg-gray-100 rounded-full h-1 sm:h-1.5 overflow-hidden">
           <div
             className="bg-linear-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progressPct}%` }}
@@ -918,15 +909,15 @@ export default function StudentQuizPage() {
       </div>
 
       {submitError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm p-3.5 rounded-xl shadow-2xs">
+        <div className="bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-sm p-3 sm:p-3.5 rounded-xl shadow-2xs">
           {submitError}
         </div>
       )}
 
       {isSubmitted ? (
-        <div className="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-sm border border-white/70 text-center space-y-3">
+        <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-xl shadow-sm border border-white/70 text-center space-y-3">
           <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+          <h2 className="text-base sm:text-xl font-bold text-gray-900">
             Quiz එක සාර්ථකව Submit විය!
           </h2>
           <p className="text-gray-600 text-sm">
@@ -940,18 +931,18 @@ export default function StudentQuizPage() {
         </div>
       ) : (
         <>
-          {/* Mobile palette filter & grid */}
-          <div className="md:hidden bg-white/80 backdrop-blur-md p-3.5 rounded-xl shadow-sm border border-white/70 space-y-2.5">
+          {/* Mobile palette — MOBILE-TIGHTENED */}
+          <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
             <div className="flex items-center justify-between text-xs text-gray-600">
-              <span className="font-bold flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-emerald-600" /> ප්‍රශ්න මාලාව
+              <span className="font-bold flex items-center gap-1.5 text-[11px]">
+                <FileText className="w-3.5 h-3.5 text-emerald-600" /> ප්‍රශ්න
               </span>
-              <span className="text-[11px] font-semibold text-gray-500">
-                {answeredCount} / {questions.length} සපයා ඇත
+              <span className="text-[10px] font-semibold text-gray-500">
+                {answeredCount} / {questions.length}
               </span>
             </div>
 
-            <div className="grid grid-cols-6 xs:grid-cols-8 sm:grid-cols-10 gap-1.5">
+            <div className="grid grid-cols-8 xs:grid-cols-10 sm:grid-cols-12 gap-1 sm:gap-1.5">
               {questions.map((_, idx) => {
                 const isAnswered = selectedAnswers[idx] !== undefined;
                 const isCurrent = currentQuestionIndex === idx;
@@ -973,11 +964,11 @@ export default function StudentQuizPage() {
                     key={idx}
                     type="button"
                     onClick={() => setCurrentQuestionIndex(idx)}
-                    className={`relative w-full aspect-square rounded-lg text-xs flex items-center justify-center transition active:scale-95 ${btnClass}`}
+                    className={`relative w-full aspect-square rounded-md text-[10px] sm:text-xs flex items-center justify-center transition active:scale-95 ${btnClass}`}
                   >
                     {idx + 1}
                     {isFlagged && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white" />
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full border border-white" />
                     )}
                   </button>
                 );
@@ -985,52 +976,54 @@ export default function StudentQuizPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
-            {/* ── Main Question Card ── */}
-            <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-6">
+            {/* ── Main Question Card — MOBILE-TIGHTENED ── */}
+            <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-3 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-3 sm:space-y-6">
               {/* Question Header & Action Row */}
-              <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-3">
+              <div className="flex items-start justify-between gap-2 border-b border-gray-100 pb-2.5 sm:pb-3">
                 <div className="min-w-0">
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    Question {currentQuestionIndex + 1}
+                  <span className="text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-200">
+                    Q {currentQuestionIndex + 1}
                   </span>
                   {currentQ.topic && (
-                    <span className="ml-2 text-xs font-medium text-gray-400">
+                    <span className="ml-1.5 sm:ml-2 text-[10px] sm:text-xs font-medium text-gray-400 truncate">
                       • {currentQ.topic}
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => toggleFlag(currentQuestionIndex)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition border ${
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition border ${
                       isCurrentFlagged
                         ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
                         : "bg-gray-50 text-gray-600 hover:text-amber-800 hover:bg-amber-50 border-gray-200"
                     }`}
                     title="Mark for review (Shortcut: F)"
                   >
-                    <Flag className={`w-3.5 h-3.5 ${isCurrentFlagged ? "fill-amber-600 text-amber-600" : ""}`} />
-                    <span>{isCurrentFlagged ? "Flagged (සලකුණු කළා)" : "Mark for Review"}</span>
+                    <Flag className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isCurrentFlagged ? "fill-amber-600 text-amber-600" : ""}`} />
+                    <span className="hidden sm:inline">
+                      {isCurrentFlagged ? "Flagged" : "Mark for Review"}
+                    </span>
                   </button>
 
                   {isCurrentAnswered && (
                     <button
                       type="button"
                       onClick={() => handleSelectOption(selectedAnswers[currentQuestionIndex])}
-                      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200"
+                      className="inline-flex items-center gap-1 p-1.5 sm:px-2 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold text-gray-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200"
                       title="Clear answer selection"
                     >
-                      <RotateCcw className="w-3 h-3" />
+                      <RotateCcw className="w-3 h-3 sm:w-3" />
                       <span className="hidden sm:inline">Clear</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
+              <h2 className="text-sm sm:text-lg font-medium text-gray-900 leading-snug sm:leading-relaxed">
                 {currentQuestionIndex + 1}. {localized.question_text}
               </h2>
 
@@ -1039,11 +1032,11 @@ export default function StudentQuizPage() {
                 <img
                   src={localized.image_url}
                   alt="Question illustration"
-                  className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto object-contain"
+                  className="max-h-56 sm:max-h-72 rounded-lg border border-gray-200 mx-auto object-contain"
                 />
               )}
 
-              <div className="space-y-2.5 sm:space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {currentOptions.map((option, idx) => {
                   const isSelected = selectedAnswers[currentQuestionIndex] === idx;
                   const optionLetters = ["A", "B", "C", "D", "E"];
@@ -1052,23 +1045,23 @@ export default function StudentQuizPage() {
                       key={idx}
                       disabled={isSubmitted}
                       onClick={() => handleSelectOption(idx)}
-                      className={`group w-full text-left p-3.5 sm:p-4 rounded-xl border transition-all duration-150 text-sm sm:text-base flex items-start gap-3 ${
+                      className={`group w-full text-left p-2.5 sm:p-4 rounded-xl border transition-all duration-150 text-sm sm:text-base flex items-start gap-2.5 sm:gap-3 ${
                         isSelected
                           ? "border-emerald-600 bg-emerald-50 text-emerald-950 font-medium ring-2 ring-emerald-500/25 shadow-2xs"
                           : "border-gray-200 bg-white/60 hover:bg-emerald-50/40 text-gray-700 hover:border-emerald-300"
                       }`}
                     >
                       <span
-                        className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 border transition ${
+                        className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[10px] sm:text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 border transition ${
                           isSelected
                             ? "bg-emerald-600 border-emerald-600 text-white shadow-2xs"
                             : "bg-gray-100 text-gray-600 border-gray-200 group-hover:bg-emerald-100 group-hover:border-emerald-300 group-hover:text-emerald-800"
                         }`}
                       >
-                        {isSelected ? <Check className="w-3.5 h-3.5 stroke-3" /> : idx + 1}
+                        {isSelected ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : idx + 1}
                       </span>
                       <span className="flex-1 wrap-break-word">{option}</span>
-                      <span className="text-[10px] font-mono text-gray-300 group-hover:text-gray-400 shrink-0">
+                      <span className="hidden sm:inline text-[10px] font-mono text-gray-300 group-hover:text-gray-400 shrink-0">
                         [{optionLetters[idx] ?? idx + 1}]
                       </span>
                     </button>
@@ -1076,44 +1069,50 @@ export default function StudentQuizPage() {
                 })}
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-3 sm:pt-4 border-t border-gray-100 flex-wrap">
-                <div className="flex items-center gap-2">
+              {/* Navigation — MOBILE-TIGHTENED */}
+              <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-2 pt-3 sm:pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                   <button
                     disabled={currentQuestionIndex === 0}
                     onClick={() => setCurrentQuestionIndex((p) => p - 1)}
-                    className="justify-center flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm bg-white/50 transition font-medium"
+                    className="justify-center flex items-center gap-1.5 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm bg-white/50 transition font-medium"
                   >
-                    <ArrowLeft className="w-4 h-4" /> <span>පෙර (Previous)</span>
+                    <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>පෙර</span>
                   </button>
 
-                  {currentQuestionIndex < questions.length - 1 && (
+                  {currentQuestionIndex < questions.length - 1 ? (
                     <button
                       onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-                      className="justify-center flex items-center gap-1.5 px-4 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition text-sm font-bold shadow-sm"
+                      className="justify-center flex items-center gap-1.5 px-3 sm:px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition text-xs sm:text-sm font-bold shadow-sm"
                     >
-                      <span>ඊළඟ (Next)</span> <ArrowRight className="w-4 h-4" />
+                      <span>ඊළඟ</span>
+                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
+                  ) : (
+                    <div />
                   )}
                 </div>
 
                 <button
                   disabled={isSubmitted || isSubmitting}
                   onClick={handleManualSubmit}
-                  className="ml-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-linear-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-bold rounded-xl transition disabled:opacity-50 text-sm shadow-md shadow-emerald-900/10"
+                  className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-linear-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-bold rounded-xl transition disabled:opacity-50 text-xs sm:text-sm shadow-md shadow-emerald-900/10"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Review & Submit</span>
                 </button>
               </div>
 
-              <div className="text-[11px] text-gray-400 text-center sm:text-left flex items-center justify-center sm:justify-start gap-3 flex-wrap pt-1">
+              {/* Keyboard hints — hidden on mobile */}
+              <div className="hidden sm:flex text-[11px] text-gray-400 items-center gap-3 flex-wrap pt-1">
                 <span>⌨️ Shortcuts: <strong>1-5</strong> or <strong>A-E</strong> (Select)</span>
                 <span>• <strong>← →</strong> (Navigate)</span>
                 <span>• <strong>F</strong> (Flag for review)</span>
               </div>
             </div>
 
-            {/* ── Desktop Question Palette Side Panel ── */}
+            {/* ── Desktop Question Palette Side Panel (unchanged) ── */}
             <div className="hidden md:block bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-xl shadow-sm border border-white/70 h-fit space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">
@@ -1209,56 +1208,74 @@ export default function StudentQuizPage() {
         </>
       )}
 
-      {/* ── Pre-Submission Confirmation Modal ── */}
+      {/* ── Pre-Submission Confirmation Modal — MOBILE-TIGHTENED ── */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-emerald-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 p-6 space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                  Quiz එක Submit කිරීමට පෙර පරීක්ෂා කරන්න
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-emerald-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 p-4 sm:p-6 space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
+                  Quiz එක Submit කිරීමට පෙර
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  කරුණාකර ඔබගේ පිළිතුරු සාරාංශය පරීක්ෂා කරන්න. Submit කිරීමෙන් පසු පිළිතුරු වෙනස් කළ නොහැක.
+                <p className="text-[11px] sm:text-xs text-gray-500 mt-1">
+                  Submit කිරීමෙන් පසු පිළිතුරු වෙනස් කළ නොහැක.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <p className="text-[10px] font-bold text-emerald-700 uppercase">පිළිතුරු දුන්</p>
-                <p className="text-xl font-extrabold text-emerald-900 mt-0.5">{answeredCount}</p>
-                <p className="text-[9px] text-emerald-600">/{questions.length}</p>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
+              <div className="p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-[9px] sm:text-[10px] font-bold text-emerald-700 uppercase leading-tight">
+                  දුන්
+                </p>
+                <p className="text-lg sm:text-xl font-extrabold text-emerald-900 mt-0.5 leading-none">
+                  {answeredCount}
+                </p>
+                <p className="text-[8px] sm:text-[9px] text-emerald-600 leading-none mt-0.5">
+                  /{questions.length}
+                </p>
               </div>
-              <div className={`p-3 rounded-xl border ${unansweredCount > 0 ? "bg-red-50 border-red-200 text-red-900" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
-                <p className={`text-[10px] font-bold uppercase ${unansweredCount > 0 ? "text-red-700" : "text-gray-500"}`}>නොකළ</p>
-                <p className={`text-xl font-extrabold mt-0.5 ${unansweredCount > 0 ? "text-red-700" : "text-gray-700"}`}>{unansweredCount}</p>
-                <p className="text-[9px] opacity-75">/{questions.length}</p>
+              <div className={`p-2 sm:p-3 rounded-xl border ${unansweredCount > 0 ? "bg-red-50 border-red-200 text-red-900" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
+                <p className={`text-[9px] sm:text-[10px] font-bold uppercase leading-tight ${unansweredCount > 0 ? "text-red-700" : "text-gray-500"}`}>
+                  නොකළ
+                </p>
+                <p className={`text-lg sm:text-xl font-extrabold mt-0.5 leading-none ${unansweredCount > 0 ? "text-red-700" : "text-gray-700"}`}>
+                  {unansweredCount}
+                </p>
+                <p className="text-[8px] sm:text-[9px] opacity-75 leading-none mt-0.5">
+                  /{questions.length}
+                </p>
               </div>
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <p className="text-[10px] font-bold text-amber-700 uppercase">Flagged</p>
-                <p className="text-xl font-extrabold text-amber-900 mt-0.5">{flaggedCount}</p>
-                <p className="text-[9px] text-amber-600">Review</p>
+              <div className="p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-[9px] sm:text-[10px] font-bold text-amber-700 uppercase leading-tight">
+                  Flagged
+                </p>
+                <p className="text-lg sm:text-xl font-extrabold text-amber-900 mt-0.5 leading-none">
+                  {flaggedCount}
+                </p>
+                <p className="text-[8px] sm:text-[9px] text-amber-600 leading-none mt-0.5">
+                  Review
+                </p>
               </div>
             </div>
 
             {unansweredCount > 0 && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2">
+              <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-xl text-[11px] sm:text-xs text-red-800 flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <span>
-                  අවධානයයි: ඔබ තවමත් <strong>ප්‍රශ්න {unansweredCount}</strong>කට පිළිතුරු සපයා නැත!
+                  ඔබ තවමත් <strong>ප්‍රශ්න {unansweredCount}</strong>කට පිළිතුරු සපයා නැත!
                 </span>
               </div>
             )}
 
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2">
               {unansweredCount > 0 && (
                 <button
                   type="button"
@@ -1267,10 +1284,10 @@ export default function StudentQuizPage() {
                     if (firstUnanswered !== -1) setCurrentQuestionIndex(firstUnanswered);
                     setShowSubmitModal(false);
                   }}
-                  className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-3 sm:px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-xs font-bold rounded-xl transition flex items-center justify-center gap-2"
                 >
-                  <HelpCircle className="w-4 h-4 text-gray-500" />
-                  නොකළ ප්‍රශ්න වෙත යන්න (Review Unanswered)
+                  <HelpCircle className="w-4 h-4 text-gray-500 shrink-0" />
+                  නොකළ ප්‍රශ්න වෙත යන්න
                 </button>
               )}
 
@@ -1282,10 +1299,10 @@ export default function StudentQuizPage() {
                     if (firstFlagged !== -1) setCurrentQuestionIndex(firstFlagged);
                     setShowSubmitModal(false);
                   }}
-                  className="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-xl border border-amber-200 transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-3 sm:px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-200 transition flex items-center justify-center gap-2"
                 >
-                  <Flag className="w-4 h-4 text-amber-600" />
-                  සලකුණු කළ ප්‍රශ්න වෙත යන්න (Review Flagged)
+                  <Flag className="w-4 h-4 text-amber-600 shrink-0" />
+                  සලකුණු කළ ප්‍රශ්න වෙත යන්න
                 </button>
               )}
             </div>
@@ -1294,20 +1311,20 @@ export default function StudentQuizPage() {
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold transition"
+                className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-[11px] sm:text-xs font-bold transition"
               >
-                තවදුරටත් සිතන්න (Cancel)
+                Cancel
               </button>
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => void finishQuiz()}
-                className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
                 )}
                 තහවුරු කර Submit
               </button>
@@ -1336,7 +1353,7 @@ function ThemedShell({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
-// QuizShell with DARK banner + AISSA logo
+// QuizShell — MOBILE-TIGHTENED
 // ---------------------------------------------------------------------------
 function QuizShell({
   title,
@@ -1356,7 +1373,7 @@ function QuizShell({
       <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
-        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+        <div className="max-w-4xl mx-auto space-y-3 sm:space-y-6">
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
             <div
               className="absolute inset-0 opacity-[0.15] pointer-events-none"
@@ -1372,11 +1389,11 @@ function QuizShell({
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-            <div className="relative p-5 sm:p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+            <div className="relative p-3.5 sm:p-6 md:p-7 flex items-start sm:items-center gap-3 sm:gap-5">
               <div className="shrink-0">
                 <div className="relative">
                   <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                  <div className="relative w-12 h-12 sm:w-24 sm:h-24 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/aissa-logo.png"
@@ -1388,21 +1405,21 @@ function QuizShell({
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1 sm:mb-2">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border ${subjectBadgeStyle(
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border ${subjectBadgeStyle(
                       subject,
                     )}`}
                   >
                     {subject}
                   </span>
                   {stream && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
                       {stream}
                     </span>
                   )}
                 </div>
-                <h1 className="text-base sm:text-xl md:text-2xl font-extrabold leading-snug tracking-tight wrap-break-word">
+                <h1 className="text-sm sm:text-xl md:text-2xl font-extrabold leading-snug tracking-tight wrap-break-word">
                   {title}
                 </h1>
               </div>
@@ -1417,7 +1434,7 @@ function QuizShell({
 }
 
 // ---------------------------------------------------------------------------
-// Review mode
+// Review mode — MOBILE-TIGHTENED
 // ---------------------------------------------------------------------------
 function ReviewMode({
   questions,
@@ -1434,7 +1451,6 @@ function ReviewMode({
   medium: Medium;
   myResult: StudentResult | null;
   myAnswers: MyAnswersMap;
-  /** Server-confirmed correctness map: question_id → is_correct */
   isCorrectMap: Record<string, boolean>;
   reviewIndex: number;
   setReviewIndex: (i: number) => void;
@@ -1448,43 +1464,45 @@ function ReviewMode({
   const studentAnswered = studentSel !== undefined && studentSel !== null;
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-xl shadow-sm border border-emerald-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
-            <Eye className="w-5 h-5 sm:w-6 sm:h-6" />
+    <div className="space-y-3 sm:space-y-4">
+      {/* Review header */}
+      <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl shadow-sm border border-emerald-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="p-2 sm:p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+            <Eye className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
             <h2 className="font-bold text-gray-900 text-sm sm:text-base">
               Review Mode
             </h2>
-            <p className="text-[11px] sm:text-xs text-gray-500">
+            <p className="text-[10px] sm:text-xs text-gray-500">
               නිවැරදි පිළිතුරු සහ විස්තර
             </p>
           </div>
         </div>
 
         {myResult ? (
-          <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl self-start sm:self-auto">
+          <div className="flex items-center gap-2 sm:gap-3 bg-emerald-50 border border-emerald-200 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl self-start sm:self-auto">
             <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" />
             <div>
-              <p className="text-[9px] sm:text-[10px] uppercase font-bold text-emerald-700">
-                ඔබේ ලකුණු
+              <p className="text-[9px] sm:text-[10px] uppercase font-bold text-emerald-700 leading-tight">
+                ලකුණු
               </p>
-              <p className="font-extrabold text-emerald-900 text-base sm:text-lg leading-none">
+              <p className="font-extrabold text-emerald-900 text-sm sm:text-lg leading-none">
                 {myResult.score} / {myResult.total_marks}
               </p>
             </div>
           </div>
         ) : (
-          <span className="text-[11px] sm:text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
+          <span className="text-[10px] sm:text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
             සහභාගී වී නැත
           </span>
         )}
       </div>
 
-      <div className="md:hidden bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-sm border border-white/70 space-y-2">
-        <div className="grid grid-cols-6 xs:grid-cols-8 sm:grid-cols-10 gap-1.5">
+      {/* Mobile palette — tighter */}
+      <div className="md:hidden bg-white/80 backdrop-blur-md p-2.5 sm:p-3 rounded-xl shadow-sm border border-white/70">
+        <div className="grid grid-cols-8 xs:grid-cols-10 sm:grid-cols-12 gap-1 sm:gap-1.5">
           {questions.map((question, idx) => {
             const isCurrent = reviewIndex === idx;
             const sel = myAnswers[question.id];
@@ -1502,7 +1520,7 @@ function ReviewMode({
               <button
                 key={idx}
                 onClick={() => setReviewIndex(idx)}
-                className={`w-full aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition ${
+                className={`w-full aspect-square rounded-md text-[10px] sm:text-xs font-semibold flex items-center justify-center transition ${
                   isCurrent ? "ring-2 ring-emerald-600 bg-emerald-600 text-white" : colorCls
                 }`}
               >
@@ -1513,9 +1531,9 @@ function ReviewMode({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
-        <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-4 sm:space-y-6">
-          <h2 className="text-base sm:text-lg font-medium text-gray-900 leading-relaxed">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-6">
+        <div className="md:col-span-3 bg-white/80 backdrop-blur-md p-3 sm:p-6 rounded-xl shadow-sm border border-white/70 space-y-3 sm:space-y-6">
+          <h2 className="text-sm sm:text-lg font-medium text-gray-900 leading-snug sm:leading-relaxed">
             {reviewIndex + 1}. {localized.question_text}
           </h2>
 
@@ -1526,7 +1544,7 @@ function ReviewMode({
               alt="Question illustration"
               loading="lazy"
               decoding="async"
-              className="max-h-64 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
+              className="max-h-56 sm:max-h-72 rounded-lg border border-gray-200 mx-auto"
               onError={(e) => {
                 const el = e.target as HTMLImageElement;
                 el.onerror = null;
@@ -1536,24 +1554,17 @@ function ReviewMode({
           )}
 
           {!studentAnswered && myResult && (
-            <div className="text-[11px] sm:text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex items-center gap-2">
+            <div className="text-[10px] sm:text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-gray-400 shrink-0" />
               ඔබ මෙම ප්‍රශ්නයට පිළිතුරු දී නැත.
             </div>
           )}
 
-          {/* ✱ FIX 4: Correct/incorrect colour coding.
-              Uses `q.correct_option` (revealed by the server post-quiz)
-              with a fallback to `isCorrectMap` (populated from
-              quiz_answers on every load and from /api/grade on submit).
-              Guarantees: correct answer → green, wrong pick → red,
-              missed question → green correct answer still shown. */}
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             {optionsList.map((opt, idx) => {
               const studentPicked = studentAnswered && studentSel === idx;
               const hasAnswerKey = typeof q.correct_option === "number";
 
-              // ── Correctness resolution ──────────────────────────
               const isCorrectOption = hasAnswerKey
                 ? q.correct_option === idx
                 : studentPicked && isCorrectMap[q.id] === true;
@@ -1562,7 +1573,6 @@ function ReviewMode({
                 ? studentPicked && !isCorrectOption
                 : studentPicked && isCorrectMap[q.id] === false;
 
-              // ── Card colours ────────────────────────────────────
               let cardCls = "bg-white/60 border-gray-200 text-gray-700";
               if (isCorrectOption)
                 cardCls =
@@ -1575,7 +1585,6 @@ function ReviewMode({
               if (isCorrectOption) badgeCls = "bg-emerald-600 text-white";
               else if (isWrongPick) badgeCls = "bg-red-600 text-white";
 
-              // ── Right-side label ────────────────────────────────
               let label: React.ReactNode = null;
               if (isCorrectOption && studentPicked) {
                 label = (
@@ -1586,7 +1595,7 @@ function ReviewMode({
               } else if (isCorrectOption) {
                 label = (
                   <span className="hidden sm:inline px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded shrink-0">
-                    Correct Answer
+                    Correct
                   </span>
                 );
               } else if (isWrongPick) {
@@ -1597,19 +1606,18 @@ function ReviewMode({
                 );
               }
 
-              // ── Left circular badge ─────────────────────────────
               let badgeIcon: React.ReactNode;
-              if (isCorrectOption) badgeIcon = <CheckCircle2 className="w-4 h-4" />;
-              else if (isWrongPick) badgeIcon = <XCircle className="w-4 h-4" />;
+              if (isCorrectOption) badgeIcon = <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />;
+              else if (isWrongPick) badgeIcon = <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />;
               else badgeIcon = idx + 1;
 
               return (
                 <div
                   key={idx}
-                  className={`p-3 sm:p-3.5 rounded-lg border flex items-start gap-2.5 sm:gap-3 text-sm transition ${cardCls}`}
+                  className={`p-2.5 sm:p-3.5 rounded-lg border flex items-start gap-2 sm:gap-3 text-xs sm:text-sm transition ${cardCls}`}
                 >
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5 ${badgeCls}`}
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-bold shrink-0 mt-0.5 ${badgeCls}`}
                   >
                     {badgeIcon}
                   </span>
@@ -1620,15 +1628,15 @@ function ReviewMode({
             })}
           </div>
 
-          {/* ✱ Explanation text + optional shared diagram */}
           {(localized.explanation || localized.explanation_image_url) && (
-            <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+            <div className="p-2.5 sm:p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 sm:space-y-3">
               {localized.explanation && (
                 <div>
-                  <p className="font-bold text-amber-950 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-600" /> Explanation
+                  <p className="font-bold text-amber-950 text-[11px] sm:text-sm mb-1 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 shrink-0" />
+                    Explanation
                   </p>
-                  <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+                  <p className="text-[11px] sm:text-sm text-amber-900 leading-snug sm:leading-relaxed">
                     {localized.explanation}
                   </p>
                 </div>
@@ -1636,8 +1644,9 @@ function ReviewMode({
 
               {localized.explanation_image_url && (
                 <div className={localized.explanation ? "pt-1 border-t border-amber-200/60" : ""}>
-                  <p className="font-bold text-amber-950 text-[10px] sm:text-xs mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Explanation Diagram
+                  <p className="font-bold text-amber-950 text-[9px] sm:text-xs mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600 shrink-0" />
+                    Diagram
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -1645,7 +1654,7 @@ function ReviewMode({
                     alt="Explanation illustration"
                     loading="lazy"
                     decoding="async"
-                    className="max-h-72 sm:max-h-96 rounded-lg border border-amber-200 bg-white mx-auto object-contain"
+                    className="max-h-56 sm:max-h-96 rounded-lg border border-amber-200 bg-white mx-auto object-contain"
                     onError={(e) => {
                       const el = e.target as HTMLImageElement;
                       el.onerror = null;
@@ -1661,24 +1670,24 @@ function ReviewMode({
             <button
               disabled={reviewIndex === 0}
               onClick={() => setReviewIndex(reviewIndex - 1)}
-              className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm bg-white/50 transition"
+              className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm bg-white/50 transition"
             >
-              <ArrowLeft className="w-4 h-4" /> <span className="hidden xs:inline">පෙර</span>
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> පෙර
             </button>
 
             {reviewIndex < questions.length - 1 ? (
               <button
                 onClick={() => setReviewIndex(reviewIndex + 1)}
-                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition text-sm shadow-sm"
+                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition text-xs sm:text-sm shadow-sm"
               >
-                ඊළඟ <ArrowRight className="w-4 h-4" />
+                ඊළඟ <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             ) : (
               <button
                 onClick={onBack}
-                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition text-sm shadow-sm"
+                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition text-xs sm:text-sm shadow-sm"
               >
-                Dashboard <ArrowRight className="w-4 h-4" />
+                Dashboard <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             )}
           </div>

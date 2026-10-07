@@ -16,7 +16,6 @@ import {
   Monitor,
   Shield,
   Eye,
-  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -257,10 +256,13 @@ export default function LeaderboardPage() {
   const [loadingIndividual, setLoadingIndividual] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Student Privacy: Mask full names for screen sharing / classroom projection
   const [privacyMode, setPrivacyMode] = useState(false);
 
-  const formatDisplayName = (fullName: string | null | undefined, rank: number, isMe: boolean) => {
+  const formatDisplayName = (
+    fullName: string | null | undefined,
+    rank: number,
+    isMe: boolean,
+  ) => {
     if (isMe) return fullName || "You";
     if (!fullName) return `Student #${rank}`;
     if (!privacyMode) return fullName;
@@ -489,9 +491,8 @@ export default function LeaderboardPage() {
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-          {/* ═══════════ Header Banner — DARK THEME + LOGO ═══════════ */}
+          {/* ═══════════ Header Banner — MOBILE-TIGHTENED ═══════════ */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
-            {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.15] pointer-events-none"
               style={{
@@ -500,109 +501,107 @@ export default function LeaderboardPage() {
                 backgroundSize: "22px 22px",
               }}
             />
-            {/* teal glows */}
             <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
-            {/* rings */}
             <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
             <div className="pointer-events-none absolute top-1/2 -right-24 w-72 h-72 rounded-full border-[1.5px] border-teal-400/10 hidden md:block" />
-            {/* shine */}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-            <div className="relative p-5 sm:p-6 md:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              {/* ✨ AISSA Logo — no box, sits directly on dark bg */}
-              <div className="shrink-0">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/aissa-logo.png"
-                      alt="AISSA Logo"
-                      className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
-                    />
+            <div className="relative p-4 sm:p-6 md:p-8">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-6">
+                {/* ✨ AISSA Logo — smaller on mobile */}
+                <div className="shrink-0">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                    <div className="relative w-14 h-14 sm:w-28 sm:h-28 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/aissa-logo.png"
+                        alt="AISSA Logo"
+                        className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(45,212,191,0.5)]"
+                      />
+                    </div>
                   </div>
                 </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <Link
+                      href="/student/dashboard"
+                      className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200 hover:bg-teal-500/25 transition"
+                    >
+                      <ArrowLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      Dashboard
+                    </Link>
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                      <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
+                      Live
+                    </span>
+                  </div>
+
+                  <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold mt-2 sm:mt-2.5 leading-tight tracking-tight flex items-center gap-1.5 sm:gap-2">
+                    <Trophy className="w-5 h-5 sm:w-7 sm:h-7 text-teal-300 shrink-0" />
+                    <span className="truncate">AISSA Leaderboard</span>
+                  </h1>
+
+                  <p className="text-slate-300 text-[11px] sm:text-sm mt-1.5 sm:mt-2 leading-snug hidden sm:block">
+                    {activeTab === "school"
+                      ? `Top ${TOP_SCHOOLS} පාසල් පමණක් · ඔබේ පාසල ඊට යටින්`
+                      : `Top ${TOP_INDIVIDUALS} සිසුන් · විෂය අනුව · ඔබේ තැන ඊට යටින්`}
+                  </p>
+                </div>
               </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Link
-                    href="/student/dashboard"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200 hover:bg-teal-500/25 transition"
+              {/* Tab toggle & Privacy Mode — full width on mobile */}
+              <div className="mt-4 sm:mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <div className="inline-flex p-1 bg-black/40 backdrop-blur-md rounded-xl border border-teal-400/20 gap-1 w-full sm:w-auto">
+                  <button
+                    onClick={() => setActiveTab("school")}
+                    className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 ${
+                      activeTab === "school"
+                        ? "bg-teal-500 text-slate-900 shadow-sm"
+                        : "text-slate-300 hover:text-white hover:bg-white/10"
+                    }`}
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    Dashboard
-                  </Link>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
-                    <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
-                    Live Rankings
-                  </span>
+                    <School className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> පාසල්
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("individual")}
+                    className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 ${
+                      activeTab === "individual"
+                        ? "bg-teal-500 text-slate-900 shadow-sm"
+                        : "text-slate-300 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> ශිෂ්‍ය
+                  </button>
                 </div>
 
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold mt-2.5 leading-tight tracking-tight flex items-center gap-2">
-                  <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-teal-300" />
-                  AISSA Leaderboard
-                </h1>
-
-                <p className="text-slate-300 text-xs sm:text-sm mt-2">
-                  {activeTab === "school"
-                    ? `Top ${TOP_SCHOOLS} පාසල් පමණක් · ඔබේ පාසල ඊට යටින්`
-                    : `Top ${TOP_INDIVIDUALS} සිසුන් · විෂය අනුව · ඔබේ තැන ඊට යටින්`}
-                </p>
+                {activeTab === "individual" && (
+                  <button
+                    type="button"
+                    onClick={() => setPrivacyMode((p) => !p)}
+                    className={`w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-xl border text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition backdrop-blur-md ${
+                      privacyMode
+                        ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-sm"
+                        : "bg-white/10 border-white/20 text-slate-300 hover:text-white hover:bg-white/15"
+                    }`}
+                    title="Toggle student name privacy masking for safe screen display"
+                  >
+                    {privacyMode ? (
+                      <>
+                        <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Privacy: Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>Mask Names</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
-            </div>
-
-            {/* Tab toggle & Privacy Mode */}
-            <div className="relative px-5 sm:px-6 md:px-8 pb-5 sm:pb-6 flex items-center justify-between gap-3 flex-wrap">
-              <div className="inline-flex p-1 bg-black/40 backdrop-blur-md rounded-xl border border-teal-400/20 gap-1">
-                <button
-                  onClick={() => setActiveTab("school")}
-                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 ${
-                    activeTab === "school"
-                      ? "bg-teal-500 text-slate-900 shadow-sm"
-                      : "text-slate-300 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <School className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> පාසල්
-                </button>
-                <button
-                  onClick={() => setActiveTab("individual")}
-                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 ${
-                    activeTab === "individual"
-                      ? "bg-teal-500 text-slate-900 shadow-sm"
-                      : "text-slate-300 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> ශිෂ්‍ය
-                </button>
-              </div>
-
-              {/* Privacy Mode Toggle */}
-              {activeTab === "individual" && (
-                <button
-                  type="button"
-                  onClick={() => setPrivacyMode((p) => !p)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition backdrop-blur-md ${
-                    privacyMode
-                      ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-sm"
-                      : "bg-white/10 border-white/20 text-slate-300 hover:text-white hover:bg-white/15"
-                  }`}
-                  title="Toggle student name privacy masking for safe screen display"
-                >
-                  {privacyMode ? (
-                    <>
-                      <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Privacy Mode: Active</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Mask Names (Privacy)</span>
-                    </>
-                  )}
-                </button>
-              )}
             </div>
           </div>
 
@@ -617,8 +616,8 @@ export default function LeaderboardPage() {
           {activeTab === "school" && (
             <>
               {loadingSchool ? (
-                <div className="p-8 sm:p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
-                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />{" "}
+                <div className="p-8 sm:p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-xs sm:text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600" />{" "}
                   Loading Leaderboard...
                 </div>
               ) : (
@@ -735,7 +734,7 @@ export default function LeaderboardPage() {
                           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                         </div>
 
-                        {/* Mobile cards */}
+                        {/* Mobile cards — tighter */}
                         <div className="lg:hidden relative">
                           <div className="divide-y divide-gray-100 max-h-[60vh] overflow-y-auto">
                             {topSchools.map((item) => {
@@ -747,7 +746,7 @@ export default function LeaderboardPage() {
                               return (
                                 <div
                                   key={item.school}
-                                  className={`p-4 space-y-3 ${
+                                  className={`p-3 space-y-2.5 ${
                                     isMine
                                       ? "bg-emerald-50/70"
                                       : isTop3
@@ -755,58 +754,60 @@ export default function LeaderboardPage() {
                                         : ""
                                   }`}
                                 >
-                                  <div className="flex items-start gap-3">
-                                    <div className="shrink-0 w-8 text-center">
+                                  <div className="flex items-start gap-2">
+                                    <div className="shrink-0 w-7 text-center">
                                       <RankBadge rank={item.rank} />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-900 leading-snug wrap-break-word">
+                                      <div className="flex items-start gap-1.5 flex-wrap">
+                                        <h3 className="font-bold text-gray-900 text-sm leading-snug wrap-break-word">
                                           {item.school}
                                         </h3>
                                         {isMine && (
                                           <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
-                                            Your School
+                                            You
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-[11px] text-gray-500 mt-0.5">
-                                        {item.students_count} registered ·{" "}
-                                        {item.total_quizzes} attempts ·{" "}
-                                        {item.participating_students} participated
+                                      <p className="text-[10px] text-gray-500 mt-0.5">
+                                        {item.students_count} reg ·{" "}
+                                        {item.total_quizzes} att ·{" "}
+                                        {item.participating_students} part
                                       </p>
                                     </div>
                                   </div>
 
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-2 text-center">
-                                      <p className="text-[9px] uppercase font-bold text-blue-600">
+                                  <div className="grid grid-cols-3 gap-1.5 pl-9">
+                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-1.5 text-center">
+                                      <p className="text-[8px] uppercase font-bold text-blue-600 leading-none">
                                         Academic
                                       </p>
-                                      <p className="text-sm font-extrabold text-blue-800">
+                                      <p className="text-sm font-extrabold text-blue-800 mt-0.5 leading-none">
                                         {fmt(item.academic_score)}
                                       </p>
-                                      <p className="text-[9px] text-blue-500">/80</p>
-                                    </div>
-                                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2 text-center">
-                                      <p className="text-[9px] uppercase font-bold text-emerald-600">
-                                        Participation
+                                      <p className="text-[8px] text-blue-500 leading-none mt-0.5">
+                                        /80
                                       </p>
-                                      <p className="text-sm font-extrabold text-emerald-800">
+                                    </div>
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-1.5 text-center">
+                                      <p className="text-[8px] uppercase font-bold text-emerald-600 leading-none">
+                                        Part.
+                                      </p>
+                                      <p className="text-sm font-extrabold text-emerald-800 mt-0.5 leading-none">
                                         {fmt(item.participation_score)}
                                       </p>
-                                      <p className="text-[9px] text-emerald-500">
+                                      <p className="text-[8px] text-emerald-500 leading-none mt-0.5">
                                         /20
                                       </p>
                                     </div>
-                                    <div className="bg-teal-50 border border-teal-100 rounded-lg p-2 text-center">
-                                      <p className="text-[9px] uppercase font-bold text-teal-600">
+                                    <div className="bg-teal-50 border border-teal-100 rounded-lg p-1.5 text-center">
+                                      <p className="text-[8px] uppercase font-bold text-teal-600 leading-none">
                                         Total
                                       </p>
-                                      <p className="text-sm font-extrabold text-teal-800">
+                                      <p className="text-sm font-extrabold text-teal-800 mt-0.5 leading-none">
                                         {fmt(item.total_score)}
                                       </p>
-                                      <p className="text-[9px] text-teal-500">
+                                      <p className="text-[8px] text-teal-500 leading-none mt-0.5">
                                         /100
                                       </p>
                                     </div>
@@ -819,7 +820,7 @@ export default function LeaderboardPage() {
                         </div>
 
                         {/* Footer hint */}
-                        <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[11px] text-gray-500 text-center">
+                        <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[10px] sm:text-[11px] text-gray-500 text-center">
                           පාසල්{" "}
                           <strong className="text-gray-700">
                             {topSchools.length}
@@ -876,7 +877,7 @@ export default function LeaderboardPage() {
                         key={subject}
                         type="button"
                         onClick={() => setSelectedSubject(subject)}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap shrink-0 ${
+                        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-bold transition whitespace-nowrap shrink-0 ${
                           isActive
                             ? meta.active
                             : "text-gray-600 hover:bg-gray-100"
@@ -891,8 +892,8 @@ export default function LeaderboardPage() {
               )}
 
               {loadingSubjects || noSubjectsForStream ? null : loadingIndividual ? (
-                <div className="p-8 sm:p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
-                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />{" "}
+                <div className="p-8 sm:p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-xs sm:text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600" />{" "}
                   Loading {selectedSubject} Leaderboard...
                 </div>
               ) : individualLeaderboard.length === 0 ? (
@@ -985,7 +986,7 @@ export default function LeaderboardPage() {
                       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
                     </div>
 
-                    {/* Mobile cards */}
+                    {/* Mobile cards — tighter */}
                     <div className="md:hidden relative">
                       <div className="divide-y divide-gray-100 max-h-[60vh] overflow-y-auto">
                         {topIndividuals.map((item) => {
@@ -994,7 +995,7 @@ export default function LeaderboardPage() {
                           return (
                             <div
                               key={item.student_id}
-                              className={`p-4 space-y-2 ${
+                              className={`p-3 space-y-1.5 ${
                                 isMe
                                   ? "bg-emerald-50/70"
                                   : isTop3
@@ -1002,13 +1003,13 @@ export default function LeaderboardPage() {
                                     : ""
                               }`}
                             >
-                              <div className="flex items-start gap-3">
-                                <div className="shrink-0 w-8 text-center">
+                              <div className="flex items-start gap-2">
+                                <div className="shrink-0 w-7 text-center">
                                   <RankBadge rank={item.rank} />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <h3 className="font-bold text-gray-900 leading-snug truncate">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h3 className="font-bold text-gray-900 text-sm leading-snug truncate">
                                       {formatDisplayName(item.full_name, item.rank, isMe)}
                                     </h3>
                                     {isMe && (
@@ -1023,7 +1024,7 @@ export default function LeaderboardPage() {
                                       {mediumShort(item.medium)}
                                     </span>
                                   </div>
-                                  <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                                  <p className="text-[10px] text-gray-500 mt-0.5 truncate">
                                     {item.school}
                                   </p>
                                 </div>
@@ -1031,19 +1032,19 @@ export default function LeaderboardPage() {
                                   <p className="text-base font-extrabold text-emerald-700 leading-none">
                                     {item.total_score}
                                   </p>
-                                  <p className="text-[9px] text-gray-400 uppercase font-bold mt-0.5">
+                                  <p className="text-[9px] text-gray-400 uppercase font-bold mt-0.5 leading-none">
                                     marks
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 pl-11">
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-gray-500 pl-9">
                                 <span className="flex items-center gap-1">
-                                  <Award className="w-3 h-3" />
-                                  {item.quizzes_completed} quizzes
+                                  <Award className="w-3 h-3 shrink-0" />
+                                  {item.quizzes_completed}Q
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
+                                  <Clock className="w-3 h-3 shrink-0" />
                                   {formatTime(item.total_time_seconds)}
                                 </span>
                                 {item.average_score != null && (
@@ -1060,7 +1061,7 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Footer hint */}
-                    <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[11px] text-gray-500 text-center">
+                    <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[10px] sm:text-[11px] text-gray-500 text-center">
                       සිසුන්{" "}
                       <strong className="text-gray-700">
                         {topIndividuals.length}
@@ -1093,7 +1094,7 @@ export default function LeaderboardPage() {
             !pageLoading &&
             !noSubjectsForStream &&
             selectedSubject && (
-              <p className="text-[11px] text-center text-gray-400 leading-relaxed">
+              <p className="text-[10px] sm:text-[11px] text-center text-gray-400 leading-relaxed px-2">
                 {selectedSubject} ranking එකේදී —{" "}
                 <span className="font-semibold text-gray-500">
                   මුළු ලකුණු එකතුව
@@ -1116,15 +1117,15 @@ export default function LeaderboardPage() {
 // ------------------------------------------------------------
 function YourRankRow({ item }: { item: IndividualRow }) {
   return (
-    <div className="bg-linear-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl shadow-sm p-4 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
+    <div className="bg-linear-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl shadow-sm p-3 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-sm">
             #{item.rank}
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-gray-900 text-sm sm:text-base truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <h3 className="font-bold text-gray-900 text-sm truncate">
                 {item.full_name}
               </h3>
               <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
@@ -1137,13 +1138,13 @@ function YourRankRow({ item }: { item: IndividualRow }) {
                 {mediumShort(item.medium)}
               </span>
             </div>
-            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 truncate">
               {item.school}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-5">
+        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-5">
           <Stat
             label="Marks"
             value={String(item.total_score)}
@@ -1171,29 +1172,29 @@ function YourRankRow({ item }: { item: IndividualRow }) {
 // ------------------------------------------------------------
 function YourSchoolRow({ item }: { item: SchoolRow }) {
   return (
-    <div className="bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-sm p-4 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="shrink-0 w-12 h-12 rounded-xl bg-amber-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
+    <div className="bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-sm p-3 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-600 text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-sm">
             #{item.rank}
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-snug wrap-break-word">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <h3 className="font-bold text-gray-900 text-sm leading-snug wrap-break-word">
                 {item.school}
               </h3>
               <span className="text-[9px] font-bold uppercase bg-amber-600 text-white px-1.5 py-0.5 rounded shrink-0">
                 Your School
               </span>
             </div>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              {item.students_count} registered · {item.total_quizzes} attempts ·{" "}
-              {item.participating_students} participated
+            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">
+              {item.students_count} reg · {item.total_quizzes} att ·{" "}
+              {item.participating_students} part
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-5">
+        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-5">
           <Stat
             label="Academic"
             value={`${fmt(item.academic_score)}/80`}
@@ -1228,13 +1229,13 @@ function Stat({
 }) {
   return (
     <div className="text-center shrink-0">
-      <p className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">
+      <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 tracking-wider leading-none">
         {label}
       </p>
       <p
-        className={`text-sm sm:text-base font-extrabold ${accent} ${
+        className={`text-xs sm:text-base font-extrabold ${accent} ${
           mono ? "font-mono" : ""
-        }`}
+        } mt-0.5 leading-none`}
       >
         {value}
       </p>

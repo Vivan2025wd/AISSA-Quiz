@@ -8,6 +8,8 @@ import {
   Sparkles,
   CheckCircle2,
   Edit3,
+  GraduationCap,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import ImageUploadField from "@/components/ImageUploadField";
@@ -48,7 +50,7 @@ export type EditableQuestion = {
   option_5_ta?: string | null;
   explanation_ta?: string | null;
 
-  // ✱ NEW — shared explanation diagram (language-agnostic)
+  // ✱ Shared explanation diagram (language-agnostic)
   explanation_image_url?: string | null;
 };
 
@@ -63,16 +65,10 @@ const subjects = ["Physics", "Chemistry", "Biology", "ICT"];
 const BIO_STREAM = "Bio Science";
 const MATHS_STREAM = "Maths";
 
-/**
- * Stream rules:
- *   • Physics / Chemistry → Common (null) — all science streams
- *   • Biology             → Bio Science only
- *   • ICT                 → Maths stream only
- */
 function derivedStreamForSubject(subject: string): string | null {
   if (subject === "Biology") return BIO_STREAM;
   if (subject === "ICT") return MATHS_STREAM;
-  return null; // Physics, Chemistry → Common
+  return null;
 }
 
 type Language = "si" | "en" | "ta";
@@ -87,7 +83,7 @@ const getInitialFormState = (question: EditableQuestion | null) => ({
   subject: question?.subject ?? "Physics",
   topic: question?.topic ?? "",
   imageUrl: question?.image_url ?? "",
-  explanationImageUrl: question?.explanation_image_url ?? "", // ✱ NEW
+  explanationImageUrl: question?.explanation_image_url ?? "",
   correctAnswer: question?.correct_option ?? 0,
 
   si: {
@@ -141,7 +137,7 @@ function QuestionEditorForm({
   const [imageUrl, setImageUrl] = useState(initialState.imageUrl);
   const [explanationImageUrl, setExplanationImageUrl] = useState(
     initialState.explanationImageUrl,
-  ); // ✱ NEW
+  );
   const [correctAnswer, setCorrectAnswer] = useState(initialState.correctAnswer);
 
   const [si, setSi] = useState<LanguageContent>(initialState.si);
@@ -152,7 +148,6 @@ function QuestionEditorForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-derived from subject — no more user-editable stream
   const derivedStream = derivedStreamForSubject(subject);
 
   const getContent = (lang: Language): LanguageContent =>
@@ -180,7 +175,6 @@ function QuestionEditorForm({
     e.preventDefault();
     setError("");
 
-    // ---- Sinhala validation ----
     if (!si.questionText.trim()) {
       setError("සිංහල ප්‍රශ්නය අවශ්‍යයි.");
       setActiveLang("si");
@@ -194,7 +188,6 @@ function QuestionEditorForm({
       }
     }
 
-    // ---- English validation ----
     if (!en.questionText.trim()) {
       setError("English question text is required.");
       setActiveLang("en");
@@ -208,7 +201,6 @@ function QuestionEditorForm({
       }
     }
 
-    // ---- Tamil validation (optional, but if started, must be complete) ----
     const taStarted = ta.questionText.trim() || ta.options.some((o) => o.trim());
     if (taStarted) {
       if (!ta.questionText.trim()) {
@@ -236,17 +228,12 @@ function QuestionEditorForm({
       .from("questions")
       .update({
         subject,
-        // ✅ Stream rules:
-        //    • Biology → "Bio Science"
-        //    • ICT     → "Maths"
-        //    • Physics / Chemistry → null (Common)
         stream: derivedStream,
         topic: topic.trim() || null,
         image_url: imageUrl.trim() || null,
-        explanation_image_url: explanationImageUrl.trim() || null, // ✱ NEW
+        explanation_image_url: explanationImageUrl.trim() || null,
         correct_option: correctAnswer,
 
-        // Sinhala (base columns)
         question_text: si.questionText.trim(),
         option_1: si.options[0].trim(),
         option_2: si.options[1].trim(),
@@ -255,7 +242,6 @@ function QuestionEditorForm({
         option_5: si.options[4].trim() || null,
         explanation: si.explanation.trim() || null,
 
-        // English
         question_text_en: en.questionText.trim(),
         option_1_en: en.options[0].trim(),
         option_2_en: en.options[1].trim(),
@@ -264,7 +250,6 @@ function QuestionEditorForm({
         option_5_en: en.options[4].trim() || null,
         explanation_en: en.explanation.trim() || null,
 
-        // Tamil (nullable if not started)
         question_text_ta: taStarted ? ta.questionText.trim() : null,
         option_1_ta: taStarted ? ta.options[0].trim() : null,
         option_2_ta: taStarted ? ta.options[1].trim() : null,
@@ -295,39 +280,55 @@ function QuestionEditorForm({
   const current = getContent(activeLang);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-emerald-950/60 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/70 overflow-hidden my-4 sm:my-8 flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-white/70 overflow-hidden max-h-[94vh] sm:my-8 flex flex-col">
 
-        {/* ═══════════════ HEADER BANNER ═══════════════ */}
-        <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shrink-0">
+        {/* ═══════════════ HEADER BANNER — DARK THEME ═══════════════ */}
+        <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shrink-0 border-b border-slate-700/50">
           <div
-            className="absolute inset-0 opacity-[0.08] pointer-events-none"
+            className="absolute inset-0 opacity-[0.15] pointer-events-none"
             style={{
               backgroundImage:
-                "radial-gradient(circle, white 1px, transparent 1px)",
-              backgroundSize: "20px 20px",
+                "radial-gradient(circle, rgba(45, 212, 191, 0.5) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
             }}
           />
-          <div className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-teal-300/25 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -top-24 -right-20 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full border-18 border-teal-400/10" />
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-white/3 to-white/5" />
 
-          <div className="relative flex items-start justify-between gap-3 px-5 sm:px-6 py-4">
+          <div className="relative flex items-start justify-between gap-3 px-4 sm:px-6 py-4">
             <div className="flex items-start gap-3 min-w-0 flex-1">
+              {/* Icon — hidden on mobile */}
               <div className="shrink-0 hidden sm:block">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-amber-300/30 blur-lg rounded-xl" />
-                  <div className="relative w-11 h-11 bg-white/15 backdrop-blur-md rounded-xl border border-white/25 shadow-lg flex items-center justify-center">
-                    <Edit3 className="w-5 h-5 text-amber-300" />
+                  <div className="absolute inset-0 bg-teal-400/25 blur-2xl rounded-full scale-110" />
+                  <div className="relative w-11 h-11 bg-teal-500/15 backdrop-blur-md rounded-xl border border-teal-400/30 flex items-center justify-center">
+                    <Edit3 className="w-5 h-5 text-teal-300" />
                   </div>
                 </div>
               </div>
 
               <div className="min-w-0">
-                <h3 className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
-                  <Edit3 className="w-5 h-5 text-amber-300 shrink-0 sm:hidden" />
-                  <span className="wrap-break-word">ප්‍රශ්නය සංස්කරණය කරන්න</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1.5 sm:mb-2">
+                  <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-teal-500/15 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-teal-400/30 text-teal-200">
+                    <GraduationCap className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    AISSA
+                  </span>
+                  <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-500/20 backdrop-blur-sm rounded-full text-[9px] sm:text-xs font-bold uppercase tracking-wider border border-amber-400/30 text-amber-200">
+                    <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    Edit
+                  </span>
+                </div>
+
+                <h3 className="text-sm sm:text-lg font-extrabold leading-snug sm:leading-tight flex items-center gap-1.5 sm:gap-2">
+                  <Edit3 className="w-4 h-4 sm:hidden text-teal-300 shrink-0" />
+                  <span className="wrap-break-word">
+                    ප්‍රශ්නය සංස්කරණය කරන්න
+                  </span>
                 </h3>
-                <p className="text-emerald-50/90 text-[11px] sm:text-xs mt-1">
+                <p className="text-slate-300 text-[10px] sm:text-xs mt-1 leading-snug hidden sm:block">
                   භාෂා 3කින්ම ප්‍රශ්නය සංස්කරණය කරන්න · සිංහල සහ English අනිවාර්යයි
                 </p>
               </div>
@@ -335,7 +336,7 @@ function QuestionEditorForm({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-white/80 hover:text-white hover:bg-white/15 rounded-lg transition shrink-0"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition shrink-0"
               title="Close"
             >
               <X className="w-5 h-5" />
@@ -343,31 +344,31 @@ function QuestionEditorForm({
           </div>
         </div>
 
-        {/* ═══════════════ FORM (scrollable body + fixed footer) ═══════════════ */}
+        {/* ═══════════════ FORM ═══════════════ */}
         <form
           onSubmit={handleSubmit}
           className="flex flex-col flex-1 min-h-0"
         >
           {/* Scrollable body */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+              <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
                 <span>⚠️</span>
                 <span>{error}</span>
               </div>
             )}
 
             {/* Metadata row — Subject + auto-derived Stream */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
                   විෂය (Subject)
                 </label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                  className="w-full p-2.5 sm:p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                 >
                   {subjects.map((s) => (
                     <option key={s} value={s}>
@@ -378,11 +379,11 @@ function QuestionEditorForm({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
                   Stream (Auto)
                 </label>
                 <div
-                  className={`w-full p-3 rounded-xl font-medium text-sm border ${
+                  className={`w-full p-2.5 sm:p-3 rounded-xl font-medium text-xs sm:text-sm border ${
                     derivedStream === null
                       ? "bg-emerald-50 border-emerald-200 text-emerald-800"
                       : derivedStream === BIO_STREAM
@@ -396,18 +397,19 @@ function QuestionEditorForm({
                       ? "Bio Science only"
                       : "Maths stream only"}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-snug hidden sm:block">
                   {derivedStream === null
                     ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
                     : derivedStream === BIO_STREAM
                       ? "* Biology Bio Science stream එකට විතරයි."
-                      : "* ICT Maths stream එකට විතරයි (Physics + ICT හෝ Physics + Chemistry)."}
+                      : "* ICT Maths stream එකට විතරයි."}
                 </p>
               </div>
             </div>
 
+            {/* Topic */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
                 පාඩම / මාතෘකාව (Topic - Optional)
               </label>
               <input
@@ -416,29 +418,29 @@ function QuestionEditorForm({
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full p-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                className="w-full p-2.5 sm:p-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
               />
             </div>
 
-            {/* ── Question Diagram (language-independent) ── */}
+            {/* Question Diagram */}
             <ImageUploadField
               value={imageUrl}
               onChange={setImageUrl}
               disabled={isSubmitting}
             />
 
-            {/* ═══ LANGUAGE TABS ═══ */}
+            {/* ═══ LANGUAGE TABS — MOBILE-TIGHTENED ═══ */}
             <div>
-              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                <label className="block text-xs font-bold text-gray-700 uppercase">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-2 flex-wrap">
+                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase">
                   භාෂාව අනුව ප්‍රශ්නය
                 </label>
-                <span className="text-[11px] text-gray-500">
-                  * සිංහල සහ English අනිවාර්යයි · தமிழ் optional
+                <span className="text-[10px] sm:text-[11px] text-gray-500">
+                  * SI · EN අනිවාර්යයි · Tamil optional
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
                 {tabs.map((t) => {
                   const content = getContent(t.key);
                   const filled = content.questionText.trim().length > 0;
@@ -447,7 +449,7 @@ function QuestionEditorForm({
                       key={t.key}
                       type="button"
                       onClick={() => setActiveLang(t.key)}
-                      className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 sm:gap-1.5 ${
                         activeLang === t.key
                           ? "bg-white text-emerald-700 shadow-sm"
                           : "text-gray-500 hover:text-gray-700"
@@ -456,7 +458,7 @@ function QuestionEditorForm({
                       {t.label}
                       {t.required && <span className="text-red-500">*</span>}
                       {filled && activeLang !== t.key && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 shrink-0" />
                       )}
                     </button>
                   );
@@ -464,9 +466,9 @@ function QuestionEditorForm({
               </div>
 
               {/* Content for active tab */}
-              <div className="mt-4 space-y-4 p-4 bg-emerald-50/40 border border-emerald-100/60 rounded-xl">
+              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4 p-3 sm:p-4 bg-emerald-50/40 border border-emerald-100/60 rounded-xl">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
                     ප්‍රශ්නය ({tabs.find((t) => t.key === activeLang)?.label})
                   </label>
                   <textarea
@@ -478,19 +480,19 @@ function QuestionEditorForm({
                     }
                     required={activeLang !== "ta"}
                     disabled={isSubmitting}
-                    className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-gray-700 uppercase">
-                    පිළිතුරු විකල්ප (Options) —{" "}
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase">
+                    පිළිතුරු විකල්ප —{" "}
                     {tabs.find((t) => t.key === activeLang)?.label}
                   </label>
                   {current.options.map((opt, idx) => {
                     const isOptionalFifth = idx === 4;
                     return (
-                      <div key={idx} className="flex items-center gap-3">
+                      <div key={idx} className="flex items-center gap-2 sm:gap-3">
                         <input
                           type="radio"
                           name="editCorrectAnswer"
@@ -503,7 +505,7 @@ function QuestionEditorForm({
                             (isOptionalFifth && !hasOption5) ||
                             activeLang !== "si"
                           }
-                          className={`w-5 h-5 text-emerald-600 focus:ring-emerald-500 ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 focus:ring-emerald-500 shrink-0 ${
                             activeLang === "si"
                               ? "cursor-pointer"
                               : "opacity-30 cursor-not-allowed"
@@ -514,14 +516,14 @@ function QuestionEditorForm({
                               : "Correct answer is selected in the Sinhala tab"
                           }
                         />
-                        <span className="w-7 font-bold text-gray-700 text-sm">
+                        <span className="w-5 sm:w-7 font-bold text-gray-700 text-xs sm:text-sm shrink-0">
                           ({idx + 1})
                         </span>
                         <input
                           type="text"
                           placeholder={
                             isOptionalFifth
-                              ? "විකල්පය 5 (Optional — හිස්ව තැබිය හැක)"
+                              ? "විකල්පය 5 (Optional)"
                               : `විකල්පය ${idx + 1}`
                           }
                           value={opt}
@@ -530,21 +532,31 @@ function QuestionEditorForm({
                           }
                           required={!isOptionalFifth && activeLang !== "ta"}
                           disabled={isSubmitting}
-                          className="flex-1 p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                          className="flex-1 min-w-0 p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                         />
                       </div>
                     );
                   })}
-                  <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    නිවැරදි පිළිතුර තෝරන්නේ සිංහල tab එකේ — එය සියලු භාෂා වලට apply වේ.
+                  <p className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold flex items-start gap-1 leading-snug">
+                    <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      <span className="hidden sm:inline">
+                        නිවැරදි පිළිතුර තෝරන්නේ සිංහල tab එකේ — එය සියලු භාෂා වලට apply වේ.
+                      </span>
+                      <span className="sm:hidden">
+                        නිවැරදි පිළිතුර සිංහල tab එකේ තෝරයි.
+                      </span>
+                    </span>
                   </p>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-2">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    විස්තරාත්මක විසඳීම — Optional
+                  <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+                    <span className="truncate">
+                      විස්තරය
+                      <span className="hidden sm:inline"> — Optional</span>
+                    </span>
                   </label>
                   <textarea
                     rows={2}
@@ -554,13 +566,13 @@ function QuestionEditorForm({
                       setContent(activeLang, { explanation: e.target.value })
                     }
                     disabled={isSubmitting}
-                    className="w-full p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
                   />
                 </div>
               </div>
             </div>
 
-            {/* ── ✱ NEW: Explanation Diagram (shared across all languages) ── */}
+            {/* Explanation Diagram */}
             <ImageUploadField
               value={explanationImageUrl}
               onChange={setExplanationImageUrl}
@@ -571,26 +583,26 @@ function QuestionEditorForm({
           </div>
 
           {/* ═══ FOOTER (fixed at bottom) ═══ */}
-          <div className="shrink-0 px-4 sm:px-6 py-4 border-t border-emerald-100 bg-emerald-50/60 backdrop-blur-sm flex items-center justify-end gap-2 sm:gap-3">
+          <div className="shrink-0 px-3.5 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50/80 backdrop-blur-sm flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm transition"
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs sm:text-sm transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-sm"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-xs sm:text-sm"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 shrink-0" />
               )}
-              Save Changes
+              <span>Save Changes</span>
             </button>
           </div>
         </form>
@@ -599,9 +611,6 @@ function QuestionEditorForm({
   );
 }
 
-// The actual exported component. `key={question.id}` forces the
-// inner form to remount when the admin switches questions,
-// resetting all three language states.
 export function QuestionEditModal({
   isOpen,
   question,
