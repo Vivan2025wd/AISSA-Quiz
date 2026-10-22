@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {  Crown } from "lucide-react";
+import { Crown } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function SuperAdminGuard({
@@ -47,7 +47,7 @@ export default function SuperAdminGuard({
 
   if (checking) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-gray-500 gap-3">
+      <div className="min-h-screen flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/loading-screen.png"

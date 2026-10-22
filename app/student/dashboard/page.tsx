@@ -101,7 +101,7 @@ type DashboardBundle = {
 };
 
 // ------------------------------------------------------------
-// Helpers (unchanged)
+// Helpers
 // ------------------------------------------------------------
 function allowedSubjectsForStream(
   stream: string | null | undefined,
@@ -162,11 +162,15 @@ function mediumFullLabel(medium: Medium | null | undefined): string {
 
 function subjectStyle(subject: string | null | undefined): string {
   const s = (subject ?? "").toLowerCase();
-  if (s.includes("physics")) return "bg-blue-50 text-blue-700 border-blue-200";
-  if (s.includes("chemistry")) return "bg-purple-50 text-purple-700 border-purple-200";
-  if (s.includes("biology")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (s.includes("ict") || s.includes("information")) return "bg-cyan-50 text-cyan-700 border-cyan-200";
-  return "bg-gray-100 text-gray-700 border-gray-200";
+  if (s.includes("physics"))
+    return "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800";
+  if (s.includes("chemistry"))
+    return "bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800";
+  if (s.includes("biology"))
+    return "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+  if (s.includes("ict") || s.includes("information"))
+    return "bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800";
+  return "bg-gray-100 dark:bg-slate-900/60 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-700";
 }
 
 function subjectKeyOf(subject: string | null | undefined): RealSubjectKey | null {
@@ -197,12 +201,13 @@ function subjectIcon(k: SubjectKey) {
 function subjectTabClass(k: SubjectKey, isActive: boolean): string {
   const base =
     "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-bold transition whitespace-nowrap shrink-0";
-  if (!isActive) return `${base} text-gray-600 hover:bg-gray-100`;
+  if (!isActive)
+    return `${base} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700/50`;
   if (k === "physics") return `${base} bg-blue-600 text-white shadow-sm`;
   if (k === "chemistry") return `${base} bg-purple-600 text-white shadow-sm`;
   if (k === "biology") return `${base} bg-emerald-600 text-white shadow-sm`;
   if (k === "ict") return `${base} bg-cyan-600 text-white shadow-sm`;
-  return `${base} bg-slate-800 text-white shadow-sm`;
+  return `${base} bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm`;
 }
 
 function canStudentSeeQuiz(
@@ -410,7 +415,7 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col items-center justify-center gap-4 text-gray-500 text-sm">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center gap-4 text-gray-500 dark:text-gray-400 text-sm">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/loading-screen.png"
@@ -418,7 +423,7 @@ export default function StudentDashboard() {
           className="w-20 h-20 sm:w-32 sm:h-32 object-contain animate-pulse"
         />
         <div className="flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />
           Loading Dashboard...
         </div>
       </div>
@@ -427,8 +432,8 @@ export default function StudentDashboard() {
 
   if (guardError) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-6 text-center space-y-4">
+      <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl shadow-xl dark:shadow-black/30 border border-white/60 dark:border-slate-700 p-6 text-center space-y-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/aissa-logo.png"
@@ -436,12 +441,12 @@ export default function StudentDashboard() {
             className="w-20 h-20 sm:w-24 sm:h-24 object-contain mx-auto opacity-90"
           />
           <div className="flex items-center justify-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-            <p className="text-red-600 font-medium text-sm">{guardError}</p>
+            <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0" />
+            <p className="text-red-600 dark:text-red-300 font-medium text-sm">{guardError}</p>
           </div>
           <Link
             href="/auth/login"
-            className="inline-block text-sm font-semibold text-emerald-600 hover:underline"
+            className="inline-block text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
           >
             ← නැවත Login වෙත
           </Link>
@@ -479,13 +484,13 @@ export default function StudentDashboard() {
       : subjectStats[selectedSubject] ?? null;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative">
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
       <div
-        className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl"
+        className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 dark:bg-teal-500/10 rounded-full filter blur-3xl"
         style={{ animationDelay: "2s" }}
       />
-      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 dark:bg-green-500/5 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-8">
@@ -567,7 +572,7 @@ export default function StudentDashboard() {
           </div>
 
           {debugWarning && (
-            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{debugWarning}</span>
             </div>
@@ -617,21 +622,21 @@ export default function StudentDashboard() {
           </div>
 
           {/* ============ Average strip — MOBILE-TIGHTENED ============ */}
-          <div className="bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-white/70 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="p-2 sm:p-2.5 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+              <div className="p-2 sm:p-2.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-lg shrink-0">
                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
                   සාමාන්‍ය ලකුණු මට්ටම (All Subjects)
                 </p>
-                <p className="text-sm sm:text-base font-bold text-gray-800">
+                <p className="text-sm sm:text-base font-bold text-gray-800 dark:text-gray-200">
                   {hasAttempts ? averageScoreText : "—"}
                 </p>
               </div>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-400 sm:text-right sm:max-w-xs leading-tight">
+            <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 sm:text-right sm:max-w-xs leading-tight">
               Subject ranking එක subject එකක් ඇතුළේ — මුළු ලකුණු එකතුව මත · සම ලකුණු විට වේගවත් කෙනා ඉහළට.
             </p>
           </div>
@@ -639,17 +644,17 @@ export default function StudentDashboard() {
           {/* ============ ACTIVE quizzes ============ */}
           <section className="space-y-3 sm:space-y-4">
             <div className="flex justify-between items-center gap-2">
-              <h2 className="text-sm sm:text-xl font-bold text-gray-800 flex items-center gap-1.5 sm:gap-2">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" /> Active Live Quizzes
+              <h2 className="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 sm:gap-2">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" /> Active Live Quizzes
               </h2>
               {activeQuizzes.length > 0 && (
-                <span className="text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap">
+                <span className="text-[10px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap">
                   {activeQuizzes.length} <span className="hidden sm:inline">සක්‍රියයි</span>
                 </span>
               )}
             </div>
             {activeQuizzes.length === 0 ? (
-              <div className="p-4 sm:p-6 bg-white/80 backdrop-blur-md rounded-xl text-center text-gray-500 border border-white/70 shadow-sm text-xs sm:text-sm">
+              <div className="p-4 sm:p-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl text-center text-gray-500 dark:text-gray-400 border border-white/70 dark:border-slate-700 shadow-sm text-xs sm:text-sm">
                 දැන් කිසිම Live Quiz එකක් නොමැත.
               </div>
             ) : (
@@ -664,8 +669,8 @@ export default function StudentDashboard() {
           {/* ============ UPCOMING ============ */}
           {upcomingQuizzes.length > 0 && (
             <section className="space-y-3 sm:space-y-4">
-              <h2 className="text-sm sm:text-xl font-bold text-gray-800 flex items-center gap-1.5 sm:gap-2">
-                <Hourglass className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0" /> ඉදිරි Quizzes
+              <h2 className="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 sm:gap-2">
+                <Hourglass className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400 shrink-0" /> ඉදිරි Quizzes
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
                 {upcomingQuizzes.map((quiz) => (
@@ -677,17 +682,17 @@ export default function StudentDashboard() {
 
           {/* ============ PAST quizzes — MOBILE-TIGHTENED ============ */}
           <section className="space-y-3 sm:space-y-4 pt-1 sm:pt-2">
-            <h2 className="text-sm sm:text-xl font-bold text-gray-800 flex items-center gap-1.5 sm:gap-2">
-              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" /> පසුගිය ප්‍රතිඵල
+            <h2 className="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 sm:gap-2">
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" /> පසුගිය ප්‍රතිඵල
             </h2>
 
             {pastQuizzes.length === 0 ? (
-              <div className="p-5 sm:p-8 bg-white/80 backdrop-blur-md rounded-xl text-center text-gray-400 text-xs sm:text-sm border border-white/70 shadow-sm">
+              <div className="p-5 sm:p-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl text-center text-gray-400 dark:text-gray-500 text-xs sm:text-sm border border-white/70 dark:border-slate-700 shadow-sm">
                 තවම Quiz කිසිවක් සම්පූර්ණ කර නැත.
               </div>
             ) : (
               <>
-                <div className="bg-white/80 backdrop-blur-md p-1.5 rounded-xl border border-white/70 shadow-sm flex gap-1 overflow-x-auto">
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm flex gap-1 overflow-x-auto">
                   {subjectTabs.map((tab) => (
                     <button
                       key={tab.key}
@@ -701,7 +706,7 @@ export default function StudentDashboard() {
                         className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
                           selectedSubject === tab.key
                             ? "bg-white/25 text-white"
-                            : "bg-gray-100 text-gray-600"
+                            : "bg-gray-100 dark:bg-slate-900/60 text-gray-600 dark:text-gray-400"
                         }`}
                       >
                         {tab.count}
@@ -710,43 +715,43 @@ export default function StudentDashboard() {
                   ))}
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-white/70 shadow-sm flex flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-1.5 sm:gap-y-2 text-[11px] sm:text-sm">
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm flex flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-1.5 sm:gap-y-2 text-[11px] sm:text-sm">
                   {selectedSubject === "all" ? (
                     <>
-                      <span className="font-bold text-gray-900">All Subjects</span>
-                      <span className="text-gray-500">
-                        <strong className="text-gray-800">{pastQuizzes.length}</strong>{" "}
+                      <span className="font-bold text-gray-900 dark:text-gray-100">All Subjects</span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        <strong className="text-gray-800 dark:text-gray-200">{pastQuizzes.length}</strong>{" "}
                         quiz{pastQuizzes.length === 1 ? "" : "zes"}
                       </span>
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-gray-400">
                         Avg:{" "}
-                        <strong className="text-emerald-700">
+                        <strong className="text-emerald-700 dark:text-emerald-400">
                           {hasAttempts ? averageScoreText : "—"}
                         </strong>
                       </span>
                     </>
                   ) : currentSubjectStats ? (
                     <>
-                      <span className="font-bold text-gray-900 flex items-center gap-1.5">
+                      <span className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                         {subjectIcon(selectedSubject)}
                         {subjectLabel(selectedSubject as RealSubjectKey)}
                       </span>
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-gray-400">
                         Rank:{" "}
-                        <strong className="text-teal-700">
+                        <strong className="text-teal-700 dark:text-teal-400">
                           #{currentSubjectStats.subject_rank}
                         </strong>
                       </span>
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-gray-400">
                         Marks:{" "}
-                        <strong className="text-blue-700">
+                        <strong className="text-blue-700 dark:text-blue-400">
                           {currentSubjectStats.total_score}/
                           {currentSubjectStats.total_marks}
                         </strong>
                       </span>
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-gray-400">
                         Avg:{" "}
-                        <strong className="text-emerald-700">
+                        <strong className="text-emerald-700 dark:text-emerald-400">
                           {currentSubjectStats.average_score != null
                             ? `${currentSubjectStats.average_score}%`
                             : "—"}
@@ -755,28 +760,28 @@ export default function StudentDashboard() {
                     </>
                   ) : (
                     <>
-                      <span className="font-bold text-gray-900 flex items-center gap-1.5">
+                      <span className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                         {subjectIcon(selectedSubject)}
                         {subjectLabel(selectedSubject as RealSubjectKey)}
                       </span>
-                      <span className="text-gray-400 text-[11px] sm:text-xs">
+                      <span className="text-gray-400 dark:text-gray-500 text-[11px] sm:text-xs">
                         තවම මෙම subject එකට ප්‍රතිඵල නොමැත.
                       </span>
                     </>
                   )}
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm overflow-hidden">
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm overflow-hidden">
                   {visiblePastQuizzes.length === 0 ? (
-                    <div className="p-5 sm:p-8 text-center text-gray-400 text-xs sm:text-sm">
+                    <div className="p-5 sm:p-8 text-center text-gray-400 dark:text-gray-500 text-xs sm:text-sm">
                       මෙම subject එකට තවම ප්‍රතිඵල නොමැත.
                     </div>
                   ) : (
                     <>
                       <div className="hidden md:block relative">
                         <div className="overflow-x-auto overflow-y-auto max-h-125 lg:max-h-140">
-                          <table className="w-full text-left text-sm text-gray-600">
-                            <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0] text-emerald-900 font-semibold uppercase text-xs">
+                          <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                            <thead className="sticky top-0 z-10 bg-emerald-50 dark:bg-emerald-950/60 shadow-[0_1px_0_0_#a7f3d0] dark:shadow-[0_1px_0_0_rgba(16,185,129,0.25)] text-emerald-900 dark:text-emerald-200 font-semibold uppercase text-xs">
                               <tr>
                                 <th className="p-4">Subject & Topic</th>
                                 <th className="p-4">දිනය</th>
@@ -786,15 +791,15 @@ export default function StudentDashboard() {
                                 <th className="p-4 text-right">Answers</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                               {visiblePastQuizzes.map((pq) => {
                                 const pct =
                                   pq.total_marks > 0
                                     ? Math.round((pq.score / pq.total_marks) * 100)
                                     : 0;
                                 return (
-                                  <tr key={pq.id} className="hover:bg-emerald-50/40 transition">
-                                    <td className="p-4 font-medium text-gray-900">
+                                  <tr key={pq.id} className="hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition">
+                                    <td className="p-4 font-medium text-gray-900 dark:text-gray-100">
                                       <span
                                         className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mb-1 ${subjectStyle(
                                           pq.quizzes?.subject,
@@ -807,19 +812,19 @@ export default function StudentDashboard() {
                                       </span>
                                     </td>
                                     <td className="p-4">{formatDate(pq.submitted_at)}</td>
-                                    <td className="p-4 font-bold text-emerald-600">
+                                    <td className="p-4 font-bold text-emerald-600 dark:text-emerald-400">
                                       {pq.score}/{pq.total_marks}
                                     </td>
                                     <td className="p-4">
                                       <span
                                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
                                           pct >= 75
-                                            ? "bg-emerald-100 text-emerald-800"
+                                            ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300"
                                             : pct >= 50
-                                              ? "bg-blue-100 text-blue-800"
+                                              ? "bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300"
                                               : pct >= 35
-                                                ? "bg-amber-100 text-amber-800"
-                                                : "bg-red-100 text-red-800"
+                                                ? "bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300"
+                                                : "bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300"
                                         }`}
                                       >
                                         {pct}%
@@ -831,7 +836,7 @@ export default function StudentDashboard() {
                                     <td className="p-4 text-right">
                                       <Link
                                         href={`/student/quiz/${pq.quiz_id}`}
-                                        className="text-xs font-bold text-emerald-600 hover:underline"
+                                        className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
                                       >
                                         Review →
                                       </Link>
@@ -843,12 +848,12 @@ export default function StudentDashboard() {
                           </table>
                         </div>
 
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 dark:from-slate-800/95 via-white/60 dark:via-slate-800/60 to-transparent" />
                       </div>
 
                       {/* Mobile cards — tighter */}
                       <div className="md:hidden relative">
-                        <div className="divide-y divide-gray-100 overflow-y-auto max-h-[70vh]">
+                        <div className="divide-y divide-gray-100 dark:divide-slate-700 overflow-y-auto max-h-[70vh]">
                           {visiblePastQuizzes.map((pq) => {
                             const pct =
                               pq.total_marks > 0
@@ -865,30 +870,30 @@ export default function StudentDashboard() {
                                     >
                                       {pq.quizzes?.subject ?? "—"}
                                     </span>
-                                    <span className="block text-sm font-semibold text-gray-900 leading-snug">
+                                    <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">
                                       {pq.quizzes?.title ?? "Untitled quiz"}
                                     </span>
                                   </div>
                                   <div className="text-right shrink-0">
-                                    <p className="text-sm font-extrabold text-emerald-600 leading-none">
+                                    <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none">
                                       {pq.score}/{pq.total_marks}
                                     </p>
                                     <span
                                       className={`inline-block mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
                                         pct >= 75
-                                          ? "bg-emerald-100 text-emerald-800"
+                                          ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300"
                                           : pct >= 50
-                                            ? "bg-blue-100 text-blue-800"
+                                            ? "bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300"
                                             : pct >= 35
-                                              ? "bg-amber-100 text-amber-800"
-                                              : "bg-red-100 text-red-800"
+                                              ? "bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300"
+                                              : "bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300"
                                       }`}
                                     >
                                       {pct}%
                                     </span>
                                   </div>
                                 </div>
-                                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-gray-500">
+                                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-gray-500 dark:text-gray-400">
                                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                     <span className="flex items-center gap-1">
                                       <Calendar className="w-3 h-3 shrink-0" />
@@ -901,7 +906,7 @@ export default function StudentDashboard() {
                                   </div>
                                   <Link
                                     href={`/student/quiz/${pq.quiz_id}`}
-                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:underline shrink-0"
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
                                   >
                                     Review <ArrowRight className="w-3 h-3" />
                                   </Link>
@@ -911,12 +916,12 @@ export default function StudentDashboard() {
                           })}
                         </div>
 
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 dark:from-slate-800/95 via-white/60 dark:via-slate-800/60 to-transparent" />
                       </div>
 
-                      <div className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-50/80 border-t border-gray-100 text-[10px] sm:text-[11px] text-gray-500 text-center">
+                      <div className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-50/80 dark:bg-slate-900/60 border-t border-gray-100 dark:border-slate-700 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 text-center">
                         ප්‍රතිඵල{" "}
-                        <strong className="text-gray-700">
+                        <strong className="text-gray-700 dark:text-gray-300">
                           {visiblePastQuizzes.length}
                         </strong>
                         ක් පෙන්වයි
@@ -951,22 +956,22 @@ function StatCard({
   value: string;
 }) {
   const colorMap: Record<typeof color, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    teal: "bg-teal-50 text-teal-600",
-    amber: "bg-amber-50 text-amber-600",
+    blue: "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400",
+    emerald: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400",
+    teal: "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400",
+    amber: "bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400",
   };
   return (
-    <div className="bg-white/80 backdrop-blur-md p-2.5 sm:p-5 rounded-xl border border-white/70 shadow-sm flex items-center gap-2 sm:gap-4 hover:shadow-md transition">
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm flex items-center gap-2 sm:gap-4 hover:shadow-md transition">
       <div className={`p-1.5 sm:p-3 rounded-lg shrink-0 ${colorMap[color]}`}>
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-[9px] sm:text-xs text-gray-500 font-medium leading-tight">
+        <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
           <span className="hidden sm:inline">{labelFull}</span>
           <span className="sm:hidden">{label}</span>
         </p>
-        <p className="text-base sm:text-xl font-bold text-gray-800 truncate leading-tight">
+        <p className="text-base sm:text-xl font-bold text-gray-800 dark:text-gray-200 truncate leading-tight">
           {value}
         </p>
       </div>
@@ -986,51 +991,51 @@ function BestSubjectCard({
   const theme = best
     ? {
         physics: {
-          icon: "bg-blue-50 text-blue-600",
-          label: "text-blue-800",
+          icon: "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400",
+          label: "text-blue-800 dark:text-blue-300",
         },
         chemistry: {
-          icon: "bg-purple-50 text-purple-600",
-          label: "text-purple-800",
+          icon: "bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400",
+          label: "text-purple-800 dark:text-purple-300",
         },
         biology: {
-          icon: "bg-emerald-50 text-emerald-600",
-          label: "text-emerald-800",
+          icon: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400",
+          label: "text-emerald-800 dark:text-emerald-300",
         },
         ict: {
-          icon: "bg-cyan-50 text-cyan-600",
-          label: "text-cyan-800",
+          icon: "bg-cyan-50 dark:bg-cyan-950/50 text-cyan-600 dark:text-cyan-400",
+          label: "text-cyan-800 dark:text-cyan-300",
         },
       }[best.key]
     : null;
 
   return (
-    <div className="bg-white/80 backdrop-blur-md p-2.5 sm:p-5 rounded-xl border border-white/70 shadow-sm flex items-center gap-2 sm:gap-4 hover:shadow-md transition">
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm flex items-center gap-2 sm:gap-4 hover:shadow-md transition">
       <div
         className={`p-1.5 sm:p-3 rounded-lg shrink-0 ${
-          theme ? theme.icon : "bg-amber-50 text-amber-600"
+          theme ? theme.icon : "bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400"
         }`}
       >
         <Award className="w-4 h-4 sm:w-6 sm:h-6" />
       </div>
       <div className="min-w-0">
-        <p className="text-[9px] sm:text-xs text-gray-500 font-medium leading-tight">
+        <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
           <span className="hidden sm:inline">හොඳම විෂය (Best Subject)</span>
           <span className="sm:hidden">හොඳම විෂය</span>
         </p>
         {best ? (
           <>
             <p
-              className={`text-sm sm:text-xl font-bold truncate leading-tight ${theme?.label ?? "text-gray-800"}`}
+              className={`text-sm sm:text-xl font-bold truncate leading-tight ${theme?.label ?? "text-gray-800 dark:text-gray-200"}`}
             >
               {subjectLabel(best.key)}
             </p>
-            <p className="text-[9px] sm:text-[10px] text-gray-400 truncate">
+            <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-500 truncate">
               #{best.rank} · {best.avgPct}%
             </p>
           </>
         ) : (
-          <p className="text-sm sm:text-xl font-bold text-gray-400">—</p>
+          <p className="text-sm sm:text-xl font-bold text-gray-400 dark:text-gray-500">—</p>
         )}
       </div>
     </div>
@@ -1046,32 +1051,32 @@ function SubjectMiniCard({
 }) {
   const theme = {
     physics: {
-      wrap: "border-blue-200/70",
-      icon: "bg-blue-50 text-blue-600",
-      label: "text-blue-800",
-      rank: "text-blue-700",
-      score: "text-blue-900",
+      wrap: "border-blue-200/70 dark:border-blue-800/70",
+      icon: "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400",
+      label: "text-blue-800 dark:text-blue-300",
+      rank: "text-blue-700 dark:text-blue-300",
+      score: "text-blue-900 dark:text-blue-200",
     },
     chemistry: {
-      wrap: "border-purple-200/70",
-      icon: "bg-purple-50 text-purple-600",
-      label: "text-purple-800",
-      rank: "text-purple-700",
-      score: "text-purple-900",
+      wrap: "border-purple-200/70 dark:border-purple-800/70",
+      icon: "bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400",
+      label: "text-purple-800 dark:text-purple-300",
+      rank: "text-purple-700 dark:text-purple-300",
+      score: "text-purple-900 dark:text-purple-200",
     },
     biology: {
-      wrap: "border-emerald-200/70",
-      icon: "bg-emerald-50 text-emerald-600",
-      label: "text-emerald-800",
-      rank: "text-emerald-700",
-      score: "text-emerald-900",
+      wrap: "border-emerald-200/70 dark:border-emerald-800/70",
+      icon: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400",
+      label: "text-emerald-800 dark:text-emerald-300",
+      rank: "text-emerald-700 dark:text-emerald-300",
+      score: "text-emerald-900 dark:text-emerald-200",
     },
     ict: {
-      wrap: "border-cyan-200/70",
-      icon: "bg-cyan-50 text-cyan-600",
-      label: "text-cyan-800",
-      rank: "text-cyan-700",
-      score: "text-cyan-900",
+      wrap: "border-cyan-200/70 dark:border-cyan-800/70",
+      icon: "bg-cyan-50 dark:bg-cyan-950/50 text-cyan-600 dark:text-cyan-400",
+      label: "text-cyan-800 dark:text-cyan-300",
+      rank: "text-cyan-700 dark:text-cyan-300",
+      score: "text-cyan-900 dark:text-cyan-200",
     },
   }[subjectKey];
 
@@ -1079,7 +1084,7 @@ function SubjectMiniCard({
 
   return (
     <div
-      className={`bg-white/80 backdrop-blur-md p-2.5 sm:p-4 rounded-xl border ${theme.wrap} shadow-sm space-y-2 sm:space-y-2.5 hover:shadow-md transition`}
+      className={`bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 sm:p-4 rounded-xl border ${theme.wrap} shadow-sm space-y-2 sm:space-y-2.5 hover:shadow-md transition`}
     >
       <div className="flex items-center gap-1.5 sm:gap-2">
         <div className={`p-1 sm:p-1.5 rounded-md ${theme.icon}`}>
@@ -1095,39 +1100,39 @@ function SubjectMiniCard({
       {hasStats ? (
         <>
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-            <div className="bg-gray-50/80 rounded-lg p-1.5 sm:p-2">
-              <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 tracking-wider leading-none">
+            <div className="bg-gray-50/80 dark:bg-slate-900/60 rounded-lg p-1.5 sm:p-2">
+              <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider leading-none">
                 Rank
               </p>
               <p className={`text-sm sm:text-base font-extrabold mt-0.5 leading-tight ${theme.rank}`}>
                 #{stats.subject_rank}
               </p>
             </div>
-            <div className="bg-gray-50/80 rounded-lg p-1.5 sm:p-2">
-              <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 tracking-wider leading-none">
+            <div className="bg-gray-50/80 dark:bg-slate-900/60 rounded-lg p-1.5 sm:p-2">
+              <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider leading-none">
                 Marks
               </p>
               <p className={`text-sm sm:text-base font-extrabold mt-0.5 leading-tight ${theme.score}`}>
                 {stats.total_score}
-                <span className="text-[10px] sm:text-xs font-semibold text-gray-400">
+                <span className="text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500">
                   /{stats.total_marks}
                 </span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500 pt-0.5">
+          <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 pt-0.5">
             <span>
               {stats.quizzes_completed} quiz
               {stats.quizzes_completed === 1 ? "" : "z"}
             </span>
-            <span className="font-bold text-emerald-700">
+            <span className="font-bold text-emerald-700 dark:text-emerald-400">
               {stats.average_score != null ? `${stats.average_score}%` : "—"}
             </span>
           </div>
         </>
       ) : (
-        <div className="py-2 sm:py-3 text-center text-gray-400 text-[10px] sm:text-xs">
+        <div className="py-2 sm:py-3 text-center text-gray-400 dark:text-gray-500 text-[10px] sm:text-xs">
           සහභාගී වී නැත.
         </div>
       )}
@@ -1139,7 +1144,7 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
   const endsIn = useLiveCountdown(() => msUntilEnd(quiz), [quiz]);
 
   return (
-    <div className="bg-white/80 backdrop-blur-md p-3 sm:p-6 rounded-xl border border-emerald-200/70 shadow-sm space-y-2.5 sm:space-y-4 hover:shadow-md transition">
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-6 rounded-xl border border-emerald-200/70 dark:border-emerald-800/70 shadow-sm space-y-2.5 sm:space-y-4 hover:shadow-md transition">
       <div className="flex justify-between items-start gap-2">
         <span
           className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded-md border ${subjectStyle(
@@ -1148,28 +1153,28 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
         >
           {quiz.subject}
         </span>
-        <span className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 shrink-0">
+        <span className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
           <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {quiz.duration_minutes}m
         </span>
       </div>
       <div>
-        <h3 className="text-sm sm:text-lg font-bold text-gray-900 leading-snug line-clamp-2">
+        <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
           {quiz.title}
         </h3>
-        <p className="text-[11px] sm:text-xs text-gray-500 mt-1 flex items-center gap-1 flex-wrap">
+        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1 flex-wrap">
           <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {quiz.total_questions} ප්‍රශ්න
           {quiz.stream ? ` • ${quiz.stream}` : ""}
         </p>
       </div>
       {endsIn && (
-        <div className="text-[10px] sm:text-[11px] font-bold text-red-600 flex items-center gap-1.5">
+        <div className="text-[10px] sm:text-[11px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full animate-pulse" />
           අවසන් වන තෙක්: {endsIn}
         </div>
       )}
       <Link
         href={`/student/quiz/${quiz.id}`}
-        className="w-full py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg flex justify-center items-center gap-1.5 sm:gap-2 transition text-xs sm:text-sm shadow-sm"
+        className="w-full py-2 sm:py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-semibold rounded-lg flex justify-center items-center gap-1.5 sm:gap-2 transition text-xs sm:text-sm shadow-sm"
       >
         Quiz එක ආරම්භ කරන්න <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </Link>
@@ -1190,7 +1195,7 @@ function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
     : null;
 
   return (
-    <div className="bg-white/80 backdrop-blur-md p-3 sm:p-6 rounded-xl border border-amber-200/70 shadow-sm space-y-2.5 sm:space-y-4 opacity-90">
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-6 rounded-xl border border-amber-200/70 dark:border-amber-800/70 shadow-sm space-y-2.5 sm:space-y-4 opacity-90">
       <div className="flex justify-between items-start gap-2">
         <span
           className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded-md border ${subjectStyle(
@@ -1199,29 +1204,29 @@ function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
         >
           {quiz.subject}
         </span>
-        <span className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 shrink-0">
+        <span className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
           <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {quiz.duration_minutes}m
         </span>
       </div>
       <div>
-        <h3 className="text-sm sm:text-lg font-bold text-gray-900 leading-snug line-clamp-2">
+        <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
           {quiz.title}
         </h3>
-        <p className="text-[11px] sm:text-xs text-gray-500 mt-1 flex items-center gap-1 flex-wrap">
+        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1 flex-wrap">
           <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {quiz.total_questions} ප්‍රශ්න
           {quiz.stream ? ` • ${quiz.stream}` : ""}
         </p>
       </div>
-      <div className="text-[10px] sm:text-[11px] font-bold text-amber-700 flex items-center gap-1.5">
+      <div className="text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
         <Hourglass className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
         {startsIn ? `ආරම්භ වන තෙක්: ${startsIn}` : `ආරම්භය: ${startTime}`}
       </div>
       <button
         type="button"
         disabled
-        className="w-full py-2 sm:py-2.5 bg-gray-200/80 text-gray-500 font-semibold rounded-lg flex justify-center items-center gap-1.5 sm:gap-2 cursor-not-allowed text-xs sm:text-sm"
+        className="w-full py-2 sm:py-2.5 bg-gray-200/80 dark:bg-slate-700 text-gray-500 dark:text-gray-400 font-semibold rounded-lg flex justify-center items-center gap-1.5 sm:gap-2 cursor-not-allowed text-xs sm:text-sm"
       >
-        <Hourglass className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> තවම ආරම්භ වී නෑ
+        <Hourglass className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> තවම ආරම්භ වී නැත
       </button>
     </div>
   );

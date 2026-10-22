@@ -71,15 +71,16 @@ export default function HomePage() {
   };
 
   return (
-    // Light page aurora — the card itself carries the dark theme
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden">
-      {/* Decorative blobs behind the card */}
-      <div className="pointer-events-none absolute top-[-10%] left-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40" />
+    // Light page aurora — the card itself carries the dark theme.
+    // In dark mode, the page background goes neutral slate and the auroras dim.
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden">
+      {/* Decorative blobs behind the card — dimmed in dark mode */}
+      <div className="pointer-events-none absolute top-[-10%] left-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-emerald-200 dark:bg-emerald-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-40 dark:opacity-100" />
       <div
-        className="pointer-events-none absolute bottom-[-10%] right-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40"
+        className="pointer-events-none absolute bottom-[-10%] right-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-teal-200 dark:bg-teal-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-40 dark:opacity-100"
         style={{ animationDelay: "2s" }}
       />
-      <div className="pointer-events-none absolute top-[20%] right-[10%] w-60 h-60 bg-green-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30" />
+      <div className="pointer-events-none absolute top-[20%] right-[10%] w-60 h-60 bg-green-100 dark:bg-green-500/5 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 dark:opacity-100" />
 
       {/* ═══════════ DARK CARD — same treatment as dashboard banner ═══════════ */}
       <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">

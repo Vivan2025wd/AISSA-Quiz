@@ -372,11 +372,11 @@ export default function StudentRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4 py-8">
-      {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative flex items-center justify-center p-4 py-8">
+      {/* Aurora blobs — dimmed in dark mode */}
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 dark:bg-teal-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-xl">
         {/* DARK BANNER */}
@@ -426,17 +426,17 @@ export default function StudentRegisterPage() {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-xl shadow-emerald-900/5 p-5 sm:p-8 space-y-5">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-white/70 dark:border-slate-700 shadow-xl shadow-emerald-900/5 dark:shadow-black/30 p-5 sm:p-8 space-y-5">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {needsEmailConfirm ? (
-            <div className="p-5 bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm rounded-xl text-center space-y-3">
-              <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-600" />
+            <div className="p-5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 text-sm rounded-xl text-center space-y-3">
+              <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-600 dark:text-emerald-400" />
               <p className="font-bold text-base">ලියාපදිංචිය සාර්ථකයි! 🎉</p>
               <p className="text-xs leading-relaxed">
                 ඔබගේ email ලිපිනය තහවුරු කිරීමට එවා ඇති link එක click කරන්න, ඉන් පසු Login කරන්න.
@@ -449,7 +449,7 @@ export default function StudentRegisterPage() {
               </p>
               <Link
                 href="/auth/login"
-                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline mt-2"
+                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline mt-2"
               >
                 ඇතුළු වන්න (Login) <ArrowRight className="w-3 h-3" />
               </Link>
@@ -457,14 +457,14 @@ export default function StudentRegisterPage() {
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
               {/* Mode Toggle */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
+              <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-white/60 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setIdMode("has-aissa")}
                   className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                     idMode === "has-aissa"
-                      ? "bg-white text-emerald-700 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" /> මට AISSA ID එකක් ඇත
@@ -474,8 +474,8 @@ export default function StudentRegisterPage() {
                   onClick={() => setIdMode("no-aissa")}
                   className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                     idMode === "no-aissa"
-                      ? "bg-white text-emerald-700 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   }`}
                 >
                   <IdCard className="w-4 h-4" /> මට AISSA ID එකක් නැත
@@ -484,11 +484,11 @@ export default function StudentRegisterPage() {
 
               {/* Full Name */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                   නම (Name)
                 </label>
                 <div className="relative">
-                  <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <User className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     name="fullName"
@@ -497,18 +497,18 @@ export default function StudentRegisterPage() {
                     onChange={handleChange}
                     required
                     disabled={isSubmitting}
-                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                   විද්‍යුත් තැපෑල (Email)
                 </label>
                 <div className="relative">
-                  <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     name="email"
@@ -517,7 +517,7 @@ export default function StudentRegisterPage() {
                     onChange={handleChange}
                     required
                     disabled={isSubmitting}
-                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                   />
                 </div>
               </div>
@@ -525,15 +525,15 @@ export default function StudentRegisterPage() {
               {/* Address */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase">
+                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
                     ලිපිනය (Address)
                   </label>
-                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
                     අභිමතය පරිදි (Optional)
                   </span>
                 </div>
                 <div className="relative">
-                  <MapPin className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <MapPin className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     name="address"
@@ -541,10 +541,10 @@ export default function StudentRegisterPage() {
                     value={formData.address}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                   />
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
                   <span>🔒</span>
                   <span>පුද්ගලිකත්ව ආරක්ෂාව: සිසුන්ගේ නිවසේ ලිපිනය අනිවාර්ය නොවේ. තරඟ සඳහා දිස්ත්‍රික්කය සහ පාසල පමණක් ප්‍රමාණවත් වේ.</span>
                 </p>
@@ -552,17 +552,17 @@ export default function StudentRegisterPage() {
 
               {/* Residential District */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                   පදිංචි දිස්ත්‍රික්කය (Residential District)
                 </label>
                 <div className="relative">
-                  <Map className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Map className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <select
                     name="district"
                     value={formData.district}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className="w-full pl-10 pr-3 py-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none cursor-pointer disabled:opacity-60 transition"
+                    className="w-full pl-10 pr-3 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none cursor-pointer disabled:opacity-60 transition"
                   >
                     {sriLankanDistricts.map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -571,9 +571,9 @@ export default function StudentRegisterPage() {
                 </div>
               </div>
 
-              {/* School — ★ now strict + onConfirm wired up */}
+              {/* School */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                   පාසල (School)
                 </label>
                 <SchoolAutocomplete
@@ -584,14 +584,14 @@ export default function StudentRegisterPage() {
                   disabled={isSubmitting}
                   placeholder="පාසලේ නම ලියන්න — උදා: Royal"
                 />
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                   * ලැයිස්තුවෙන් පාසලක් තෝරා තහවුරු කරන තෙක් Auto-number ලැබෙන්නේ නැත.
                 </p>
               </div>
 
               {/* Stream */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                   විෂය ධාරාව (Stream)
                 </label>
                 <select
@@ -599,7 +599,7 @@ export default function StudentRegisterPage() {
                   value={formData.stream}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  className="w-full px-3 py-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none cursor-pointer disabled:opacity-60 transition"
+                  className="w-full px-3 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none cursor-pointer disabled:opacity-60 transition"
                 >
                   {streams.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -609,36 +609,36 @@ export default function StudentRegisterPage() {
 
               {/* Subject Combination */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                   ඔබ කරන විෂයන් (Your Subjects)
                 </label>
 
                 {formData.stream === "Biological Science" ? (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl">
                     <div className="flex flex-wrap gap-2">
                       {["Physics", "Chemistry", "Biology"].map((s) => (
                         <span
                           key={s}
-                          className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-800 text-xs font-bold rounded-lg"
+                          className="px-3 py-1.5 bg-white dark:bg-slate-900/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-lg"
                         >
                           ✓ {s}
                         </span>
                       ))}
                     </div>
-                    <p className="text-[11px] text-emerald-700 mt-2">
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-2">
                       * Bio Science එකට Physics, Chemistry, Biology අනිවාර්යයි.
                     </p>
                   </div>
                 ) : (
-                  <div className="p-3 bg-cyan-50/70 border border-cyan-200 rounded-xl space-y-3">
+                  <div className="p-3 bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 rounded-xl space-y-3">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-3 py-1.5 bg-white border border-cyan-300 text-cyan-800 font-bold rounded-lg">
+                      <span className="px-3 py-1.5 bg-white dark:bg-slate-900/60 border border-cyan-300 dark:border-cyan-800 text-cyan-800 dark:text-cyan-300 font-bold rounded-lg">
                         ✓ Physics (අනිවාර්යයි)
                       </span>
                     </div>
 
                     <div>
-                      <p className="text-[11px] font-bold text-cyan-900 uppercase mb-2">
+                      <p className="text-[11px] font-bold text-cyan-900 dark:text-cyan-200 uppercase mb-2">
                         + ඔබේ දෙවන විෂය තෝරන්න
                       </p>
                       <div className="grid grid-cols-2 gap-2">
@@ -652,8 +652,8 @@ export default function StudentRegisterPage() {
                               disabled={isSubmitting}
                               className={`py-3 rounded-xl text-sm font-bold transition border flex items-center justify-center gap-2 ${
                                 isActive
-                                  ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
-                                  : "bg-white text-gray-700 border-gray-300 hover:border-cyan-400"
+                                  ? "bg-cyan-600 dark:bg-cyan-500 text-white border-cyan-600 dark:border-cyan-500 shadow-sm"
+                                  : "bg-white dark:bg-slate-900/60 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-slate-700 hover:border-cyan-400 dark:hover:border-cyan-600"
                               } disabled:opacity-60`}
                             >
                               {isActive && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -664,7 +664,7 @@ export default function StudentRegisterPage() {
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-cyan-700 leading-relaxed">
+                    <p className="text-[11px] text-cyan-700 dark:text-cyan-300 leading-relaxed">
                       * Maths stream එකට Physics අනිවාර්යයි. ඊට අමතරව <strong>Chemistry</strong> හෝ{" "}
                       <strong>ICT</strong> දෙකෙන් එකක් තෝරන්න.
                     </p>
@@ -674,8 +674,8 @@ export default function StudentRegisterPage() {
 
               {/* Medium */}
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 uppercase mb-1.5">
-                  <Languages className="w-4 h-4 text-emerald-600" />
+                <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
+                  <Languages className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   මාධ්‍යය (Medium)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -691,8 +691,8 @@ export default function StudentRegisterPage() {
                         disabled={isSubmitting}
                         className={`py-3 rounded-xl text-sm font-bold transition border flex items-center justify-center gap-2 ${
                           isActive
-                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                            : "bg-white/60 text-gray-700 border-gray-300 hover:border-emerald-400"
+                            ? "bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-sm"
+                            : "bg-white/60 dark:bg-slate-900/60 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-600"
                         } disabled:opacity-60`}
                       >
                         {isActive && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -701,7 +701,7 @@ export default function StudentRegisterPage() {
                     );
                   })}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1.5">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">
                   * ඔබ ක්විස් එක කරන භාෂාව — ප්‍රශ්න මේ භාෂාවෙන්ම පෙන්වයි.
                   හැම විෂයකටම මේ මාධ්‍යයෙන්ම ප්‍රශ්න ලැබෙනවා.
                 </p>
@@ -712,17 +712,17 @@ export default function StudentRegisterPage() {
                 <div
                   className={`p-4 border rounded-xl space-y-1.5 ${
                     !formData.aissaIdInput
-                      ? "bg-emerald-50/70 border-emerald-200"
+                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800"
                       : aissaValidation?.valid
-                        ? "bg-emerald-50 border-emerald-300"
-                        : "bg-red-50 border-red-200"
+                        ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700"
+                        : "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800"
                   }`}
                 >
-                  <label className="flex text-xs font-extrabold uppercase items-center gap-1.5 text-emerald-900">
+                  <label className="flex text-xs font-extrabold uppercase items-center gap-1.5 text-emerald-900 dark:text-emerald-200">
                     <CheckCircle2 className="w-4 h-4" /> AISSA Member ID
                   </label>
                   <div className="relative">
-                    <IdCard className="w-5 h-5 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <IdCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={formData.aissaIdInput}
@@ -730,35 +730,35 @@ export default function StudentRegisterPage() {
                       placeholder="R25THENUMI-SBVC-AWC"
                       required
                       disabled={isSubmitting}
-                      className="w-full pl-10 pr-4 py-3 bg-white border border-emerald-300 rounded-xl font-bold text-sm tracking-wider text-emerald-900 focus:ring-2 focus:ring-emerald-500 outline-none placeholder:font-normal placeholder:tracking-normal disabled:opacity-60"
+                      className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900/60 border border-emerald-300 dark:border-emerald-800 rounded-xl font-bold text-sm tracking-wider text-emerald-900 dark:text-emerald-200 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 outline-none placeholder:font-normal placeholder:tracking-normal placeholder:text-emerald-300 dark:placeholder:text-emerald-400/50 disabled:opacity-60"
                     />
                   </div>
                   {formData.aissaIdInput && aissaValidation?.valid && (
-                    <p className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
+                    <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       වලංගුයි · කලාපය:{" "}
                       <span className="font-mono">{aissaValidation.parsed?.districtCode}</span>
                     </p>
                   )}
                   {formData.aissaIdInput && !aissaValidation?.valid && (
-                    <p className="text-[11px] text-red-700 font-semibold flex items-center gap-1">
+                    <p className="text-[11px] text-red-700 dark:text-red-300 font-semibold flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" />
                       {aissaValidation?.error}
                     </p>
                   )}
-                  <p className="text-[11px] text-emerald-700 font-medium">
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
                     * ආරම්භය <strong>R, T, O, හෝ M</strong> අක්ෂරයක් විය යුතුය
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-teal-50/70 border border-teal-200 rounded-xl space-y-4">
+                <div className="p-4 bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl space-y-4">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-extrabold text-teal-900 uppercase">
+                      <p className="text-xs font-extrabold text-teal-900 dark:text-teal-200 uppercase">
                         Non-AISSA Quiz ID — විස්තර
                       </p>
-                      <p className="text-[11px] text-teal-700 mt-0.5">
+                      <p className="text-[11px] text-teal-700 dark:text-teal-300 mt-0.5">
                         පහත විස්තර පුරවන්න — අපි ඔබට නව Quiz ID එකක් Auto-Generate කර ඊමේල් කරන්නෙමු.
                       </p>
                     </div>
@@ -766,11 +766,11 @@ export default function StudentRegisterPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-teal-900 uppercase mb-1.5">
+                      <label className="block text-[11px] font-bold text-teal-900 dark:text-teal-200 uppercase mb-1.5">
                         පාසල් වර්ෂය
                       </label>
                       <div className="relative">
-                        <Calendar className="w-4 h-4 text-teal-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
                           type="text"
                           inputMode="numeric"
@@ -781,16 +781,16 @@ export default function StudentRegisterPage() {
                           required
                           disabled={isSubmitting}
                           maxLength={4}
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-teal-300 rounded-xl font-bold text-sm text-teal-900 focus:ring-2 focus:ring-teal-500 outline-none placeholder:font-normal placeholder:text-teal-300 disabled:opacity-60"
+                          className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900/60 border border-teal-300 dark:border-teal-800 rounded-xl font-bold text-sm text-teal-900 dark:text-teal-200 focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 outline-none placeholder:font-normal placeholder:text-teal-300 dark:placeholder:text-teal-400/50 disabled:opacity-60"
                         />
                       </div>
-                      <p className="text-[10px] text-teal-600 mt-1">
+                      <p className="text-[10px] text-teal-600 dark:text-teal-400 mt-1">
                         ඔබ A/L ආරම්භ කළ වර්ෂය
                       </p>
                     </div>
 
                     <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-teal-900 uppercase mb-1.5">
+                      <label className="flex items-center justify-between text-[11px] font-bold text-teal-900 dark:text-teal-200 uppercase mb-1.5">
                         <span>පාසල් අංකය</span>
                         <button
                           type="button"
@@ -798,7 +798,7 @@ export default function StudentRegisterPage() {
                           disabled={
                             numberLoading || !confirmedSchool || !formData.schoolYear
                           }
-                          className="text-teal-600 hover:text-teal-800 disabled:opacity-40 transition"
+                          className="text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 disabled:opacity-40 transition"
                           title="Auto-number refresh"
                         >
                           <RefreshCw
@@ -807,7 +807,7 @@ export default function StudentRegisterPage() {
                         </button>
                       </label>
                       <div className="relative">
-                        <Hash className="w-4 h-4 text-teal-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Hash className="w-4 h-4 text-teal-600 dark:text-teal-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
                           type="text"
                           inputMode="numeric"
@@ -818,16 +818,16 @@ export default function StudentRegisterPage() {
                           required
                           disabled={isSubmitting}
                           maxLength={4}
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-teal-300 rounded-xl font-bold text-sm text-teal-900 focus:ring-2 focus:ring-teal-500 outline-none placeholder:font-normal placeholder:text-teal-300 disabled:opacity-60"
+                          className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900/60 border border-teal-300 dark:border-teal-800 rounded-xl font-bold text-sm text-teal-900 dark:text-teal-200 focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 outline-none placeholder:font-normal placeholder:text-teal-300 dark:placeholder:text-teal-400/50 disabled:opacity-60"
                         />
                         {numberLoading && (
-                          <Loader2 className="w-3.5 h-3.5 text-teal-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 text-teal-400 dark:text-teal-500 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
                         )}
                       </div>
                       {numberError ? (
-                        <p className="text-[10px] text-red-600 mt-1">{numberError}</p>
+                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{numberError}</p>
                       ) : nextNumber !== null ? (
-                        <p className="text-[10px] text-teal-600 mt-1">
+                        <p className="text-[10px] text-teal-600 dark:text-teal-400 mt-1">
                           Auto: ඊළඟ අංකය{" "}
                           <strong className="font-mono">
                             {String(nextNumber).padStart(3, "0")}
@@ -838,7 +838,7 @@ export default function StudentRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-teal-900 uppercase mb-1.5">
+                    <label className="block text-[11px] font-bold text-teal-900 dark:text-teal-200 uppercase mb-1.5">
                       AISSA කලාපය
                     </label>
                     <select
@@ -846,7 +846,7 @@ export default function StudentRegisterPage() {
                       value={formData.aissaDistrict}
                       onChange={handleChange}
                       disabled={isSubmitting}
-                      className="w-full px-3 py-2.5 bg-white border border-teal-300 rounded-xl font-bold text-sm text-teal-900 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer disabled:opacity-60"
+                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/60 border border-teal-300 dark:border-teal-800 rounded-xl font-bold text-sm text-teal-900 dark:text-teal-200 focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 outline-none cursor-pointer disabled:opacity-60"
                     >
                       {AISSA_DISTRICT_CODES.map((code) => (
                         <option key={code} value={code}>
@@ -856,13 +856,13 @@ export default function StudentRegisterPage() {
                     </select>
                   </div>
 
-                  <div className="p-3 bg-white border border-teal-200 rounded-xl">
-                    <p className="text-[10px] uppercase font-bold text-teal-500 tracking-wider">
+                  <div className="p-3 bg-white dark:bg-slate-900/60 border border-teal-200 dark:border-teal-800 rounded-xl">
+                    <p className="text-[10px] uppercase font-bold text-teal-500 dark:text-teal-400 tracking-wider">
                       Auto-Generated Quiz ID
                     </p>
-                    <p className="mt-1 font-mono font-extrabold text-sm text-teal-900 break-all">
+                    <p className="mt-1 font-mono font-extrabold text-sm text-teal-900 dark:text-teal-200 break-all">
                       {finalAisId || (
-                        <span className="text-teal-300 font-sans font-medium">
+                        <span className="text-teal-300 dark:text-teal-500/70 font-sans font-medium">
                           නම, පාසල, වර්ෂය පිරවූ පසු මෙහි දිස්වේ...
                         </span>
                       )}
@@ -874,11 +874,11 @@ export default function StudentRegisterPage() {
               {/* Password */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                     මුරපදය (Password)
                   </label>
                   <div className="relative">
-                    <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="password"
                       name="password"
@@ -887,17 +887,17 @@ export default function StudentRegisterPage() {
                       onChange={handleChange}
                       required
                       disabled={isSubmitting}
-                      className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                      className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
                     මුරපදය නැවත තහවුරු කරන්න
                   </label>
                   <div className="relative">
-                    <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="password"
                       name="confirmPassword"
@@ -906,7 +906,7 @@ export default function StudentRegisterPage() {
                       onChange={handleChange}
                       required
                       disabled={isSubmitting}
-                      className="w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                      className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                     />
                   </div>
                 </div>
@@ -915,7 +915,7 @@ export default function StudentRegisterPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || !confirmedSchool}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -929,11 +929,11 @@ export default function StudentRegisterPage() {
           )}
 
           {!needsEmailConfirm && (
-            <div className="pt-4 border-t border-gray-100 text-center text-xs text-gray-600">
+            <div className="pt-4 border-t border-gray-100 dark:border-slate-700 text-center text-xs text-gray-600 dark:text-gray-400">
               දැනටමත් AISSA ගිණුමක් තිබේද?{" "}
               <Link
                 href="/auth/login"
-                className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline inline-flex items-center gap-0.5"
+                className="font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline inline-flex items-center gap-0.5"
               >
                 ඇතුළු වන්න (Login) <ArrowRight className="w-3 h-3" />
               </Link>

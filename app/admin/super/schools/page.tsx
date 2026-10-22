@@ -170,8 +170,8 @@ export default function SchoolsPage() {
         <div
           className={`shrink-0 p-2.5 sm:p-3 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 border ${
             toast.kind === "ok"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-red-50 border-red-200 text-red-700"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+              : "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
           }`}
         >
           {toast.kind === "ok" ? (
@@ -184,21 +184,21 @@ export default function SchoolsPage() {
       )}
 
       {/* ═══ Filter bar — MOBILE-TIGHTENED ═══ */}
-      <div className="shrink-0 bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="relative flex-1">
-          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-3 top-3 sm:top-3.5" />
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-3 sm:top-3.5" />
           <input
             type="text"
             placeholder="Search by name or district..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition"
+            className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:bg-white dark:focus:bg-slate-900 transition"
           />
         </div>
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="px-3 sm:px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-60"
+          className="px-3 sm:px-4 py-2.5 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-900 transition flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           <span>Refresh</span>
@@ -206,45 +206,45 @@ export default function SchoolsPage() {
       </div>
 
       {/* ═══ Table — flex-1 + min-h-0 so ONLY this scrolls ═══ */}
-      <div className="flex-1 min-h-0 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden flex flex-col">
-        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between gap-2">
-          <h2 className="text-sm sm:text-base font-bold text-gray-900">
+      <div className="flex-1 min-h-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
             Schools{" "}
-            <span className="text-amber-600">
+            <span className="text-amber-600 dark:text-amber-400">
               ({filtered.length} / {schools.length})
             </span>
           </h2>
         </div>
 
         {loading ? (
-          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 text-xs sm:text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
             <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-amber-500" />
             Loading schools...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 text-xs sm:text-sm px-4 text-center">
+          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs sm:text-sm px-4 text-center">
             No schools match your search.
           </div>
         ) : (
-          <ul className="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100">
+          <ul className="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-700">
             {filtered.map((s) => {
               const key = s.name.toLowerCase();
               const count = counts[key] ?? 0;
               return (
                 <li
                   key={s.id}
-                  className="p-3 sm:p-5 flex flex-col gap-2.5 sm:gap-3 hover:bg-amber-50/20 transition"
+                  className="p-3 sm:p-5 flex flex-col gap-2.5 sm:gap-3 hover:bg-amber-50/20 dark:hover:bg-amber-950/10 transition"
                 >
                   {/* Row 1: school name + district + student count */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                    <p className="font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
                       {s.name}
                     </p>
-                    <p className="text-[10px] sm:text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <MapPin className="w-3 h-3 shrink-0" />
                       <span className="truncate">{s.district ?? "—"}</span>
                       {count > 0 && (
-                        <span className="inline-flex items-center gap-1 text-amber-700 font-semibold ml-1 sm:ml-2 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 font-semibold ml-1 sm:ml-2 shrink-0">
                           <UsersIcon className="w-3 h-3" /> {count} student{count === 1 ? "" : "s"}
                         </span>
                       )}
@@ -255,13 +255,13 @@ export default function SchoolsPage() {
                   <div className="flex items-center gap-1.5 sm:gap-2 sm:justify-end">
                     <button
                       onClick={() => setEditing(s)}
-                      className="flex-1 sm:flex-none text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 transition flex items-center justify-center gap-1 sm:gap-1.5 border border-amber-200"
+                      className="flex-1 sm:flex-none text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-950/70 text-amber-800 dark:text-amber-300 transition flex items-center justify-center gap-1 sm:gap-1.5 border border-amber-200 dark:border-amber-800"
                     >
                       <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Edit
                     </button>
                     <button
                       onClick={() => void handleDelete(s)}
-                      className="flex-1 sm:flex-none text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center justify-center gap-1 sm:gap-1.5 border border-red-200"
+                      className="flex-1 sm:flex-none text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 text-red-700 dark:text-red-300 transition flex items-center justify-center gap-1 sm:gap-1.5 border border-red-200 dark:border-red-800"
                     >
                       <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                       <span className="sm:hidden">Delete</span>
@@ -341,7 +341,7 @@ function SchoolFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full sm:max-w-lg bg-white/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-white/70 overflow-hidden max-h-[92vh] sm:my-8 flex flex-col">
+      <div className="relative w-full sm:max-w-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-white/70 dark:border-slate-700 overflow-hidden max-h-[92vh] sm:my-8 flex flex-col">
         {/* Header */}
         <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-amber-500/20 shrink-0">
           <div
@@ -386,14 +386,14 @@ function SchoolFormModal({
         {/* Body */}
         <form onSubmit={handleSave} className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1">
           {error && (
-            <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2">
+            <div className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+            <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
               School Name
             </label>
             <input
@@ -403,9 +403,9 @@ function SchoolFormModal({
               placeholder="e.g. Royal College, Colombo"
               required
               disabled={saving}
-              className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none disabled:opacity-60"
+              className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-amber-400 dark:focus:border-amber-500 outline-none disabled:opacity-60"
             />
-            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-snug">
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug">
               Format: <em>School Name, City</em>
               <span className="hidden sm:inline">
                 {" "}— e.g. <em>Ananda College, Colombo</em>
@@ -414,14 +414,14 @@ function SchoolFormModal({
           </div>
 
           <div>
-            <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+            <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
               <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> District
             </label>
             <select
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
               disabled={saving}
-              className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none cursor-pointer disabled:opacity-60"
+              className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-amber-400 dark:focus:border-amber-500 outline-none cursor-pointer disabled:opacity-60"
             >
               {DISTRICTS.map((d) => (
                 <option key={d} value={d}>{d}</option>
@@ -431,12 +431,12 @@ function SchoolFormModal({
         </form>
 
         {/* Footer */}
-        <div className="px-3.5 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/80 flex items-center gap-2 shrink-0">
+        <div className="px-3.5 sm:px-6 py-3 border-t border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/60 flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="flex-1 sm:flex-none px-4 sm:px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-700 text-[11px] sm:text-xs font-semibold rounded-xl border border-gray-200 transition disabled:opacity-60"
+            className="flex-1 sm:flex-none px-4 sm:px-4 py-2.5 bg-white dark:bg-slate-900/60 hover:bg-gray-100 dark:hover:bg-slate-900 text-gray-700 dark:text-gray-200 text-[11px] sm:text-xs font-semibold rounded-xl border border-gray-200 dark:border-slate-700 transition disabled:opacity-60"
           >
             Cancel
           </button>

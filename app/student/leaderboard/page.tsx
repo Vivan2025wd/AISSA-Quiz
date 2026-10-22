@@ -206,7 +206,7 @@ function ScoreBar({
   const safe = Number.isFinite(n) ? n : 0;
   const pct = max > 0 ? Math.min(100, (safe / max) * 100) : 0;
   return (
-    <div className={`${width} h-1.5 bg-gray-100 rounded-full overflow-hidden`}>
+    <div className={`${width} h-1.5 bg-gray-100 dark:bg-slate-900/60 rounded-full overflow-hidden`}>
       <div
         className={`h-full ${color} transition-all`}
         style={{ width: `${pct}%` }}
@@ -219,7 +219,7 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <span className="text-xl">🥇</span>;
   if (rank === 2) return <span className="text-xl">🥈</span>;
   if (rank === 3) return <span className="text-xl">🥉</span>;
-  return <span className="font-bold text-gray-500">#{rank}</span>;
+  return <span className="font-bold text-gray-500 dark:text-gray-400">#{rank}</span>;
 }
 
 function schoolsMatch(
@@ -483,11 +483,11 @@ export default function LeaderboardPage() {
     activeTab === "school" ? loadingSchool : loadingIndividual;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative">
       {/* Aurora blobs */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 dark:bg-teal-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 dark:bg-green-500/5 rounded-full filter blur-3xl" />
 
       <div className="relative p-3 sm:p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
@@ -606,7 +606,7 @@ export default function LeaderboardPage() {
           </div>
 
           {loadError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
               <span>⚠️</span>
               <span>{loadError}</span>
             </div>
@@ -616,15 +616,15 @@ export default function LeaderboardPage() {
           {activeTab === "school" && (
             <>
               {loadingSchool ? (
-                <div className="p-8 sm:p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-xs sm:text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
-                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600" />{" "}
+                <div className="p-8 sm:p-12 text-center text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2 text-xs sm:text-sm bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm">
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600 dark:text-emerald-400" />{" "}
                   Loading Leaderboard...
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm overflow-hidden">
+                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm overflow-hidden">
                     {schoolLeaderboard.length === 0 ? (
-                      <div className="p-6 text-center text-gray-400 text-sm">
+                      <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
                         තවම දත්ත නොමැත.
                       </div>
                     ) : (
@@ -633,7 +633,7 @@ export default function LeaderboardPage() {
                         <div className="hidden lg:block relative">
                           <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
                             <table className="w-full text-left text-sm">
-                              <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0] text-emerald-900 uppercase text-xs font-semibold">
+                              <thead className="sticky top-0 z-10 bg-emerald-50 dark:bg-emerald-950/60 shadow-[0_1px_0_0_#a7f3d0] dark:shadow-[0_1px_0_0_rgba(16,185,129,0.25)] text-emerald-900 dark:text-emerald-200 uppercase text-xs font-semibold">
                                 <tr>
                                   <th className="p-4 w-14">Rank</th>
                                   <th className="p-4">පාසල</th>
@@ -644,7 +644,7 @@ export default function LeaderboardPage() {
                                   <th className="p-4 text-right">Total /100</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-100">
+                              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                                 {topSchools.map((item) => {
                                   const isMine = schoolsMatch(
                                     item.school,
@@ -655,41 +655,41 @@ export default function LeaderboardPage() {
                                       key={item.school}
                                       className={
                                         isMine
-                                          ? "bg-emerald-50/70 hover:bg-emerald-50"
+                                          ? "bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
                                           : item.rank <= 3
-                                            ? "bg-amber-50/20 hover:bg-amber-50/40"
-                                            : "hover:bg-emerald-50/30"
+                                            ? "bg-amber-50/20 dark:bg-amber-950/20 hover:bg-amber-50/40 dark:hover:bg-amber-950/30"
+                                            : "hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20"
                                       }
                                     >
                                       <td className="p-4 text-center">
                                         <RankBadge rank={item.rank} />
                                       </td>
                                       <td className="p-4">
-                                        <div className="font-bold text-gray-900 flex items-center gap-2">
+                                        <div className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                           <span className="wrap-break-word">
                                             {item.school}
                                           </span>
                                           {isMine && (
-                                            <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
+                                            <span className="text-[9px] font-bold uppercase bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 rounded shrink-0">
                                               Your School
                                             </span>
                                           )}
                                         </div>
-                                        <div className="text-[11px] text-gray-400 mt-0.5">
+                                        <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
                                           {item.students_count} registered ·{" "}
                                           {item.total_quizzes} attempts
                                         </div>
                                       </td>
-                                      <td className="p-4 text-center font-semibold text-gray-800">
+                                      <td className="p-4 text-center font-semibold text-gray-800 dark:text-gray-200">
                                         {item.participating_students}
                                       </td>
                                       <td className="p-4 text-right">
-                                        <span className="font-mono text-sm font-bold text-gray-700">
+                                        <span className="font-mono text-sm font-bold text-gray-700 dark:text-gray-300">
                                           {fmt(item.top5_marks)}
                                         </span>
                                       </td>
                                       <td className="p-4 text-right">
-                                        <div className="font-extrabold text-blue-700">
+                                        <div className="font-extrabold text-blue-700 dark:text-blue-400">
                                           {fmt(item.academic_score)}
                                         </div>
                                         <div className="flex justify-end mt-1">
@@ -701,7 +701,7 @@ export default function LeaderboardPage() {
                                         </div>
                                       </td>
                                       <td className="p-4 text-right">
-                                        <div className="font-extrabold text-emerald-700">
+                                        <div className="font-extrabold text-emerald-700 dark:text-emerald-400">
                                           {fmt(item.participation_score)}
                                         </div>
                                         <div className="flex justify-end mt-1">
@@ -713,7 +713,7 @@ export default function LeaderboardPage() {
                                         </div>
                                       </td>
                                       <td className="p-4 text-right">
-                                        <div className="text-lg font-extrabold text-teal-700">
+                                        <div className="text-lg font-extrabold text-teal-700 dark:text-teal-400">
                                           {fmt(item.total_score)}
                                         </div>
                                         <div className="flex justify-end mt-1">
@@ -731,12 +731,12 @@ export default function LeaderboardPage() {
                               </tbody>
                             </table>
                           </div>
-                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
+                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 dark:from-slate-800/95 via-white/60 dark:via-slate-800/60 to-transparent" />
                         </div>
 
                         {/* Mobile cards — tighter */}
                         <div className="lg:hidden relative">
-                          <div className="divide-y divide-gray-100 max-h-[60vh] overflow-y-auto">
+                          <div className="divide-y divide-gray-100 dark:divide-slate-700 max-h-[60vh] overflow-y-auto">
                             {topSchools.map((item) => {
                               const isTop3 = item.rank <= 3;
                               const isMine = schoolsMatch(
@@ -748,9 +748,9 @@ export default function LeaderboardPage() {
                                   key={item.school}
                                   className={`p-3 space-y-2.5 ${
                                     isMine
-                                      ? "bg-emerald-50/70"
+                                      ? "bg-emerald-50/70 dark:bg-emerald-950/40"
                                       : isTop3
-                                        ? "bg-amber-50/30"
+                                        ? "bg-amber-50/30 dark:bg-amber-950/20"
                                         : ""
                                   }`}
                                 >
@@ -760,16 +760,16 @@ export default function LeaderboardPage() {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-start gap-1.5 flex-wrap">
-                                        <h3 className="font-bold text-gray-900 text-sm leading-snug wrap-break-word">
+                                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm leading-snug wrap-break-word">
                                           {item.school}
                                         </h3>
                                         {isMine && (
-                                          <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
+                                          <span className="text-[9px] font-bold uppercase bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 rounded shrink-0">
                                             You
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-[10px] text-gray-500 mt-0.5">
+                                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                                         {item.students_count} reg ·{" "}
                                         {item.total_quizzes} att ·{" "}
                                         {item.participating_students} part
@@ -778,36 +778,36 @@ export default function LeaderboardPage() {
                                   </div>
 
                                   <div className="grid grid-cols-3 gap-1.5 pl-9">
-                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-1.5 text-center">
-                                      <p className="text-[8px] uppercase font-bold text-blue-600 leading-none">
+                                    <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 rounded-lg p-1.5 text-center">
+                                      <p className="text-[8px] uppercase font-bold text-blue-600 dark:text-blue-400 leading-none">
                                         Academic
                                       </p>
-                                      <p className="text-sm font-extrabold text-blue-800 mt-0.5 leading-none">
+                                      <p className="text-sm font-extrabold text-blue-800 dark:text-blue-300 mt-0.5 leading-none">
                                         {fmt(item.academic_score)}
                                       </p>
-                                      <p className="text-[8px] text-blue-500 leading-none mt-0.5">
+                                      <p className="text-[8px] text-blue-500 dark:text-blue-400 leading-none mt-0.5">
                                         /80
                                       </p>
                                     </div>
-                                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-1.5 text-center">
-                                      <p className="text-[8px] uppercase font-bold text-emerald-600 leading-none">
+                                    <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 rounded-lg p-1.5 text-center">
+                                      <p className="text-[8px] uppercase font-bold text-emerald-600 dark:text-emerald-400 leading-none">
                                         Part.
                                       </p>
-                                      <p className="text-sm font-extrabold text-emerald-800 mt-0.5 leading-none">
+                                      <p className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 mt-0.5 leading-none">
                                         {fmt(item.participation_score)}
                                       </p>
-                                      <p className="text-[8px] text-emerald-500 leading-none mt-0.5">
+                                      <p className="text-[8px] text-emerald-500 dark:text-emerald-400 leading-none mt-0.5">
                                         /20
                                       </p>
                                     </div>
-                                    <div className="bg-teal-50 border border-teal-100 rounded-lg p-1.5 text-center">
-                                      <p className="text-[8px] uppercase font-bold text-teal-600 leading-none">
+                                    <div className="bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 rounded-lg p-1.5 text-center">
+                                      <p className="text-[8px] uppercase font-bold text-teal-600 dark:text-teal-400 leading-none">
                                         Total
                                       </p>
-                                      <p className="text-sm font-extrabold text-teal-800 mt-0.5 leading-none">
+                                      <p className="text-sm font-extrabold text-teal-800 dark:text-teal-300 mt-0.5 leading-none">
                                         {fmt(item.total_score)}
                                       </p>
-                                      <p className="text-[8px] text-teal-500 leading-none mt-0.5">
+                                      <p className="text-[8px] text-teal-500 dark:text-teal-400 leading-none mt-0.5">
                                         /100
                                       </p>
                                     </div>
@@ -816,13 +816,13 @@ export default function LeaderboardPage() {
                               );
                             })}
                           </div>
-                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
+                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 dark:from-slate-800/95 via-white/60 dark:via-slate-800/60 to-transparent" />
                         </div>
 
                         {/* Footer hint */}
-                        <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[10px] sm:text-[11px] text-gray-500 text-center">
+                        <div className="px-4 py-2.5 bg-emerald-50/60 dark:bg-emerald-950/30 border-t border-emerald-100/60 dark:border-emerald-900/50 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 text-center">
                           පාසල්{" "}
-                          <strong className="text-gray-700">
+                          <strong className="text-gray-700 dark:text-gray-300">
                             {topSchools.length}
                           </strong>
                           ක් පෙන්වයි · scroll කරලා බලන්න
@@ -833,7 +833,7 @@ export default function LeaderboardPage() {
 
                   {mySchoolRow && !isMySchoolInTop && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 font-semibold px-1">
+                      <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 font-semibold px-1">
                         ✨ ඔබේ පාසලේ තැන (Your School)
                       </div>
                       <YourSchoolRow item={mySchoolRow} />
@@ -841,7 +841,7 @@ export default function LeaderboardPage() {
                   )}
 
                   {!studentSchool && schoolLeaderboard.length > 0 && (
-                    <p className="text-[11px] text-center text-gray-400">
+                    <p className="text-[11px] text-center text-gray-400 dark:text-gray-500">
                       ඔබේ profile එකේ පාසල සටහන් කර නැත — ඔබේ පාසලේ තැන පෙන්විය
                       නොහැක.
                     </p>
@@ -855,20 +855,20 @@ export default function LeaderboardPage() {
           {activeTab === "individual" && (
             <div className="space-y-4">
               {loadingSubjects ? (
-                <div className="p-4 bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm text-xs text-gray-500 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />{" "}
+                <div className="p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />{" "}
                   Loading subjects...
                 </div>
               ) : noSubjectsForStream ? (
-                <div className="p-6 bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm text-center text-gray-400 text-sm">
+                <div className="p-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm text-center text-gray-400 dark:text-gray-500 text-sm">
                   ඔබේ{" "}
-                  <strong className="text-gray-600">
+                  <strong className="text-gray-600 dark:text-gray-300">
                     {studentStream ?? "stream"}
                   </strong>{" "}
                   එකට අදාළ quizzes තවම නොමැත.
                 </div>
               ) : (
-                <div className="bg-white/80 backdrop-blur-md p-1.5 rounded-xl border border-white/70 shadow-sm flex gap-1 overflow-x-auto">
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm flex gap-1 overflow-x-auto">
                   {availableSubjects.map((subject) => {
                     const meta = subjectMeta(subject);
                     const isActive = selectedSubject === subject;
@@ -880,7 +880,7 @@ export default function LeaderboardPage() {
                         className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-bold transition whitespace-nowrap shrink-0 ${
                           isActive
                             ? meta.active
-                            : "text-gray-600 hover:bg-gray-100"
+                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700/50"
                         }`}
                       >
                         {meta.icon}
@@ -892,22 +892,22 @@ export default function LeaderboardPage() {
               )}
 
               {loadingSubjects || noSubjectsForStream ? null : loadingIndividual ? (
-                <div className="p-8 sm:p-12 text-center text-gray-500 flex items-center justify-center gap-2 text-xs sm:text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
-                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600" />{" "}
+                <div className="p-8 sm:p-12 text-center text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2 text-xs sm:text-sm bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm">
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600 dark:text-emerald-400" />{" "}
                   Loading {selectedSubject} Leaderboard...
                 </div>
               ) : individualLeaderboard.length === 0 ? (
-                <div className="p-6 text-center text-gray-400 text-sm bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm">
+                <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm">
                   {selectedSubject} ප්‍රතිඵල තවම නොමැත.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-white/80 backdrop-blur-md rounded-xl border border-white/70 shadow-sm overflow-hidden">
+                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-xl border border-white/70 dark:border-slate-700 shadow-sm overflow-hidden">
                     {/* Desktop table */}
                     <div className="hidden md:block relative">
                       <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
                         <table className="w-full text-left text-sm">
-                          <thead className="sticky top-0 z-10 bg-emerald-50 shadow-[0_1px_0_0_#a7f3d0] text-emerald-900 uppercase text-xs font-semibold">
+                          <thead className="sticky top-0 z-10 bg-emerald-50 dark:bg-emerald-950/60 shadow-[0_1px_0_0_#a7f3d0] dark:shadow-[0_1px_0_0_rgba(16,185,129,0.25)] text-emerald-900 dark:text-emerald-200 uppercase text-xs font-semibold">
                             <tr>
                               <th className="p-4 w-16">Rank</th>
                               <th className="p-4">ශිෂ්‍යයා</th>
@@ -919,7 +919,7 @@ export default function LeaderboardPage() {
                               <th className="p-4 text-right">Avg %</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
+                          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                             {topIndividuals.map((item) => {
                               const isMe = item.student_id === studentId;
                               return (
@@ -927,52 +927,52 @@ export default function LeaderboardPage() {
                                   key={item.student_id}
                                   className={
                                     isMe
-                                      ? "bg-emerald-50/70 hover:bg-emerald-50"
+                                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
                                       : item.rank <= 3
-                                        ? "bg-amber-50/20 hover:bg-amber-50/40"
-                                        : "hover:bg-emerald-50/30"
+                                        ? "bg-amber-50/20 dark:bg-amber-950/20 hover:bg-amber-50/40 dark:hover:bg-amber-950/30"
+                                        : "hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20"
                                   }
                                 >
                                   <td className="p-4 text-center">
                                     <RankBadge rank={item.rank} />
                                   </td>
-                                  <td className="p-4 font-bold text-gray-900">
+                                  <td className="p-4 font-bold text-gray-900 dark:text-gray-100">
                                     <div className="flex items-center gap-2">
-                                      <Award className="w-4 h-4 text-emerald-600 shrink-0" />
+                                      <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                       <span className="truncate">
                                         {formatDisplayName(item.full_name, item.rank, isMe)}
                                       </span>
                                       {isMe && (
-                                        <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
+                                        <span className="text-[9px] font-bold uppercase bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 rounded shrink-0">
                                           You
                                         </span>
                                       )}
                                     </div>
                                   </td>
-                                  <td className="p-4 text-gray-600 text-xs">
+                                  <td className="p-4 text-gray-600 dark:text-gray-400 text-xs">
                                     {item.school}
                                   </td>
                                   <td className="p-4 text-center">
                                     <span
-                                      className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 uppercase"
+                                      className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-900/60 text-gray-700 dark:text-gray-300 uppercase"
                                       title={mediumFull(item.medium)}
                                     >
                                       {mediumShort(item.medium)}
                                     </span>
                                   </td>
-                                  <td className="p-4 text-center text-gray-500">
+                                  <td className="p-4 text-center text-gray-500 dark:text-gray-400">
                                     {item.quizzes_completed}
                                   </td>
-                                  <td className="p-4 text-right font-extrabold text-emerald-700 text-base">
+                                  <td className="p-4 text-right font-extrabold text-emerald-700 dark:text-emerald-400 text-base">
                                     {item.total_score}
                                   </td>
-                                  <td className="p-4 text-right text-xs text-gray-500 font-mono">
+                                  <td className="p-4 text-right text-xs text-gray-500 dark:text-gray-400 font-mono">
                                     <span className="flex items-center justify-end gap-1">
                                       <Clock className="w-3 h-3" />
                                       {formatTime(item.total_time_seconds)}
                                     </span>
                                   </td>
-                                  <td className="p-4 text-right text-xs font-semibold text-gray-500">
+                                  <td className="p-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">
                                     {item.average_score != null
                                       ? `${item.average_score}%`
                                       : "—"}
@@ -983,12 +983,12 @@ export default function LeaderboardPage() {
                           </tbody>
                         </table>
                       </div>
-                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 dark:from-slate-800/95 via-white/60 dark:via-slate-800/60 to-transparent" />
                     </div>
 
                     {/* Mobile cards — tighter */}
                     <div className="md:hidden relative">
-                      <div className="divide-y divide-gray-100 max-h-[60vh] overflow-y-auto">
+                      <div className="divide-y divide-gray-100 dark:divide-slate-700 max-h-[60vh] overflow-y-auto">
                         {topIndividuals.map((item) => {
                           const isTop3 = item.rank <= 3;
                           const isMe = item.student_id === studentId;
@@ -997,9 +997,9 @@ export default function LeaderboardPage() {
                               key={item.student_id}
                               className={`p-3 space-y-1.5 ${
                                 isMe
-                                  ? "bg-emerald-50/70"
+                                  ? "bg-emerald-50/70 dark:bg-emerald-950/40"
                                   : isTop3
-                                    ? "bg-amber-50/30"
+                                    ? "bg-amber-50/30 dark:bg-amber-950/20"
                                     : ""
                               }`}
                             >
@@ -1009,36 +1009,36 @@ export default function LeaderboardPage() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h3 className="font-bold text-gray-900 text-sm leading-snug truncate">
+                                    <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm leading-snug truncate">
                                       {formatDisplayName(item.full_name, item.rank, isMe)}
                                     </h3>
                                     {isMe && (
-                                      <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
+                                      <span className="text-[9px] font-bold uppercase bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 rounded shrink-0">
                                         You
                                       </span>
                                     )}
                                     <span
-                                      className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 uppercase shrink-0"
+                                      className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-900/60 text-gray-700 dark:text-gray-300 uppercase shrink-0"
                                       title={mediumFull(item.medium)}
                                     >
                                       {mediumShort(item.medium)}
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+                                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                                     {item.school}
                                   </p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                  <p className="text-base font-extrabold text-emerald-700 leading-none">
+                                  <p className="text-base font-extrabold text-emerald-700 dark:text-emerald-400 leading-none">
                                     {item.total_score}
                                   </p>
-                                  <p className="text-[9px] text-gray-400 uppercase font-bold mt-0.5 leading-none">
+                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-bold mt-0.5 leading-none">
                                     marks
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-gray-500 pl-9">
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-gray-500 dark:text-gray-400 pl-9">
                                 <span className="flex items-center gap-1">
                                   <Award className="w-3 h-3 shrink-0" />
                                   {item.quizzes_completed}Q
@@ -1048,7 +1048,7 @@ export default function LeaderboardPage() {
                                   {formatTime(item.total_time_seconds)}
                                 </span>
                                 {item.average_score != null && (
-                                  <span className="font-semibold text-gray-600">
+                                  <span className="font-semibold text-gray-600 dark:text-gray-300">
                                     Avg {item.average_score}%
                                   </span>
                                 )}
@@ -1057,13 +1057,13 @@ export default function LeaderboardPage() {
                           );
                         })}
                       </div>
-                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 via-white/60 to-transparent" />
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-white/95 dark:from-slate-800/95 via-white/60 dark:via-slate-800/60 to-transparent" />
                     </div>
 
                     {/* Footer hint */}
-                    <div className="px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[10px] sm:text-[11px] text-gray-500 text-center">
+                    <div className="px-4 py-2.5 bg-emerald-50/60 dark:bg-emerald-950/30 border-t border-emerald-100/60 dark:border-emerald-900/50 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 text-center">
                       සිසුන්{" "}
-                      <strong className="text-gray-700">
+                      <strong className="text-gray-700 dark:text-gray-300">
                         {topIndividuals.length}
                       </strong>
                       ක් පෙන්වයි · scroll කරලා බලන්න
@@ -1072,7 +1072,7 @@ export default function LeaderboardPage() {
 
                   {myIndividualRow && !isMyIndividualInTop && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 font-semibold px-1">
+                      <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 font-semibold px-1">
                         ✨ ඔබේ ස්ථානය (Your Rank) — {selectedSubject}
                       </div>
                       <YourRankRow item={myIndividualRow} />
@@ -1080,7 +1080,7 @@ export default function LeaderboardPage() {
                   )}
 
                   {!myIndividualRow && (
-                    <p className="text-[11px] text-center text-gray-400">
+                    <p className="text-[11px] text-center text-gray-400 dark:text-gray-500">
                       {selectedSubject} විෂයට ඔබ තවම සහභාගී වී නැත — ranking
                       එකේ ඔබේ ස්ථානයක් නොමැත.
                     </p>
@@ -1094,13 +1094,13 @@ export default function LeaderboardPage() {
             !pageLoading &&
             !noSubjectsForStream &&
             selectedSubject && (
-              <p className="text-[10px] sm:text-[11px] text-center text-gray-400 leading-relaxed px-2">
+              <p className="text-[10px] sm:text-[11px] text-center text-gray-400 dark:text-gray-500 leading-relaxed px-2">
                 {selectedSubject} ranking එකේදී —{" "}
-                <span className="font-semibold text-gray-500">
+                <span className="font-semibold text-gray-500 dark:text-gray-400">
                   මුළු ලකුණු එකතුව
                 </span>{" "}
                 ඉහළම කෙනා ඉහළට · සම ලකුණු විට{" "}
-                <span className="font-semibold text-gray-500">
+                <span className="font-semibold text-gray-500 dark:text-gray-400">
                   අඩු මුළු කාලය
                 </span>{" "}
                 ගතකළ කෙනා ජය ගනී.
@@ -1117,28 +1117,28 @@ export default function LeaderboardPage() {
 // ------------------------------------------------------------
 function YourRankRow({ item }: { item: IndividualRow }) {
   return (
-    <div className="bg-linear-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-xl shadow-sm p-3 sm:p-5">
+    <div className="bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-2 border-emerald-300 dark:border-emerald-800 rounded-xl shadow-sm p-3 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-          <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-sm">
+          <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-sm">
             #{item.rank}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <h3 className="font-bold text-gray-900 text-sm truncate">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
                 {item.full_name}
               </h3>
-              <span className="text-[9px] font-bold uppercase bg-emerald-600 text-white px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-[9px] font-bold uppercase bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 rounded shrink-0">
                 You
               </span>
               <span
-                className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded bg-white text-gray-700 uppercase shrink-0 border border-gray-200"
+                className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 uppercase shrink-0 border border-gray-200 dark:border-slate-700"
                 title={mediumFull(item.medium)}
               >
                 {mediumShort(item.medium)}
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
               {item.school}
             </p>
           </div>
@@ -1148,17 +1148,17 @@ function YourRankRow({ item }: { item: IndividualRow }) {
           <Stat
             label="Marks"
             value={String(item.total_score)}
-            accent="text-emerald-700"
+            accent="text-emerald-700 dark:text-emerald-400"
           />
           <Stat
             label="Avg"
             value={item.average_score != null ? `${item.average_score}%` : "—"}
-            accent="text-teal-700"
+            accent="text-teal-700 dark:text-teal-400"
           />
           <Stat
             label="Time"
             value={formatTime(item.total_time_seconds)}
-            accent="text-indigo-700"
+            accent="text-indigo-700 dark:text-indigo-400"
             mono
           />
         </div>
@@ -1172,7 +1172,7 @@ function YourRankRow({ item }: { item: IndividualRow }) {
 // ------------------------------------------------------------
 function YourSchoolRow({ item }: { item: SchoolRow }) {
   return (
-    <div className="bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-sm p-3 sm:p-5">
+    <div className="bg-linear-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border-2 border-amber-300 dark:border-amber-800 rounded-xl shadow-sm p-3 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-600 text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-sm">
@@ -1180,14 +1180,14 @@ function YourSchoolRow({ item }: { item: SchoolRow }) {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <h3 className="font-bold text-gray-900 text-sm leading-snug wrap-break-word">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm leading-snug wrap-break-word">
                 {item.school}
               </h3>
               <span className="text-[9px] font-bold uppercase bg-amber-600 text-white px-1.5 py-0.5 rounded shrink-0">
                 Your School
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
               {item.students_count} reg · {item.total_quizzes} att ·{" "}
               {item.participating_students} part
             </p>
@@ -1198,17 +1198,17 @@ function YourSchoolRow({ item }: { item: SchoolRow }) {
           <Stat
             label="Academic"
             value={`${fmt(item.academic_score)}/80`}
-            accent="text-blue-700"
+            accent="text-blue-700 dark:text-blue-400"
           />
           <Stat
             label="Participation"
             value={`${fmt(item.participation_score)}/20`}
-            accent="text-emerald-700"
+            accent="text-emerald-700 dark:text-emerald-400"
           />
           <Stat
             label="Total"
             value={`${fmt(item.total_score)}/100`}
-            accent="text-teal-700"
+            accent="text-teal-700 dark:text-teal-400"
           />
         </div>
       </div>
@@ -1229,7 +1229,7 @@ function Stat({
 }) {
   return (
     <div className="text-center shrink-0">
-      <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 tracking-wider leading-none">
+      <p className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider leading-none">
         {label}
       </p>
       <p

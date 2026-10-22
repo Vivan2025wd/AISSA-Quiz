@@ -118,27 +118,27 @@ export default function AdminRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-md p-6 sm:p-8 space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-black/30 p-6 sm:p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-2xl mb-1">
+          <div className="inline-flex p-3 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-2xl mb-1">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Admin ගිණුම සාදන්න</h1>
-          <p className="text-xs text-gray-500">
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">Admin ගිණුම සාදන්න</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             AISSA කමිටු සාමාජිකයින් සඳහා පමණි. Access Code එකක් අවශ්‍යයි.
           </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
+          <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl">
             {error}
           </div>
         )}
 
         {needsEmailConfirm ? (
-          <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-xl text-center space-y-2">
-            <CheckCircle2 className="w-8 h-8 mx-auto text-green-600" />
+          <div className="p-4 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-sm rounded-xl text-center space-y-2">
+            <CheckCircle2 className="w-8 h-8 mx-auto text-green-600 dark:text-green-400" />
             <p className="font-bold">ගිණුම සාදන ලදී!</p>
             <p className="text-xs">
               ඔබගේ email ලිපිනය තහවුරු කිරීමට එවා ඇති link එක click කරන්න. ඉන් පසු
@@ -146,7 +146,7 @@ export default function AdminRegisterPage() {
             </p>
             <Link
               href="/auth/login"
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline mt-2"
+              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline mt-2"
             >
               ඇතුළු වන්න (Login) <ArrowRight className="w-3 h-3" />
             </Link>
@@ -154,69 +154,69 @@ export default function AdminRegisterPage() {
         ) : (
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">සම්පූර්ණ නම</label>
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">සම්පූර්ණ නම</label>
             <div className="relative">
-              <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <User className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 disabled={isSubmitting}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none disabled:opacity-60"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">ඊමේල්</label>
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">ඊමේල්</label>
             <div className="relative">
-              <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Mail className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isSubmitting}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none disabled:opacity-60"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">මුරපදය</label>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">මුරපදය</label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none disabled:opacity-60"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">තහවුරු කරන්න</label>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">තහවුරු කරන්න</label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none disabled:opacity-60"
                 />
               </div>
             </div>
           </div>
 
-          <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-1.5">
-            <label className="flex text-xs font-extrabold text-indigo-900 uppercase items-center gap-1.5">
-              <KeyRound className="w-4 h-4 text-indigo-600" /> Admin Access Code
+          <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-1.5">
+            <label className="flex text-xs font-extrabold text-indigo-900 dark:text-indigo-200 uppercase items-center gap-1.5">
+              <KeyRound className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Admin Access Code
             </label>
             <input
               type="password"
@@ -225,9 +225,9 @@ export default function AdminRegisterPage() {
               required
               disabled={isSubmitting}
               placeholder="Committee එකෙන් ලබාදුන් Code එක"
-              className="w-full px-3 py-3 bg-white border border-indigo-300 rounded-xl font-bold text-sm text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none placeholder:font-normal disabled:opacity-60"
+              className="w-full px-3 py-3 bg-white dark:bg-slate-900/60 border border-indigo-300 dark:border-indigo-800 rounded-xl font-bold text-sm text-indigo-900 dark:text-indigo-200 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none placeholder:font-normal placeholder:text-indigo-300 dark:placeholder:text-indigo-400/60 disabled:opacity-60"
             />
-            <p className="text-[11px] text-indigo-700 font-medium">
+            <p className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
               * වැරදි Code එකක් නම් ගිණුම සාදනු ලබන්නේ සාමාන්‍ය (Non-Admin) ලෙසයි.
             </p>
           </div>
@@ -235,7 +235,7 @@ export default function AdminRegisterPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm transition mt-2 disabled:opacity-60"
+            className="w-full py-3.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm transition mt-2 disabled:opacity-60"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -249,8 +249,8 @@ export default function AdminRegisterPage() {
         )}
 
         {!needsEmailConfirm && (
-        <div className="pt-4 border-t text-center text-xs text-gray-600">
-          <Link href="/auth/login" className="font-bold text-indigo-600 hover:underline">
+        <div className="pt-4 border-t border-gray-200 dark:border-slate-700 text-center text-xs text-gray-600 dark:text-gray-400">
+          <Link href="/auth/login" className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
             දැනටමත් ගිණුමක් තිබේද? ඇතුළු වන්න
           </Link>
         </div>

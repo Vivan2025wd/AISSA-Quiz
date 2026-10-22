@@ -281,7 +281,7 @@ function QuestionEditorForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-white/70 overflow-hidden max-h-[94vh] sm:my-8 flex flex-col">
+      <div className="relative w-full max-w-3xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-white/70 dark:border-slate-700 overflow-hidden max-h-[94vh] sm:my-8 flex flex-col">
 
         {/* ═══════════════ HEADER BANNER — DARK THEME ═══════════════ */}
         <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shrink-0 border-b border-slate-700/50">
@@ -352,7 +352,7 @@ function QuestionEditorForm({
           {/* Scrollable body */}
           <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-5">
             {error && (
-              <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+              <div className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
                 <span>⚠️</span>
                 <span>{error}</span>
               </div>
@@ -361,14 +361,14 @@ function QuestionEditorForm({
             {/* Metadata row — Subject + auto-derived Stream */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                   විෂය (Subject)
                 </label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full p-2.5 sm:p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                  className="w-full p-2.5 sm:p-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                 >
                   {subjects.map((s) => (
                     <option key={s} value={s}>
@@ -379,16 +379,16 @@ function QuestionEditorForm({
               </div>
 
               <div>
-                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                   Stream (Auto)
                 </label>
                 <div
                   className={`w-full p-2.5 sm:p-3 rounded-xl font-medium text-xs sm:text-sm border ${
                     derivedStream === null
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      ? "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
                       : derivedStream === BIO_STREAM
-                        ? "bg-purple-50 border-purple-200 text-purple-800"
-                        : "bg-cyan-50 border-cyan-200 text-cyan-800"
+                        ? "bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300"
+                        : "bg-cyan-50 dark:bg-cyan-950/50 border-cyan-200 dark:border-cyan-800 text-cyan-800 dark:text-cyan-300"
                   }`}
                 >
                   {derivedStream === null
@@ -397,7 +397,7 @@ function QuestionEditorForm({
                       ? "Bio Science only"
                       : "Maths stream only"}
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-snug hidden sm:block">
+                <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug hidden sm:block">
                   {derivedStream === null
                     ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
                     : derivedStream === BIO_STREAM
@@ -409,7 +409,7 @@ function QuestionEditorForm({
 
             {/* Topic */}
             <div>
-              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                 පාඩම / මාතෘකාව (Topic - Optional)
               </label>
               <input
@@ -418,7 +418,7 @@ function QuestionEditorForm({
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full p-2.5 sm:p-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                className="w-full p-2.5 sm:p-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
               />
             </div>
 
@@ -432,15 +432,15 @@ function QuestionEditorForm({
             {/* ═══ LANGUAGE TABS — MOBILE-TIGHTENED ═══ */}
             <div>
               <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-2 flex-wrap">
-                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase">
+                <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
                   භාෂාව අනුව ප්‍රශ්නය
                 </label>
-                <span className="text-[10px] sm:text-[11px] text-gray-500">
+                <span className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400">
                   * SI · EN අනිවාර්යයි · Tamil optional
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-gray-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-white/60 dark:border-slate-700">
                 {tabs.map((t) => {
                   const content = getContent(t.key);
                   const filled = content.questionText.trim().length > 0;
@@ -451,14 +451,14 @@ function QuestionEditorForm({
                       onClick={() => setActiveLang(t.key)}
                       className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 sm:gap-1.5 ${
                         activeLang === t.key
-                          ? "bg-white text-emerald-700 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
+                          ? "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-sm"
+                          : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                       }`}
                     >
                       {t.label}
-                      {t.required && <span className="text-red-500">*</span>}
+                      {t.required && <span className="text-red-500 dark:text-red-400">*</span>}
                       {filled && activeLang !== t.key && (
-                        <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                       )}
                     </button>
                   );
@@ -466,9 +466,9 @@ function QuestionEditorForm({
               </div>
 
               {/* Content for active tab */}
-              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4 p-3 sm:p-4 bg-emerald-50/40 border border-emerald-100/60 rounded-xl">
+              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4 p-3 sm:p-4 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-100/60 dark:border-emerald-900/50 rounded-xl">
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                     ප්‍රශ්නය ({tabs.find((t) => t.key === activeLang)?.label})
                   </label>
                   <textarea
@@ -480,12 +480,12 @@ function QuestionEditorForm({
                     }
                     required={activeLang !== "ta"}
                     disabled={isSubmitting}
-                    className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                   />
                 </div>
 
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
                     පිළිතුරු විකල්ප —{" "}
                     {tabs.find((t) => t.key === activeLang)?.label}
                   </label>
@@ -505,7 +505,7 @@ function QuestionEditorForm({
                             (isOptionalFifth && !hasOption5) ||
                             activeLang !== "si"
                           }
-                          className={`w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 focus:ring-emerald-500 shrink-0 ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-emerald-500 dark:focus:ring-emerald-400 shrink-0 ${
                             activeLang === "si"
                               ? "cursor-pointer"
                               : "opacity-30 cursor-not-allowed"
@@ -516,7 +516,7 @@ function QuestionEditorForm({
                               : "Correct answer is selected in the Sinhala tab"
                           }
                         />
-                        <span className="w-5 sm:w-7 font-bold text-gray-700 text-xs sm:text-sm shrink-0">
+                        <span className="w-5 sm:w-7 font-bold text-gray-700 dark:text-gray-300 text-xs sm:text-sm shrink-0">
                           ({idx + 1})
                         </span>
                         <input
@@ -532,12 +532,12 @@ function QuestionEditorForm({
                           }
                           required={!isOptionalFifth && activeLang !== "ta"}
                           disabled={isSubmitting}
-                          className="flex-1 min-w-0 p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                          className="flex-1 min-w-0 p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                         />
                       </div>
                     );
                   })}
-                  <p className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold flex items-start gap-1 leading-snug">
+                  <p className="text-[10px] sm:text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-start gap-1 leading-snug">
                     <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 mt-0.5" />
                     <span>
                       <span className="hidden sm:inline">
@@ -551,8 +551,8 @@ function QuestionEditorForm({
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
-                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+                  <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 dark:text-amber-400 shrink-0" />
                     <span className="truncate">
                       විස්තරය
                       <span className="hidden sm:inline"> — Optional</span>
@@ -566,7 +566,7 @@ function QuestionEditorForm({
                       setContent(activeLang, { explanation: e.target.value })
                     }
                     disabled={isSubmitting}
-                    className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                    className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                   />
                 </div>
               </div>
@@ -583,19 +583,19 @@ function QuestionEditorForm({
           </div>
 
           {/* ═══ FOOTER (fixed at bottom) ═══ */}
-          <div className="shrink-0 px-3.5 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50/80 backdrop-blur-sm flex items-center gap-2 sm:gap-3">
+          <div className="shrink-0 px-3.5 sm:px-6 py-3 sm:py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/60 backdrop-blur-sm flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs sm:text-sm transition"
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-900 text-gray-700 dark:text-gray-200 font-semibold rounded-xl text-xs sm:text-sm transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-xs sm:text-sm"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-xs sm:text-sm"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

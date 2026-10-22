@@ -97,7 +97,7 @@ export default function QuestionsPage() {
   // ============================================================
   if (loading && questions.length === 0) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 text-sm">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 dark:text-gray-400 text-sm">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/loading-screen.png"
@@ -105,7 +105,7 @@ export default function QuestionsPage() {
           className="w-20 h-20 sm:w-32 sm:h-32 object-contain animate-pulse"
         />
         <div className="flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+          <Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />
           Question Bank එක Load වෙමින්...
         </div>
       </div>
@@ -197,16 +197,16 @@ export default function QuestionsPage() {
       )}
 
       {/* ═══ Filter Bar — MOBILE-TIGHTENED ═══ */}
-      <div className="shrink-0 bg-white/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 shadow-sm grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+      <div className="shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
         {/* Search — spans both columns on mobile */}
         <div className="relative col-span-2 sm:col-span-1">
-          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-3 top-3 sm:top-3.5" />
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-3 sm:top-3.5" />
           <input
             type="text"
             placeholder="Search by text or topic..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 bg-white/60 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 focus:bg-white transition-all"
+            className="w-full pl-9 pr-3 py-2.5 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
           />
         </div>
 
@@ -214,7 +214,7 @@ export default function QuestionsPage() {
           <select
             value={filterSubject}
             onChange={(e) => setFilterSubject(e.target.value)}
-            className="w-full px-2 sm:px-3 py-2.5 bg-white/60 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 focus:bg-white transition-all"
+            className="w-full px-2 sm:px-3 py-2.5 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
           >
             {subjectFilters.map((s) => (
               <option key={s} value={s}>
@@ -228,7 +228,7 @@ export default function QuestionsPage() {
           <select
             value={filterStream}
             onChange={(e) => setFilterStream(e.target.value)}
-            className="w-full px-2 sm:px-3 py-2.5 bg-white/60 border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 focus:bg-white transition-all"
+            className="w-full px-2 sm:px-3 py-2.5 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
           >
             {streamFilters.map((st) => (
               <option key={st} value={st}>
@@ -240,28 +240,28 @@ export default function QuestionsPage() {
       </div>
 
       {/* ═══ Questions List — flex-1 + min-h-0 so ONLY this scrolls ═══ */}
-      <div className="flex-1 min-h-0 bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
         {/* Header strip */}
-        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between gap-2">
-          <h2 className="text-sm sm:text-lg font-bold text-gray-900">
+        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
+          <h2 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100">
             ප්‍රශ්න ලැයිස්තුව{" "}
-            <span className="text-emerald-700">
+            <span className="text-emerald-700 dark:text-emerald-400">
               ({filteredQuestions.length})
             </span>
           </h2>
-          <span className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap">
+          <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
             <span className="hidden sm:inline">Total in Bank: </span>
-            <strong className="text-gray-600">{questions.length}</strong>
+            <strong className="text-gray-600 dark:text-gray-300">{questions.length}</strong>
           </span>
         </div>
 
         {loading ? (
-          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 text-xs sm:text-sm">
-            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600" />
+          <div className="flex-1 min-h-0 flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-emerald-600 dark:text-emerald-400" />
             Question Bank එක Load වෙමින්...
           </div>
         ) : filteredQuestions.length === 0 ? (
-          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 text-center px-4 text-xs sm:text-sm">
+          <div className="flex-1 min-h-0 flex items-center justify-center text-gray-400 dark:text-gray-500 text-center px-4 text-xs sm:text-sm">
             ප්‍රශ්න කිසිවක් හමු නොවීය. නව ප්‍රශ්නයක් එකතු කිරීමට &quot;Add New Question&quot; ඔබන්න.
           </div>
         ) : (
@@ -280,26 +280,26 @@ export default function QuestionsPage() {
                 );
 
                 const streamBadgeClass = !q.stream
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                   : q.stream === "Bio Science"
-                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                    ? "bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
                     : q.stream === "Maths"
-                      ? "bg-cyan-50 text-cyan-700 border-cyan-200"
-                      : "bg-gray-50 text-gray-700 border-gray-200";
+                      ? "bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800"
+                      : "bg-gray-50 dark:bg-slate-900/60 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-700";
 
                 return (
                   <div
                     key={q.id}
-                    className="p-3 sm:p-5 border border-gray-200 rounded-xl bg-white/60 hover:bg-white hover:border-emerald-300 hover:shadow-md transition space-y-2.5 sm:space-y-3"
+                    className="p-3 sm:p-5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white/60 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900/60 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md transition space-y-2.5 sm:space-y-3"
                   >
                     <div className="flex justify-between items-start gap-2 sm:gap-4">
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                          <span className="px-1.5 sm:px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] sm:text-xs font-bold rounded-md">
+                          <span className="px-1.5 sm:px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs font-bold rounded-md">
                             #{idx + 1}
                           </span>
                           {q.subject && (
-                            <span className="px-1.5 sm:px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] sm:text-xs font-bold rounded-md border border-teal-200">
+                            <span className="px-1.5 sm:px-2 py-0.5 bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 text-[10px] sm:text-xs font-bold rounded-md border border-teal-200 dark:border-teal-800">
                               {q.subject}
                             </span>
                           )}
@@ -309,13 +309,13 @@ export default function QuestionsPage() {
                             {q.stream ?? "Common"}
                           </span>
                           {q.topic && (
-                            <span className="px-1.5 sm:px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] sm:text-xs font-semibold rounded-md max-w-30 sm:max-w-none truncate">
+                            <span className="px-1.5 sm:px-2 py-0.5 bg-gray-100 dark:bg-slate-900/60 text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs font-semibold rounded-md max-w-30 sm:max-w-none truncate">
                               {q.topic}
                             </span>
                           )}
                         </div>
 
-                        <p className="text-sm sm:text-base font-medium text-gray-900 leading-snug sm:leading-relaxed pt-1 wrap-break-word">
+                        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 leading-snug sm:leading-relaxed pt-1 wrap-break-word">
                           {q.question_text}
                         </p>
                       </div>
@@ -323,7 +323,7 @@ export default function QuestionsPage() {
                       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                         <button
                           onClick={() => setEditingQuestion(q)}
-                          className="p-1.5 sm:px-3 sm:py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition text-xs font-bold flex items-center gap-1.5"
+                          className="p-1.5 sm:px-3 sm:py-1.5 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 rounded-lg transition text-xs font-bold flex items-center gap-1.5"
                           title="Edit Question"
                           aria-label="Edit Question"
                         >
@@ -332,7 +332,7 @@ export default function QuestionsPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(q.id)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                          className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
                           title="Delete Question"
                           aria-label="Delete Question"
                         >
@@ -347,13 +347,13 @@ export default function QuestionsPage() {
                         <img
                           src={q.image_url}
                           alt="Diagram"
-                          className="max-h-40 sm:max-h-48 rounded-lg border border-gray-200 object-contain bg-white"
+                          className="max-h-40 sm:max-h-48 rounded-lg border border-gray-200 dark:border-slate-700 object-contain bg-white dark:bg-slate-900"
                         />
                       </div>
                     )}
 
                     {/* Options — 1-col on mobile (already), tighter padding */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-gray-200/60">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-gray-200/60 dark:border-slate-700">
                       {optionsList.map((opt, optIdx) => {
                         const isCorrect = q.correct_option === optIdx;
                         return (
@@ -361,22 +361,22 @@ export default function QuestionsPage() {
                             key={optIdx}
                             className={`p-2 sm:p-2.5 rounded-lg text-xs font-medium flex items-center gap-2 border transition ${
                               isCorrect
-                                ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
-                                : "bg-white border-gray-200 text-gray-700"
+                                ? "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-bold"
+                                : "bg-white dark:bg-slate-900/40 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300"
                             }`}
                           >
                             <span
                               className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                                 isCorrect
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-gray-200 text-gray-700"
+                                  ? "bg-emerald-600 dark:bg-emerald-500 text-white"
+                                  : "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200"
                               }`}
                             >
                               {optIdx + 1}
                             </span>
                             <span className="flex-1 wrap-break-word">{opt}</span>
                             {isCorrect && (
-                              <span className="px-1.5 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-bold rounded flex items-center gap-0.5 shrink-0">
+                              <span className="px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 text-[10px] font-bold rounded flex items-center gap-0.5 shrink-0">
                                 <Check className="w-3 h-3" />
                                 <span className="hidden sm:inline">Correct</span>
                               </span>
@@ -388,19 +388,19 @@ export default function QuestionsPage() {
 
                     {/* Explanation + explanation diagram */}
                     {(q.explanation || q.explanation_image_url) && (
-                      <div className="p-2 sm:p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-lg text-xs text-amber-900 space-y-2">
+                      <div className="p-2 sm:p-2.5 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 rounded-lg text-xs text-amber-900 dark:text-amber-200 space-y-2">
                         {q.explanation && (
                           <div>
-                            <span className="font-bold flex items-center gap-1 mb-0.5 text-amber-950">
-                              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" /> Explanation:
+                            <span className="font-bold flex items-center gap-1 mb-0.5 text-amber-950 dark:text-amber-100">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" /> Explanation:
                             </span>
                             <span className="wrap-break-word">{q.explanation}</span>
                           </div>
                         )}
                         {q.explanation_image_url && (
                           <div className="pt-1">
-                            <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1 mb-1">
-                              <Sparkles className="w-3 h-3 text-amber-600 shrink-0" /> Diagram
+                            <span className="text-[10px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1 mb-1">
+                              <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" /> Diagram
                             </span>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -408,7 +408,7 @@ export default function QuestionsPage() {
                               alt="Explanation diagram"
                               loading="lazy"
                               decoding="async"
-                              className="max-h-32 sm:max-h-40 rounded-lg border border-amber-200 bg-white object-contain"
+                              className="max-h-32 sm:max-h-40 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-white dark:bg-slate-900 object-contain"
                             />
                           </div>
                         )}
@@ -420,9 +420,9 @@ export default function QuestionsPage() {
             </div>
 
             {/* Footer hint */}
-            <div className="shrink-0 px-3 sm:px-4 py-2.5 bg-emerald-50/60 border-t border-emerald-100/60 text-[10px] sm:text-[11px] text-gray-500 text-center">
+            <div className="shrink-0 px-3 sm:px-4 py-2.5 bg-emerald-50/60 dark:bg-emerald-950/30 border-t border-emerald-100/60 dark:border-emerald-900/50 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 text-center">
               ප්‍රශ්න{" "}
-              <strong className="text-gray-700">
+              <strong className="text-gray-700 dark:text-gray-300">
                 {filteredQuestions.length}
               </strong>
               ක් පෙන්වයි · scroll කරලා බලන්න

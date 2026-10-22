@@ -124,7 +124,7 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
   }, [quizId]);
 
   return (
-    <div className="relative overflow-hidden bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-white/70">
+    <div className="relative overflow-hidden bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl shadow-sm dark:shadow-black/30 border border-white/70 dark:border-slate-700">
       {/* ═══════════ HEADER ═══════════ */}
       <div className="relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white px-5 py-4">
         {/* dot grid */}
@@ -167,16 +167,16 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
       {/* ═══════════ BODY ═══════════ */}
       <div className="p-4 sm:p-5">
         {loading ? (
-          <div className="text-center text-xs text-gray-500 py-8 flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />{" "}
+          <div className="text-center text-xs text-gray-500 dark:text-gray-400 py-8 flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />{" "}
             Loading leaderboard...
           </div>
         ) : leaderboard.length === 0 ? (
           <div className="text-center py-8">
-            <div className="inline-flex p-3 bg-emerald-50 text-emerald-600 rounded-2xl mb-2">
+            <div className="inline-flex p-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-2xl mb-2">
               <Trophy className="w-6 h-6" />
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               තවම කිසිවෙක් මෙම Quiz එකට සහභාගී වී නැත.
             </p>
           </div>
@@ -192,12 +192,12 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
                   key={entry.id}
                   className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition ${
                     isFirst
-                      ? "bg-linear-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-sm"
+                      ? "bg-linear-to-r from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 border-amber-300 dark:border-amber-800 shadow-sm"
                       : isSecond
-                        ? "bg-linear-to-r from-gray-50 to-slate-50 border-gray-300 shadow-sm"
+                        ? "bg-linear-to-r from-gray-50 to-slate-50 dark:from-slate-900/60 dark:to-slate-800/60 border-gray-300 dark:border-slate-700 shadow-sm"
                         : isThird
-                          ? "bg-linear-to-r from-orange-50 to-amber-50 border-orange-300 shadow-sm"
-                          : "bg-white/60 border-gray-200 hover:bg-emerald-50/40 hover:border-emerald-200"
+                          ? "bg-linear-to-r from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/30 border-orange-300 dark:border-orange-800 shadow-sm"
+                          : "bg-white/60 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 hover:border-emerald-200 dark:hover:border-emerald-800"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -209,12 +209,12 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
                             isFirst
                               ? "text-yellow-500"
                               : isSecond
-                                ? "text-gray-400"
-                                : "text-amber-600"
+                                ? "text-gray-400 dark:text-slate-400"
+                                : "text-amber-600 dark:text-amber-400"
                           }`}
                         />
                       ) : (
-                        <span className="font-bold text-emerald-700 text-sm">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
                           #{index + 1}
                         </span>
                       )}
@@ -222,10 +222,10 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
 
                     {/* Name + School */}
                     <div className="min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate">
+                      <p className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
                         {entry.student_name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {entry.school}
                       </p>
                     </div>
@@ -233,13 +233,13 @@ export default function RealtimeLeaderboard({ quizId }: { quizId: string }) {
 
                   {/* Score */}
                   <div className="text-right shrink-0">
-                    <p className="font-extrabold text-emerald-700 text-sm">
+                    <p className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">
                       {entry.score}
-                      <span className="text-gray-400 font-semibold">
+                      <span className="text-gray-400 dark:text-gray-500 font-semibold">
                         /{entry.total_marks}
                       </span>
                     </p>
-                    <p className="text-[10px] text-gray-400 font-mono">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
                       {entry.time_spent_seconds}s
                     </p>
                   </div>

@@ -118,8 +118,10 @@ export default function SuperAdminLayout({
 
   return (
     <SuperAdminGuard>
-      {/* ── Outer shell: locked height on desktop so only <main> scrolls ── */}
-      <div className="min-h-screen md:h-screen md:overflow-hidden bg-gray-100 flex flex-col md:flex-row">
+      {/* ── Outer shell: locked height on desktop so only <main> scrolls.
+           The only light-mode element is this background — everything else
+           inside is already dark-themed, so only this class gets a dark variant. ── */}
+      <div className="min-h-screen md:h-screen md:overflow-hidden bg-gray-100 dark:bg-slate-950 flex flex-col md:flex-row">
         {/* ═══ MOBILE TOP BAR — amber themed ═══
             `sticky` alone provides the positioning context for the inner
             absolute children — no `relative` needed (was causing a

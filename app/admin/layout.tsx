@@ -238,7 +238,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex flex-col md:flex-row relative">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col md:flex-row relative">
       {/* ============ MOBILE TOP BAR — DARK THEME ============ */}
       <header className="md:hidden sticky top-0 z-30 overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-slate-700/50 flex items-center justify-between px-4 py-3 shrink-0 shadow-lg shadow-black/40">
         {/* dot grid */}
@@ -336,9 +336,9 @@ export default function AdminLayout({
 
       {/* ============ MAIN CONTENT ============ */}
       <main className="flex-1 overflow-y-auto relative">
-        {/* Aurora blobs for the content area */}
-        <div className="pointer-events-none fixed top-[-15%] left-[15%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/40 rounded-full filter blur-3xl" />
-        <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/40 rounded-full filter blur-3xl" />
+        {/* Aurora blobs for the content area — dimmed in dark mode */}
+        <div className="pointer-events-none fixed top-[-15%] left-[15%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/40 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
+        <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/40 dark:bg-teal-500/10 rounded-full filter blur-3xl" />
 
         <div className="relative p-3 sm:p-4 md:p-6">
           <AdminGuard>{children}</AdminGuard>

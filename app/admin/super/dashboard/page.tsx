@@ -55,7 +55,7 @@ export default function SuperAdminDashboard() {
 
   if (loading && !stats) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-3 text-gray-500">
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/loading-screen.png"
@@ -76,56 +76,56 @@ export default function SuperAdminDashboard() {
       label: "Total Users",
       labelShort: "Users",
       value: stats?.total_users ?? 0,
-      accent: "bg-teal-50 text-teal-600",
+      accent: "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400",
     },
     {
       icon: <ShieldCheck className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Administrators",
       labelShort: "Admins",
       value: stats?.total_admins ?? 0,
-      accent: "bg-blue-50 text-blue-600",
+      accent: "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400",
     },
     {
       icon: <Crown className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Super Admins",
       labelShort: "Super",
       value: stats?.total_super_admins ?? 0,
-      accent: "bg-amber-50 text-amber-600",
+      accent: "bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400",
     },
     {
       icon: <GraduationCap className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Students",
       labelShort: "Students",
       value: stats?.total_students ?? 0,
-      accent: "bg-emerald-50 text-emerald-600",
+      accent: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400",
     },
     {
       icon: <School className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Schools",
       labelShort: "Schools",
       value: stats?.total_schools ?? 0,
-      accent: "bg-purple-50 text-purple-600",
+      accent: "bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400",
     },
     {
       icon: <Tag className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Aliases",
       labelShort: "Aliases",
       value: stats?.total_aliases ?? 0,
-      accent: "bg-cyan-50 text-cyan-600",
+      accent: "bg-cyan-50 dark:bg-cyan-950/50 text-cyan-600 dark:text-cyan-400",
     },
     {
       icon: <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Quizzes",
       labelShort: "Quizzes",
       value: stats?.total_quizzes ?? 0,
-      accent: "bg-rose-50 text-rose-600",
+      accent: "bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400",
     },
     {
       icon: <FileQuestion className="w-4 h-4 sm:w-6 sm:h-6" />,
       label: "Questions",
       labelShort: "Questions",
       value: stats?.total_questions ?? 0,
-      accent: "bg-indigo-50 text-indigo-600",
+      accent: "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400",
     },
   ];
 
@@ -203,7 +203,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       {error && (
-        <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2">
+        <div className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2">
           <span>⚠️</span>
           <span>{error}</span>
         </div>
@@ -214,16 +214,16 @@ export default function SuperAdminDashboard() {
         {cards.map((card) => (
           <div
             key={card.label}
-            className="bg-white/80 backdrop-blur-md p-2.5 sm:p-5 rounded-xl border border-white/70 shadow-sm hover:shadow-md transition"
+            className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition"
           >
             <div className={`p-1.5 sm:p-2.5 w-fit rounded-lg mb-2 sm:mb-3 ${card.accent}`}>
               {card.icon}
             </div>
-            <p className="text-[10px] sm:text-xs text-gray-500 font-medium leading-tight">
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
               <span className="hidden sm:inline">{card.label}</span>
               <span className="sm:hidden">{card.labelShort}</span>
             </p>
-            <p className="text-lg sm:text-2xl font-extrabold text-gray-900 mt-0.5 sm:mt-1 leading-tight">
+            <p className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100 mt-0.5 sm:mt-1 leading-tight">
               {card.value.toLocaleString()}
             </p>
           </div>

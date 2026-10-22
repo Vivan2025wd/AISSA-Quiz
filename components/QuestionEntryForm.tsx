@@ -282,7 +282,7 @@ export default function QuestionEntryForm(props: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-md border border-white/70 shadow-xl shadow-emerald-900/5"
+      className="relative overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-white/70 dark:border-slate-700 shadow-xl shadow-emerald-900/5 dark:shadow-black/30"
     >
       {/* ═══════════════ HEADER BANNER — MOBILE-TIGHTENED ═══════════════ */}
       <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-black text-white border-b border-slate-700/50">
@@ -368,47 +368,47 @@ export default function QuestionEntryForm(props: Props) {
       <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
 
         {isAtLimit && (
-          <div className="p-2.5 sm:p-3 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+          <div className="p-2.5 sm:p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             මෙම Quiz එකට උපරිම ප්‍රශ්න 20 සම්පූර්ණ වී ඇත.
           </div>
         )}
 
         {error && (
-          <div className="p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+          <div className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] sm:text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] sm:text-xs font-semibold rounded-xl flex items-center gap-2 shadow-sm">
+          <div className="p-2.5 sm:p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] sm:text-xs font-semibold rounded-xl flex items-center gap-2 shadow-sm">
             <CheckCircle2 className="w-4 h-4" /> ප්‍රශ්නය සාර්ථකව එකතු කරන ලදී!
           </div>
         )}
 
         {/* Locked target info */}
         {isLocked ? (
-          <div className="p-3 sm:p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
-            <p className="text-[10px] sm:text-xs font-bold text-emerald-900 uppercase flex items-center gap-1.5">
+          <div className="p-3 sm:p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+            <p className="text-[10px] sm:text-xs font-bold text-emerald-900 dark:text-emerald-200 uppercase flex items-center gap-1.5">
               <FileQuestion className="w-3.5 h-3.5" />
               Selected Quiz
             </p>
-            <p className="text-xs sm:text-sm font-semibold text-emerald-800 mt-0.5 wrap-break-word">
+            <p className="text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-300 mt-0.5 wrap-break-word">
               {props.quizLabel}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                 විෂය (Subject)
               </label>
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full p-2.5 sm:p-3 bg-white/60 border border-gray-300 text-gray-900 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                className="w-full p-2.5 sm:p-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
               >
                 {subjects.map((s) => (
                   <option key={s} value={s}>
@@ -419,16 +419,16 @@ export default function QuestionEntryForm(props: Props) {
             </div>
 
             <div>
-              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                 Stream (Auto)
               </label>
               <div
                 className={`w-full p-2.5 sm:p-3 rounded-xl font-medium text-xs sm:text-sm border ${
                   derivedStream === null
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    ? "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
                     : derivedStream === BIO_STREAM
-                      ? "bg-purple-50 border-purple-200 text-purple-800"
-                      : "bg-cyan-50 border-cyan-200 text-cyan-800"
+                      ? "bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300"
+                      : "bg-cyan-50 dark:bg-cyan-950/50 border-cyan-200 dark:border-cyan-800 text-cyan-800 dark:text-cyan-300"
                 }`}
               >
                 {derivedStream === null
@@ -437,7 +437,7 @@ export default function QuestionEntryForm(props: Props) {
                     ? "Bio Science only"
                     : "Maths stream only"}
               </div>
-              <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-snug">
+              <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug">
                 {derivedStream === null
                   ? "* Physics සහ Chemistry හැම science stream එකකටම පොදුයි."
                   : derivedStream === BIO_STREAM
@@ -450,7 +450,7 @@ export default function QuestionEntryForm(props: Props) {
 
         {/* Topic */}
         <div>
-          <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+          <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
             පාඩම / මාතෘකාව (Topic)
           </label>
           <input
@@ -459,7 +459,7 @@ export default function QuestionEntryForm(props: Props) {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             disabled={isSubmitting || isAtLimit}
-            className="w-full p-2.5 sm:p-3 bg-white/60 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+            className="w-full p-2.5 sm:p-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
           />
         </div>
 
@@ -473,17 +473,17 @@ export default function QuestionEntryForm(props: Props) {
         {/* ═══════════════ LANGUAGE TABS — MOBILE-TIGHTENED ═══════════════ */}
         <div className="space-y-2.5 sm:space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 uppercase">
-              <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
+            <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
+              <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400" />
               භාෂාව අනුව ප්‍රශ්නය
             </label>
-            <span className="text-[10px] sm:text-[11px] text-gray-500">
-              <span className="text-red-500">*</span> සිංහල · EN &nbsp;|&nbsp; Tamil opt
+            <span className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="text-red-500 dark:text-red-400">*</span> සිංහල · EN &nbsp;|&nbsp; Tamil opt
             </span>
           </div>
 
           {/* Tab bar */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-white/60">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-gray-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-white/60 dark:border-slate-700">
             {tabs.map((lang) => {
               const meta = LANG_META[lang];
               const filled = isTabFilled(lang);
@@ -495,14 +495,14 @@ export default function QuestionEntryForm(props: Props) {
                   onClick={() => setActiveLang(lang)}
                   className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 sm:gap-1.5 ${
                     isActive
-                      ? "bg-white text-emerald-700 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   }`}
                 >
                   {meta.nativeLabel}
-                  {meta.required && <span className="text-red-500">*</span>}
+                  {meta.required && <span className="text-red-500 dark:text-red-400">*</span>}
                   {filled && !isActive && (
-                    <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                   )}
                 </button>
               );
@@ -510,10 +510,10 @@ export default function QuestionEntryForm(props: Props) {
           </div>
 
           {/* Active tab content */}
-          <div className="p-3 sm:p-4 bg-emerald-50/40 border border-emerald-100/60 rounded-xl space-y-3 sm:space-y-4">
+          <div className="p-3 sm:p-4 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-100/60 dark:border-emerald-900/50 rounded-xl space-y-3 sm:space-y-4">
             {/* Question text */}
             <div>
-              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
+              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
                 ප්‍රශ්නය — {activeMeta.nativeLabel}
               </label>
               <textarea
@@ -525,13 +525,13 @@ export default function QuestionEntryForm(props: Props) {
                 }
                 required={activeMeta.required}
                 disabled={isSubmitting || isAtLimit}
-                className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
               />
             </div>
 
             {/* Options — tighter on mobile */}
             <div className="space-y-1.5 sm:space-y-2">
-              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 uppercase">
+              <label className="block text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
                 පිළිතුරු විකල්ප — {activeMeta.nativeLabel}
               </label>
 
@@ -557,13 +557,13 @@ export default function QuestionEntryForm(props: Props) {
                           ? "නිවැරදි පිළිතුර තෝරන්න"
                           : "Correct answer is set on the Sinhala tab"
                       }
-                      className={`w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 focus:ring-emerald-500 shrink-0 ${
+                      className={`w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-emerald-500 dark:focus:ring-emerald-400 shrink-0 ${
                         showRadioHere && !radioDisabled
                           ? "cursor-pointer"
                           : "cursor-not-allowed opacity-30"
                       }`}
                     />
-                    <span className="w-5 sm:w-7 font-bold text-gray-700 text-xs sm:text-sm shrink-0">
+                    <span className="w-5 sm:w-7 font-bold text-gray-700 dark:text-gray-300 text-xs sm:text-sm shrink-0">
                       ({idx + 1})
                     </span>
                     <input
@@ -579,14 +579,14 @@ export default function QuestionEntryForm(props: Props) {
                       }
                       required={!isOptionalFifth && activeMeta.required}
                       disabled={isSubmitting || isAtLimit}
-                      className="flex-1 min-w-0 p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                      className="flex-1 min-w-0 p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
                     />
                   </div>
                 );
               })}
 
               {activeLang === "si" ? (
-                <p className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold flex items-start gap-1 leading-snug">
+                <p className="text-[10px] sm:text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-start gap-1 leading-snug">
                   <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 mt-0.5" />
                   <span>
                     <span className="hidden sm:inline">
@@ -598,7 +598,7 @@ export default function QuestionEntryForm(props: Props) {
                   </span>
                 </p>
               ) : (
-                <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium leading-snug">
+                <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-snug">
                   <span className="hidden sm:inline">
                     නිවැරදි පිළිතුර සිංහල tab එකේ තෝරන ලද්දකි. මෙතන ඇති විකල්ප පිළිවෙලම සමාන විය යුතුයි
                     (Option 1 = Option 1 in Sinhala, etc.).
@@ -612,8 +612,8 @@ export default function QuestionEntryForm(props: Props) {
 
             {/* Explanation */}
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 uppercase mb-1.5 sm:mb-2">
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+              <label className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 dark:text-amber-400 shrink-0" />
                 <span className="truncate">
                   විස්තරය — {activeMeta.nativeLabel}
                   <span className="hidden sm:inline"> (Optional)</span>
@@ -627,21 +627,21 @@ export default function QuestionEntryForm(props: Props) {
                   setContent(activeLang, { explanation: e.target.value })
                 }
                 disabled={isSubmitting || isAtLimit}
-                className="w-full p-2.5 sm:p-3 bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none disabled:opacity-60 transition"
+                className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
               />
             </div>
           </div>
 
           {/* Progress indicator */}
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-gray-500 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 flex-wrap">
             <span className="font-semibold">සම්පූර්ණ කළ භාෂා:</span>
             {tabs.map((lang) => (
               <span
                 key={lang}
                 className={`px-1.5 sm:px-2 py-0.5 rounded-md font-bold ${
                   isTabFilled(lang)
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-gray-100 text-gray-400"
+                    ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300"
+                    : "bg-gray-100 dark:bg-slate-900/60 text-gray-400 dark:text-gray-500"
                 }`}
               >
                 {LANG_META[lang].nativeLabel}
@@ -665,7 +665,7 @@ export default function QuestionEntryForm(props: Props) {
         <button
           type="submit"
           disabled={isSubmitting || isAtLimit}
-          className="w-full py-3 sm:py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-sm sm:text-base"
+          className="w-full py-3 sm:py-3.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-bold rounded-xl flex justify-center items-center gap-2 shadow-sm hover:shadow-md transition disabled:opacity-60 text-sm sm:text-base"
         >
           {isSubmitting ? (
             <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />

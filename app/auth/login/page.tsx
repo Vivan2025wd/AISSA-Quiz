@@ -31,9 +31,9 @@ export default function StudentLoginPage() {
 // ============================================================
 function LoginPageFallback() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4 overflow-hidden">
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative flex items-center justify-center p-4 overflow-hidden">
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 dark:bg-teal-500/10 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-md">
         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black border border-slate-700/50 shadow-xl shadow-black/40 mb-4">
@@ -221,15 +221,15 @@ function StudentLoginPageInner() {
     }
 
     markAdminVerified(user.id);
-    router.push("/admin/quizzes");
+    router.push("/admin/dashboard");
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 relative flex items-center justify-center p-4 overflow-hidden">
-      {/* Light page aurora */}
-      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 rounded-full filter blur-3xl" />
-      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 rounded-full filter blur-3xl" />
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative flex items-center justify-center p-4 overflow-hidden">
+      {/* Light page aurora — dimmed in dark mode */}
+      <div className="pointer-events-none fixed top-[-15%] left-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-emerald-200/50 dark:bg-emerald-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed bottom-[-15%] right-[-10%] w-80 h-80 sm:w-md sm:h-112 bg-teal-200/50 dark:bg-teal-500/10 rounded-full filter blur-3xl" />
+      <div className="pointer-events-none fixed top-[35%] right-[15%] w-72 h-72 bg-green-100/60 dark:bg-green-500/5 rounded-full filter blur-3xl" />
 
       <div className="relative w-full max-w-md">
         {/* ═══════════ DARK BANNER — like dashboard ═══════════ */}

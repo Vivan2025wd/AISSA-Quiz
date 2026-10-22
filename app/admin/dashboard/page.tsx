@@ -176,18 +176,18 @@ export default function AdminDashboardPage() {
 
   const statusBadge = (isLiveNow: boolean) =>
     isLiveNow ? (
-      <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-200 whitespace-nowrap">
+      <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-1 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-md border border-red-200 dark:border-red-800 whitespace-nowrap">
         <Radio className="w-3 h-3 animate-pulse" /> Live
       </span>
     ) : (
-      <span className="inline-block text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-1 bg-amber-50 text-amber-700 rounded-md border border-amber-200 whitespace-nowrap">
+      <span className="inline-block text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded-md border border-amber-200 dark:border-amber-800 whitespace-nowrap">
         Scheduled
       </span>
     );
 
   if (loading && quizzes.length === 0 && stats.totalQuestions === 0) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 text-sm">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 dark:text-gray-400 text-sm">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/loading-screen.png"
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
           className="w-20 h-20 sm:w-32 sm:h-32 object-contain animate-pulse"
         />
         <div className="flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />
           Loading Admin Dashboard...
         </div>
       </div>
@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {fetchError && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
           <span>⚠️</span>
           <span>{fetchError}</span>
         </div>
@@ -307,32 +307,32 @@ export default function AdminDashboardPage() {
 
       {/* ============ Stat cards — 2-col grid on mobile ============ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 shadow-sm hover:shadow-md transition">
-          <div className="p-2 sm:p-2.5 bg-emerald-50 text-emerald-600 w-fit rounded-lg mb-2 sm:mb-3">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition">
+          <div className="p-2 sm:p-2.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 w-fit rounded-lg mb-2 sm:mb-3">
             <FileQuestion className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium leading-tight">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
             ප්‍රශ්න ගණන
           </p>
-          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 mt-0.5 sm:mt-1">
+          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100 mt-0.5 sm:mt-1">
             {loading ? "…" : stats.totalQuestions}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1 wrap-break-word line-clamp-2">
+          <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 mt-1 wrap-break-word line-clamp-2">
             {loading ? "…" : subjectSummary}
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 shadow-sm hover:shadow-md transition">
-          <div className="p-2 sm:p-2.5 bg-teal-50 text-teal-600 w-fit rounded-lg mb-2 sm:mb-3">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition">
+          <div className="p-2 sm:p-2.5 bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 w-fit rounded-lg mb-2 sm:mb-3">
             <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium leading-tight">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
             Live / Upcoming
           </p>
-          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 mt-0.5 sm:mt-1">
+          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100 mt-0.5 sm:mt-1">
             {loading ? "…" : quizzes.length}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold mt-1 line-clamp-2">
+          <p className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 line-clamp-2">
             {loading
               ? "…"
               : liveNow.length > 0
@@ -343,64 +343,64 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 shadow-sm hover:shadow-md transition">
-          <div className="p-2 sm:p-2.5 bg-blue-50 text-blue-600 w-fit rounded-lg mb-2 sm:mb-3">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition">
+          <div className="p-2 sm:p-2.5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 w-fit rounded-lg mb-2 sm:mb-3">
             <Users className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium leading-tight">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
             ලියාපදිංචි සිසුන්
           </p>
-          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 mt-0.5 sm:mt-1">
+          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100 mt-0.5 sm:mt-1">
             {loading ? "…" : stats.totalStudents.toLocaleString()}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1">
+          <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 mt-1">
             දිවයින පුරා
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 shadow-sm hover:shadow-md transition">
-          <div className="p-2 sm:p-2.5 bg-amber-50 text-amber-600 w-fit rounded-lg mb-2 sm:mb-3">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-5 rounded-xl border border-white/70 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:border-slate-600 transition">
+          <div className="p-2 sm:p-2.5 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 w-fit rounded-lg mb-2 sm:mb-3">
             <School className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium leading-tight">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium leading-tight">
             සක්‍රිය පාසල්
           </p>
-          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 mt-0.5 sm:mt-1">
+          <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100 mt-0.5 sm:mt-1">
             {loading ? "…" : stats.activeSchools}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1">
+          <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 mt-1">
             Leaderboard
           </p>
         </div>
       </div>
 
       {/* ============ QUIZZES table — MOBILE-TIGHTENED ============ */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 p-3.5 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-white/70 dark:border-slate-700 p-3.5 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
         <div className="flex justify-between items-center gap-2">
-          <h2 className="text-sm sm:text-base font-bold text-gray-900">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
             Live Quizzes වල තත්ත්වය
           </h2>
           <Link
             href="/admin/quizzes"
-            className="text-[11px] sm:text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline transition whitespace-nowrap"
+            className="text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 hover:underline transition whitespace-nowrap"
           >
             සියල්ල <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="p-6 flex items-center justify-center text-gray-400 text-xs gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" /> Loading...
+          <div className="p-6 flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" /> Loading...
           </div>
         ) : orderedQuizzes.length === 0 ? (
-          <div className="p-5 sm:p-6 text-center text-gray-400 text-[11px] sm:text-xs">
+          <div className="p-5 sm:p-6 text-center text-gray-400 dark:text-gray-500 text-[11px] sm:text-xs">
             දැනට Live Quiz කිසිවක් නොමැත. Quiz එකක් Schedule කරන්න.
           </div>
         ) : (
           <>
             {/* -------- DESKTOP table (unchanged) -------- */}
-            <div className="hidden md:block divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden text-sm">
-              <div className="bg-emerald-50/80 backdrop-blur-sm p-3.5 font-bold text-xs uppercase text-emerald-900 grid grid-cols-4 gap-3">
+            <div className="hidden md:block divide-y divide-gray-100 dark:divide-slate-700 border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden text-sm">
+              <div className="bg-emerald-50/80 dark:bg-emerald-950/40 backdrop-blur-sm p-3.5 font-bold text-xs uppercase text-emerald-900 dark:text-emerald-200 grid grid-cols-4 gap-3">
                 <span>Subject & Topic</span>
                 <span>Scheduled Time</span>
                 <span>Questions</span>
@@ -411,20 +411,20 @@ export default function AdminDashboardPage() {
                 return (
                   <div
                     key={quiz.id}
-                    className="p-3.5 grid grid-cols-4 items-center gap-3 hover:bg-emerald-50/30 transition"
+                    className="p-3.5 grid grid-cols-4 items-center gap-3 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 transition"
                   >
                     <div className="min-w-0">
-                      <span className="text-xs font-bold text-emerald-600 block truncate">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block truncate">
                         {quiz.subject}
                       </span>
-                      <span className="font-semibold text-gray-800 truncate block">
+                      <span className="font-semibold text-gray-800 dark:text-gray-200 truncate block">
                         {quiz.title}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       {formatScheduledTime(quiz.scheduled_at)}
                     </span>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       {quiz.total_questions} MCQ
                     </span>
                     {statusBadge(isLiveNow)}
@@ -440,20 +440,20 @@ export default function AdminDashboardPage() {
                 return (
                   <div
                     key={quiz.id}
-                    className="p-3 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl space-y-1.5 hover:shadow-sm transition"
+                    className="p-3 bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-200 dark:border-slate-700 rounded-xl space-y-1.5 hover:shadow-sm transition"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] font-bold text-emerald-600 block uppercase tracking-wide">
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block uppercase tracking-wide">
                           {quiz.subject}
                         </span>
-                        <span className="text-sm font-semibold text-gray-900 block leading-snug line-clamp-2">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 block leading-snug line-clamp-2">
                           {quiz.title}
                         </span>
                       </div>
                       <div className="shrink-0">{statusBadge(isLiveNow)}</div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-500">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3 shrink-0" />
                         <span className="truncate">
