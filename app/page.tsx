@@ -133,7 +133,7 @@ export default function HomePage() {
           </div>
 
           <p className="text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed">
-            විද්‍යා විෂය සිසුන්ට සවියක් — ඔන්ලයින් ප්‍රශ්න පත්‍ර, ක්ෂණික ලකුණු සහ Real-time Leaderboards.
+            Empower your A/L Science journey with online quizzes, instant marks, and islandwide competition.
           </p>
 
           {!loading && (
