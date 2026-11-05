@@ -15,7 +15,6 @@ import {
   Target,
   Timer,
   AlertTriangle,
-  Hourglass,
   FlaskConical,
   Atom,
   Dna,
@@ -26,9 +25,9 @@ import {
 import {
   getQuizWindowStatus,
   msUntilEnd,
-  msUntilStart,
   formatCountdown,
 } from "@/lib/quiz-window";
+import UpcomingQuizzesTimetable from "@/components/UpcomingQuizzesTimetable";
 
 // ------------------------------------------------------------
 // Types
@@ -120,8 +119,8 @@ function allowedSubjectsForStream(
   const s = (stream ?? "").toLowerCase();
   if (s.includes("bio")) return ["physics", "chemistry", "biology"];
   if (s.includes("physical") || s.includes("maths"))
-    return ["physics", "chemistry"];
-  return ["physics", "chemistry", "biology"];
+    return ["physics", "chemistry", "ict"];
+  return [];
 }
 
 function formatDate(iso: string) {
@@ -214,11 +213,27 @@ function canStudentSeeQuiz(
   studentStream: string | null | undefined,
   studentSubjects: string | null | undefined,
   quizSubject: string | null | undefined,
+  quizStream: string | null | undefined,
 ): boolean {
-  if (!quizSubject) return true;
+  if (!quizSubject) return false;
   const key = subjectKeyOf(quizSubject);
-  if (!key) return true;
-  return allowedSubjectsForStream(studentStream, studentSubjects).includes(key);
+  const normalizeStream = (value: string) => {
+    const normalized = value.toLowerCase();
+    if (normalized.includes("bio")) return "bio";
+    if (normalized.includes("math") || normalized.includes("physical")) {
+      return "maths";
+    }
+    return normalized.trim();
+  };
+  const studentStreamKey = normalizeStream(studentStream ?? "");
+  if (!key) return false;
+  if (key === "ict" && studentStreamKey === "bio") return false;
+  if (key === "biology" && studentStreamKey === "maths") return false;
+  if (!allowedSubjectsForStream(studentStream, studentSubjects).includes(key)) {
+    return false;
+  }
+  if (!quizStream) return true;
+  return studentStreamKey === normalizeStream(quizStream);
 }
 
 function useLiveCountdown(
@@ -460,13 +475,18 @@ export default function StudentDashboard() {
     typeof stats?.average_score === "number" ? `${stats.average_score}%` : "N/A";
 
   const activeQuizzes: Quiz[] = [];
-  const upcomingQuizzes: Quiz[] = [];
   for (const q of quizzes) {
-    if (!canStudentSeeQuiz(profile?.stream, profile?.subjects, q.subject)) continue;
+    if (
+      !canStudentSeeQuiz(
+        profile?.stream,
+        profile?.subjects,
+        q.subject,
+        q.stream,
+      )
+    ) continue;
 
     const status = getQuizWindowStatus(q);
     if (status === "active" || status === "unscheduled") activeQuizzes.push(q);
-    else if (status === "upcoming") upcomingQuizzes.push(q);
   }
 
   const subjectTabs: { key: SubjectKey; label: string; count: number }[] = [
@@ -571,6 +591,15 @@ export default function StudentDashboard() {
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <Link
+              href="/student/profile"
+              className="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-300"
+            >
+              Update profile district
+            </Link>
+          </div>
+
           {debugWarning && (
             <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-xl flex items-start gap-2 shadow-sm">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -666,19 +695,7 @@ export default function StudentDashboard() {
             )}
           </section>
 
-          {/* ============ UPCOMING ============ */}
-          {upcomingQuizzes.length > 0 && (
-            <section className="space-y-3 sm:space-y-4">
-              <h2 className="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 sm:gap-2">
-                <Hourglass className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400 shrink-0" /> ඉදිරි Quizzes
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
-                {upcomingQuizzes.map((quiz) => (
-                  <UpcomingQuizCard key={quiz.id} quiz={quiz} />
-                ))}
-              </div>
-            </section>
-          )}
+          <UpcomingQuizzesTimetable />
 
           {/* ============ PAST quizzes — MOBILE-TIGHTENED ============ */}
           <section className="space-y-3 sm:space-y-4 pt-1 sm:pt-2">
@@ -1178,56 +1195,6 @@ function ActiveQuizCard({ quiz }: { quiz: Quiz }) {
       >
         Quiz එක ආරම්භ කරන්න <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </Link>
-    </div>
-  );
-}
-
-function UpcomingQuizCard({ quiz }: { quiz: Quiz }) {
-  const startsIn = useLiveCountdown(() => msUntilStart(quiz), [quiz]);
-
-  const startTime = quiz.scheduled_at
-    ? new Date(quiz.scheduled_at).toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
-
-  return (
-    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-6 rounded-xl border border-amber-200/70 dark:border-amber-800/70 shadow-sm space-y-2.5 sm:space-y-4 opacity-90">
-      <div className="flex justify-between items-start gap-2">
-        <span
-          className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded-md border ${subjectStyle(
-            quiz.subject,
-          )}`}
-        >
-          {quiz.subject}
-        </span>
-        <span className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
-          <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {quiz.duration_minutes}m
-        </span>
-      </div>
-      <div>
-        <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-          {quiz.title}
-        </h3>
-        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1 flex-wrap">
-          <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> {quiz.total_questions} ප්‍රශ්න
-          {quiz.stream ? ` • ${quiz.stream}` : ""}
-        </p>
-      </div>
-      <div className="text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
-        <Hourglass className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-        {startsIn ? `ආරම්භ වන තෙක්: ${startsIn}` : `ආරම්භය: ${startTime}`}
-      </div>
-      <button
-        type="button"
-        disabled
-        className="w-full py-2 sm:py-2.5 bg-gray-200/80 dark:bg-slate-700 text-gray-500 dark:text-gray-400 font-semibold rounded-lg flex justify-center items-center gap-1.5 sm:gap-2 cursor-not-allowed text-xs sm:text-sm"
-      >
-        <Hourglass className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> තවම ආරම්භ වී නැත
-      </button>
     </div>
   );
 }

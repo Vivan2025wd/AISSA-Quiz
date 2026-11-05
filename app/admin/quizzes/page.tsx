@@ -39,37 +39,29 @@ function derivedStreamForSubject(subject: string): string | null {
 }
 
 const START_BUFFER_MINUTES = 5;
+const COLOMBO_OFFSET = "+05:30";
+const COLOMBO_OFFSET_MINUTES = 330;
 
-function getDefaultDate(): string {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+function getDefaultColomboDateTime(): string {
+  const timestamp =
+    Date.now() +
+    START_BUFFER_MINUTES * 60_000 +
+    COLOMBO_OFFSET_MINUTES * 60_000;
+  return new Date(timestamp).toISOString().slice(0, 16);
 }
 
-function getDefaultTime(): string {
-  const d = new Date(Date.now() + START_BUFFER_MINUTES * 60_000);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+function isoToColomboDateTime(iso: string | null | undefined): string {
+  if (!iso) return getDefaultColomboDateTime();
+  const timestamp = new Date(iso).getTime();
+  if (!Number.isFinite(timestamp)) return getDefaultColomboDateTime();
+  return new Date(timestamp + COLOMBO_OFFSET_MINUTES * 60_000)
+    .toISOString()
+    .slice(0, 16);
 }
 
-function isoToLocalDateTime(iso: string | null | undefined): {
-  date: string;
-  time: string;
-} {
-  if (!iso) return { date: getDefaultDate(), time: getDefaultTime() };
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return { date: getDefaultDate(), time: getDefaultTime() };
-
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-
-  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${min}` };
+function colomboDateTimeToUtc(value: string): string | null {
+  const timestamp = new Date(`${value}:00${COLOMBO_OFFSET}`).getTime();
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
 }
 
 interface Quiz {
@@ -113,8 +105,9 @@ export default function AdminQuizzesPage() {
   const [subject, setSubject] = useState("Physics");
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(getDefaultDate());
-  const [startTime, setStartTime] = useState(getDefaultTime());
+  const [scheduledAtLocal, setScheduledAtLocal] = useState(
+    getDefaultColomboDateTime(),
+  );
   const [duration, setDuration] = useState("45");
   const [isLive, setIsLive] = useState(true);
 
@@ -124,12 +117,43 @@ export default function AdminQuizzesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [roleChecked, setRoleChecked] = useState(false);
 
   const derivedStream = derivedStreamForSubject(subject);
 
   useEffect(() => {
     fetchQuizzes();
+    void checkSuperAdmin();
   }, []);
+
+  async function checkSuperAdmin() {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) {
+      console.error("Could not verify scheduler role:", authError.message);
+      setRoleChecked(true);
+      return;
+    }
+    if (!user) {
+      setRoleChecked(true);
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("is_super_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError) {
+      console.error("Could not load scheduler role:", profileError.message);
+    } else {
+      setIsSuperAdmin(profile?.is_super_admin === true);
+    }
+    setRoleChecked(true);
+  }
 
   async function fetchQuizzes() {
     setLoading(true);
@@ -147,10 +171,10 @@ export default function AdminQuizzesPage() {
   }
 
   async function toggleQuizStatus(id: string, currentStatus: boolean) {
-    const { error } = await supabase
-      .from("quizzes")
-      .update({ is_live: !currentStatus })
-      .eq("id", id);
+    const { error } = await supabase.rpc("admin_set_quiz_live", {
+      p_quiz_id: id,
+      p_is_live: !currentStatus,
+    });
 
     if (error) {
       alert("Status update කිරීමට අපොහොසත් විය.");
@@ -224,8 +248,7 @@ export default function AdminQuizzesPage() {
   const resetForm = () => {
     setTopic("");
     setDescription("");
-    setDate(getDefaultDate());
-    setStartTime(getDefaultTime());
+    setScheduledAtLocal(getDefaultColomboDateTime());
     setDuration("45");
     setIsLive(true);
     setSelectedQuestionIds([]);
@@ -236,14 +259,25 @@ export default function AdminQuizzesPage() {
     setError("");
     setSuccess(false);
 
+    if (!isSuperAdmin) {
+      setError("Only a super admin can schedule quizzes.");
+      return;
+    }
+    if (!subject.trim() || !topic.trim()) {
+      setError("Subject, topic, and stream are required.");
+      return;
+    }
+    const scheduledAt = colomboDateTimeToUtc(scheduledAtLocal);
+    if (!scheduledAt || new Date(scheduledAt).getTime() <= Date.now()) {
+      setError("Schedule time must be in the future (Asia/Colombo time).");
+      return;
+    }
     if (selectedQuestionIds.length > 20) {
       setError("උපරිම ප්‍රශ්න 20ක් පමණක් Quiz එකකට තෝරාගත හැක.");
       return;
     }
 
     setIsSubmitting(true);
-
-    const scheduledAt = new Date(`${date}T${startTime}:00`).toISOString();
 
     const { data: createdQuiz, error: insertError } = await supabase
       .from("quizzes")
@@ -381,23 +415,30 @@ export default function AdminQuizzesPage() {
               <span className="truncate">Performance</span>
             </Link>
 
-            <button
-              onClick={() => setShowForm((v) => !v)}
-              className={`col-span-2 sm:col-auto px-2.5 sm:px-4 py-2 sm:py-2.5 font-bold rounded-xl text-[11px] sm:text-sm transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm ${
-                showForm
-                  ? "bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-100 border border-teal-400/30"
-                  : "bg-teal-500 text-slate-900 hover:bg-teal-400 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.01]"
-              }`}
-            >
-              {showForm ? <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> : <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
-              <span className="truncate">{showForm ? "Cancel" : "Create New Quiz"}</span>
-            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setShowForm((v) => !v)}
+                className={`col-span-2 sm:col-auto px-2.5 sm:px-4 py-2 sm:py-2.5 font-bold rounded-xl text-[11px] sm:text-sm transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm ${
+                  showForm
+                    ? "bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-100 border border-teal-400/30"
+                    : "bg-teal-500 text-slate-900 hover:bg-teal-400 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.01]"
+                }`}
+              >
+                {showForm ? <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> : <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
+                <span className="truncate">{showForm ? "Cancel" : "Create New Quiz"}</span>
+              </button>
+            )}
           </div>
+          {roleChecked && !isSuperAdmin && (
+            <p className="relative text-xs text-amber-200">
+              Quiz scheduling is available to super admins only.
+            </p>
+          )}
         </div>
       </div>
 
       {/* ═══ Scheduler Form — shrink-0 with capped height ═══ */}
-      {showForm && (
+      {showForm && isSuperAdmin && (
         <div className="shrink-0 md:max-h-[70vh] md:overflow-y-auto rounded-2xl">
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3.5 sm:p-6 md:p-8 rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm space-y-4 sm:space-y-6">
             <div>
@@ -430,6 +471,7 @@ export default function AdminQuizzesPage() {
                   </label>
                   <select
                     value={subject}
+                    required
                     onChange={(e) => {
                       setSubject(e.target.value);
                       setSelectedQuestionIds([]);
@@ -504,29 +546,15 @@ export default function AdminQuizzesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
-                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> දිනය
+                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Schedule time (Asia/Colombo)
                   </label>
                   <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                    disabled={isSubmitting}
-                    className="w-full p-2.5 sm:p-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
-                    <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> ආරම්භය
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    type="datetime-local"
+                    value={scheduledAtLocal}
+                    onChange={(e) => setScheduledAtLocal(e.target.value)}
                     required
                     disabled={isSubmitting}
                     className="w-full p-2.5 sm:p-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
@@ -705,6 +733,7 @@ export default function AdminQuizzesPage() {
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                               {new Date(quiz.scheduled_at).toLocaleString("en-GB", {
+                                timeZone: "Asia/Colombo",
                                 day: "2-digit",
                                 month: "short",
                                 hour: "2-digit",
@@ -727,12 +756,14 @@ export default function AdminQuizzesPage() {
                             <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> View
                           </button>
 
-                          <button
-                            onClick={() => setEditingQuiz(quiz)}
-                            className="text-[10px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 transition"
-                          >
-                            <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Edit
-                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => setEditingQuiz(quiz)}
+                              className="text-[10px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 transition"
+                            >
+                              <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Edit
+                            </button>
+                          )}
 
                           <Link
                             href={`/admin/quizzes/${quiz.id}/questions`}
@@ -937,21 +968,17 @@ function QuizEditModal({
         title: "",
         description: "",
         subject: "Physics",
-        date: getDefaultDate(),
-        time: getDefaultTime(),
+        scheduledAtLocal: getDefaultColomboDateTime(),
         duration: "45",
         isLive: true,
       };
     }
 
-    const { date: d, time: t } = isoToLocalDateTime(currentQuiz.scheduled_at);
-
     return {
       title: currentQuiz.title ?? "",
       description: currentQuiz.description ?? "",
       subject: currentQuiz.subject ?? "Physics",
-      date: d,
-      time: t,
+      scheduledAtLocal: isoToColomboDateTime(currentQuiz.scheduled_at),
       duration: String(currentQuiz.duration_minutes ?? 45),
       isLive: currentQuiz.is_live ?? true,
     };
@@ -961,8 +988,9 @@ function QuizEditModal({
   const [title, setTitle] = useState(initialForm.title);
   const [description, setDescription] = useState(initialForm.description);
   const [subject, setSubject] = useState(initialForm.subject);
-  const [date, setDate] = useState(initialForm.date);
-  const [time, setTime] = useState(initialForm.time);
+  const [scheduledAtLocal, setScheduledAtLocal] = useState(
+    initialForm.scheduledAtLocal,
+  );
   const [duration, setDuration] = useState(initialForm.duration);
   const [isLive, setIsLive] = useState(initialForm.isLive);
   const [isSaving, setIsSaving] = useState(false);
@@ -975,22 +1003,30 @@ function QuizEditModal({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!title.trim() || !subject.trim()) {
+      setError("Subject and title are required.");
+      return;
+    }
+    const scheduledAt = colomboDateTimeToUtc(scheduledAtLocal);
+    if (!scheduledAt || new Date(scheduledAt).getTime() <= Date.now()) {
+      setError("Schedule time must be in the future (Asia/Colombo time).");
+      return;
+    }
     setIsSaving(true);
 
-    const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
-
-    const { error: updateError } = await supabase
-      .from("quizzes")
-      .update({
-        title: title.trim(),
-        description: description.trim() || null,
-        subject,
-        stream: derivedStream,
-        scheduled_at: scheduledAt,
-        duration_minutes: parseInt(duration, 10),
-        is_live: isLive,
-      })
-      .eq("id", quiz.id);
+    const { error: updateError } = await supabase.rpc(
+      "super_admin_update_quiz_schedule",
+      {
+        p_quiz_id: quiz.id,
+        p_title: title.trim(),
+        p_description: description.trim() || null,
+        p_subject: subject,
+        p_stream: derivedStream,
+        p_scheduled_at: scheduledAt,
+        p_duration_minutes: Number.parseInt(duration, 10),
+        p_is_live: isLive,
+      },
+    );
 
     setIsSaving(false);
 
@@ -1058,6 +1094,7 @@ function QuizEditModal({
               </label>
               <select
                 value={subject}
+                required
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={isSaving}
                 className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
@@ -1121,29 +1158,15 @@ function QuizEditModal({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
-                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> දිනය
+                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Schedule time (Asia/Colombo)
               </label>
               <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                disabled={isSaving}
-                className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5 sm:mb-2">
-                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> ආරම්භය
-              </label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
+                type="datetime-local"
+                value={scheduledAtLocal}
+                onChange={(e) => setScheduledAtLocal(e.target.value)}
                 required
                 disabled={isSaving}
                 className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none disabled:opacity-60 transition"

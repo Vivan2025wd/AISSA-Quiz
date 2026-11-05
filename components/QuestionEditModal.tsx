@@ -16,6 +16,7 @@ import ImageUploadField from "@/components/ImageUploadField";
 
 export type EditableQuestion = {
   id: string;
+  question_code?: string | null;
   quiz_id?: string | null;
   subject?: string | null;
   stream?: string | null;

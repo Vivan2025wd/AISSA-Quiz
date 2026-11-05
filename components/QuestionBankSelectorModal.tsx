@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 export type BankQuestion = {
   id: string;
+  question_code?: string | null;
   subject?: string | null;
   stream?: string | null;
   topic: string | null;
@@ -37,9 +38,10 @@ interface QuestionBankSelectorModalProps {
   quizSubject?: string;
   quizStream?: string;
   maxLimit?: number;
+  quizId?: string;
 }
 
-const streams = ["All", "Common", "Bio Science"];
+const streams = ["All", "Common", "Bio Science", "Maths"];
 const subjects = ["All", "Physics", "Chemistry", "Biology", "ICT"];
 
 export default function QuestionBankSelectorModal({
@@ -52,6 +54,7 @@ export default function QuestionBankSelectorModal({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   quizStream: _quizStream,
   maxLimit = 20,
+  quizId,
 }: QuestionBankSelectorModalProps) {
   const [questions, setQuestions] = useState<BankQuestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,6 +66,7 @@ export default function QuestionBankSelectorModal({
   const [selectedStream, setSelectedStream] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
+  const [hideUsedQuestions, setHideUsedQuestions] = useState(false);
 
   const wasOpenRef = useRef(false);
 
@@ -76,6 +80,7 @@ export default function QuestionBankSelectorModal({
       setSelectedStream("All");
       setSearchQuery("");
       setSelectedTopic("");
+      setHideUsedQuestions(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -85,31 +90,52 @@ export default function QuestionBankSelectorModal({
     setLoadError(null);
 
     try {
-      // ✅ select("*") — column issues නැහැ
-      let query = supabase
-        .from("questions")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let data: BankQuestion[] = [];
+      let queryError: string | null = null;
 
-      if (selectedSubject && selectedSubject !== "All") {
-        query = query.eq("subject", selectedSubject);
+      if (hideUsedQuestions) {
+        const result = await supabase.rpc("get_unused_questions", {
+          p_quiz_id: quizId ?? null,
+        });
+        queryError = result.error?.message ?? null;
+        data = (result.data ?? []) as BankQuestion[];
+        if (!queryError) {
+          if (selectedSubject !== "All") {
+            data = data.filter((question) => question.subject === selectedSubject);
+          }
+          if (selectedStream === "Common") {
+            data = data.filter((question) => question.stream == null);
+          } else if (selectedStream !== "All") {
+            data = data.filter((question) => question.stream === selectedStream);
+          }
+        }
+      } else {
+        let query = supabase
+            .from("questions")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (selectedSubject !== "All") {
+          query = query.eq("subject", selectedSubject);
+        }
+        if (selectedStream === "Common") {
+          query = query.is("stream", null);
+        } else if (selectedStream !== "All") {
+          query = query.eq("stream", selectedStream);
+        }
+
+        const result = await query;
+        queryError = result.error?.message ?? null;
+        data = (result.data ?? []) as BankQuestion[];
       }
 
-      if (selectedStream === "Common") {
-        query = query.is("stream", null);
-      } else if (selectedStream && selectedStream !== "All") {
-        query = query.eq("stream", selectedStream);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("[Bank] Query error:", error);
-        setLoadError("Query error: " + error.message);
+      if (queryError) {
+        console.error("[Bank] Query error:", queryError);
+        setLoadError("Query error: " + queryError);
         setQuestions([]);
       } else {
-        console.log("[Bank] Loaded:", data?.length ?? 0, "questions");
-        setQuestions((data ?? []) as BankQuestion[]);
+        console.log("[Bank] Loaded:", data.length, "questions");
+        setQuestions(data);
       }
     } catch (err) {
       console.error("[Bank] Unexpected error:", err);
@@ -120,7 +146,7 @@ export default function QuestionBankSelectorModal({
     } finally {
       setLoading(false);
     }
-  }, [selectedSubject, selectedStream]);
+  }, [hideUsedQuestions, quizId, selectedSubject, selectedStream]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -139,7 +165,8 @@ export default function QuestionBankSelectorModal({
       const s = searchQuery.toLowerCase();
       const matchText = q.question_text?.toLowerCase().includes(s);
       const matchTopic = q.topic?.toLowerCase().includes(s);
-      if (!matchText && !matchTopic) return false;
+      const code = (q.question_code ?? q.id).toLowerCase();
+      if (!matchText && !matchTopic && !code.includes(s)) return false;
     }
     if (selectedTopic.trim()) {
       if (!q.topic?.toLowerCase().includes(selectedTopic.toLowerCase()))
@@ -305,6 +332,16 @@ export default function QuestionBankSelectorModal({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 transition"
               />
+
+              <label className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={hideUsedQuestions}
+                  onChange={(event) => setHideUsedQuestions(event.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                Hide Used Questions
+              </label>
             </div>
 
             <select
@@ -449,6 +486,9 @@ export default function QuestionBankSelectorModal({
                             {q.subject}
                           </span>
                         )}
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                          {q.question_code ?? q.id}
+                        </span>
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             q.stream

@@ -30,15 +30,16 @@ import {
   AISSA_DISTRICT_LABELS,
   type AissaDistrictCode,
   generateNonAissaId,
+  isAissaDistrictCode,
   validateAissaId,
 } from "@/lib/aissa-id";
-
-const sriLankanDistricts = [
-  "Colombo","Gampaha","Kalutara","Kandy","Matale","Nuwara Eliya","Galle",
-  "Matara","Hambantota","Jaffna","Kilinochchi","Mannar","Vavuniya",
-  "Mullaitivu","Batticaloa","Ampara","Trincomalee","Kurunegala","Puttalam",
-  "Anuradhapura","Polonnaruwa","Badulla","Monaragala","Ratnapura","Kegalle",
-];
+import {
+  DISTRICT_TO_AISSA_MAP,
+  getAissaDistrict,
+  isDistrict,
+  SRI_LANKAN_DISTRICTS,
+  type District,
+} from "@/lib/constants/districts";
 
 type StreamKey = "Biological Science" | "Maths";
 type SubjectCode = "physics" | "chemistry" | "biology" | "ict";
@@ -69,16 +70,32 @@ export default function StudentRegisterPage() {
   const [confirmedSchool, setConfirmedSchool] =
     useState<SchoolSuggestion | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    fullName: string;
+    email: string;
+    address: string;
+    district: District;
+    aissaDistrictCode: string;
+    school: string;
+    stream: StreamKey;
+    medium: Medium;
+    aissaIdInput: string;
+    aissaDistrict: AissaDistrictCode;
+    schoolYear: string;
+    studentNumber: string;
+    password: string;
+    confirmPassword: string;
+  }>({
     fullName: "",
     email: "",
     address: "",
-    district: sriLankanDistricts[0],
+    district: SRI_LANKAN_DISTRICTS[0],
+    aissaDistrictCode: getAissaDistrict(SRI_LANKAN_DISTRICTS[0]),
     school: "",
     stream: streams[0] as StreamKey,
     medium: "sinhala" as Medium,
     aissaIdInput: "",
-    aissaDistrict: "AWC" as AissaDistrictCode,
+    aissaDistrict: DISTRICT_TO_AISSA_MAP[SRI_LANKAN_DISTRICTS[0]],
     schoolYear: String(new Date().getFullYear()),
     studentNumber: "",
     password: "",
@@ -206,6 +223,17 @@ export default function StudentRegisterPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+    if (name === "district") {
+      if (!isDistrict(value)) return;
+      setFormData((prev) => ({
+        ...prev,
+        district: value,
+        aissaDistrictCode: DISTRICT_TO_AISSA_MAP[value],
+        aissaDistrict: DISTRICT_TO_AISSA_MAP[value],
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]:
@@ -277,6 +305,10 @@ export default function StudentRegisterPage() {
       setError("මුරපදය අඩුම තරමින් අක්ෂර 6ක් විය යුතුය!");
       return;
     }
+    if (!isAissaDistrictCode(formData.aissaDistrictCode.trim())) {
+      setError("Please enter a valid AISSA zone code.");
+      return;
+    }
 
     // ★ Block submit unless the school came from the dropdown.
     if (!confirmedSchool) {
@@ -322,7 +354,8 @@ export default function StudentRegisterPage() {
           stream: formData.stream,
           medium: formData.medium,
           ais_id: finalAisId,
-          aissa_district: effectiveAissaDistrict,
+          aissa_district: formData.aissaDistrictCode.trim().toUpperCase(),
+          aissa_zone_code: effectiveAissaDistrict,
           is_aissa_member: isAissaMember,
           school_year: isAissaMember ? null : Number(formData.schoolYear),
           student_number: isAissaMember
@@ -564,11 +597,27 @@ export default function StudentRegisterPage() {
                     disabled={isSubmitting}
                     className="w-full pl-10 pr-3 py-3 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none cursor-pointer disabled:opacity-60 transition"
                   >
-                    {sriLankanDistricts.map((d) => (
+                    {SRI_LANKAN_DISTRICTS.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
                 </div>
+                <input
+                  type="text"
+                  aria-label="AISSA zone code"
+                  value={formData.aissaDistrictCode}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      aissaDistrictCode: e.target.value,
+                    }))
+                  }
+                  disabled={isSubmitting}
+                  className="mt-2 w-full px-3 py-2.5 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium text-sm focus:ring-2 focus:ring-emerald-500 outline-none disabled:opacity-60"
+                />
+                <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                  AISSA zone code auto-fills from your residential district. You may override it.
+                </p>
               </div>
 
               {/* School */}

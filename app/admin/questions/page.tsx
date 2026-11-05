@@ -20,6 +20,7 @@ import { QuestionEditModal, type EditableQuestion } from "@/components/QuestionE
 
 const subjectFilters = ["All", "Physics", "Chemistry", "Biology", "ICT"];
 const streamFilters = ["All", "Common", "Bio Science", "Maths"];
+type QuestionSort = "recent" | "code";
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
@@ -29,6 +30,7 @@ export default function QuestionsPage() {
   const [filterSubject, setFilterSubject] = useState("All");
   const [filterStream, setFilterStream] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<QuestionSort>("recent");
 
   const [editingQuestion, setEditingQuestion] =
     useState<EditableQuestion | null>(null);
@@ -39,7 +41,7 @@ export default function QuestionsPage() {
     let query = supabase
       .from("questions")
       .select(
-        `id, subject, stream, topic, image_url, explanation_image_url,
+        `id, question_code, subject, stream, topic, image_url, explanation_image_url,
          question_text, option_1, option_2, option_3, option_4, option_5, explanation, correct_option,
          question_text_en, option_1_en, option_2_en, option_3_en, option_4_en, option_5_en, explanation_en,
          question_text_ta, option_1_ta, option_2_ta, option_3_ta, option_4_ta, option_5_ta, explanation_ta`,
@@ -89,7 +91,13 @@ export default function QuestionsPage() {
     const qText = q.question_text.toLowerCase();
     const topicText = (q.topic ?? "").toLowerCase();
     const search = searchQuery.toLowerCase();
-    return qText.includes(search) || topicText.includes(search);
+    const code = (q.question_code ?? q.id).toLowerCase();
+    return qText.includes(search) || topicText.includes(search) || code.includes(search);
+  }).sort((a, b) => {
+    if (sortBy === "code") {
+      return (a.question_code ?? a.id).localeCompare(b.question_code ?? b.id);
+    }
+    return 0;
   });
 
   // ============================================================
@@ -197,13 +205,13 @@ export default function QuestionsPage() {
       )}
 
       {/* ═══ Filter Bar — MOBILE-TIGHTENED ═══ */}
-      <div className="shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+      <div className="shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {/* Search — spans both columns on mobile */}
         <div className="relative col-span-2 sm:col-span-1">
           <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-3 sm:top-3.5" />
           <input
             type="text"
-            placeholder="Search by text or topic..."
+            placeholder="Search by code, text or topic..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2.5 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
@@ -221,6 +229,20 @@ export default function QuestionsPage() {
                 Subject: {s}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={sortBy}
+            onChange={(e) =>
+              setSortBy(e.target.value === "code" ? "code" : "recent")
+            }
+            aria-label="Sort questions"
+            className="w-full px-2 sm:px-3 py-2.5 bg-white/60 dark:bg-slate-900/60 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="recent">Sort: Recently added</option>
+            <option value="code">Sort: Question code</option>
           </select>
         </div>
 
@@ -267,7 +289,7 @@ export default function QuestionsPage() {
         ) : (
           <>
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
-              {filteredQuestions.map((q, idx) => {
+              {filteredQuestions.map((q) => {
                 const optionsList = [
                   q.option_1,
                   q.option_2,
@@ -296,7 +318,7 @@ export default function QuestionsPage() {
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           <span className="px-1.5 sm:px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs font-bold rounded-md">
-                            #{idx + 1}
+                            {q.question_code ?? q.id}
                           </span>
                           {q.subject && (
                             <span className="px-1.5 sm:px-2 py-0.5 bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 text-[10px] sm:text-xs font-bold rounded-md border border-teal-200 dark:border-teal-800">

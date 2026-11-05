@@ -291,6 +291,18 @@ Creates `quiz_answers` (one row per question per submission) with RLS policies s
 
 Runs 67 curated Sri Lankan schools with their districts as `on conflict (name) do nothing`.
 
+### 6. District, question-code, used-question, and timetable migrations
+
+After the master schema, dashboard/helper, and super-admin SQL are installed, run
+the timestamped files in `supabase/migrations/` in filename order. They add:
+
+- Zone-code `profiles.aissa_district` auto-fill from residential district; the
+  AISSA ID zone code remains separately stored in `profiles.aissa_zone_code`.
+- Per-subject question codes, counters, and the deterministic null-only backfill.
+- `get_unused_questions(p_quiz_id)` for the Admin Question Bank selector.
+- Student quiz-eligibility policies and the `get_upcoming_quizzes_for_user()`
+  timetable RPC. Schedule creation and schedule-field edits are super-admin-only.
+
 > ⚠️ **Before deploying to production**: replace `'AISSA2026ADMIN'` in the admin-secrets insert with your own secret code, and re-run the migration.
 
 ---

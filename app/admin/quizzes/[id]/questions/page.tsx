@@ -103,16 +103,28 @@ export default function ManageQuizQuestionsPage() {
     )
       return;
 
-    await supabase
+    const { error: removeError } = await supabase
       .from("quiz_questions")
       .delete()
       .eq("quiz_id", quizId)
       .eq("question_id", questionId);
 
-    await supabase
-      .from("quizzes")
-      .update({ total_questions: Math.max(0, questions.length - 1) })
-      .eq("id", quizId);
+    if (removeError) {
+      alert("Could not remove question from quiz: " + removeError.message);
+      return;
+    }
+
+    const { error: countError } = await supabase.rpc(
+      "admin_set_quiz_question_count",
+      {
+        p_quiz_id: quizId,
+        p_total_questions: Math.max(0, questions.length - 1),
+      },
+    );
+    if (countError) {
+      alert("Could not update quiz question count: " + countError.message);
+      return;
+    }
 
     loadData();
   };
@@ -125,7 +137,15 @@ export default function ManageQuizQuestionsPage() {
 
     setLoading(true);
 
-    await supabase.from("quiz_questions").delete().eq("quiz_id", quizId);
+    const { error: deleteError } = await supabase
+      .from("quiz_questions")
+      .delete()
+      .eq("quiz_id", quizId);
+    if (deleteError) {
+      setLoading(false);
+      alert("Could not replace quiz questions: " + deleteError.message);
+      return;
+    }
 
     if (selectedIds.length > 0) {
       const rows = selectedIds.map((qId, idx) => ({
@@ -133,13 +153,28 @@ export default function ManageQuizQuestionsPage() {
         question_id: qId,
         order_index: idx + 1,
       }));
-      await supabase.from("quiz_questions").insert(rows);
+      const { error: insertError } = await supabase
+        .from("quiz_questions")
+        .insert(rows);
+      if (insertError) {
+        setLoading(false);
+        alert("Could not save quiz questions: " + insertError.message);
+        return;
+      }
     }
 
-    await supabase
-      .from("quizzes")
-      .update({ total_questions: selectedIds.length })
-      .eq("id", quizId);
+    const { error: countError } = await supabase.rpc(
+      "admin_set_quiz_question_count",
+      {
+        p_quiz_id: quizId,
+        p_total_questions: selectedIds.length,
+      },
+    );
+    if (countError) {
+      setLoading(false);
+      alert("Could not update quiz question count: " + countError.message);
+      return;
+    }
 
     setLoading(false);
     loadData();
@@ -449,6 +484,7 @@ export default function ManageQuizQuestionsPage() {
         onConfirmSelection={handleBankSelectionConfirm}
         quizSubject={quiz.subject}
         quizStream={quiz.stream || undefined}
+        quizId={quizId}
         maxLimit={20}
       />
 
