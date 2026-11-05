@@ -27,7 +27,8 @@ import {
   msUntilEnd,
   formatCountdown,
 } from "@/lib/quiz-window";
-import UpcomingQuizzesTimetable from "@/components/UpcomingQuizzesTimetable";
+import WeeklyTimetable from "@/components/WeeklyTimetable";
+import WeeklyTimetableCard from "@/components/WeeklyTimetableCard";
 
 // ------------------------------------------------------------
 // Types
@@ -695,7 +696,9 @@ export default function StudentDashboard() {
             )}
           </section>
 
-          <UpcomingQuizzesTimetable />
+          <WeeklyTimetableCard />
+
+          <WeeklyTimetable />
 
           {/* ============ PAST quizzes — MOBILE-TIGHTENED ============ */}
           <section className="space-y-3 sm:space-y-4 pt-1 sm:pt-2">

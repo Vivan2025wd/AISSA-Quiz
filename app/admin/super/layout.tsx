@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   School,
+  CalendarDays,
   ArrowLeft,
   Crown,
   ShieldCheck,
@@ -27,6 +28,7 @@ export default function SuperAdminLayout({
     { name: "Overview", href: "/admin/super/dashboard", icon: LayoutDashboard },
     { name: "Administrators", href: "/admin/super/admins", icon: Users },
     { name: "Schools Directory", href: "/admin/super/schools", icon: School },
+    { name: "Weekly Syllabus", href: "/admin/super/timetable", icon: CalendarDays },
   ];
 
   // Lock body scroll while the mobile drawer is open
