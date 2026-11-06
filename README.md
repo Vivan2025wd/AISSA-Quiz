@@ -303,6 +303,12 @@ the timestamped files in `supabase/migrations/` in filename order. They add:
 - Student quiz-eligibility policies and the `get_upcoming_quizzes_for_user()`
   timetable RPC. Schedule creation and schedule-field edits are super-admin-only.
 
+The `20261106190000_question_codes_and_used_question_filter.sql` migration
+updates question-code generation to reuse the smallest missing per-subject
+number and adds the server-side `get_unused_questions(p_quiz_id, p_subject,
+p_stream)` selector query. Apply it after the earlier question-code and used-
+question migrations.
+
 > ⚠️ **Before deploying to production**: replace `'AISSA2026ADMIN'` in the admin-secrets insert with your own secret code, and re-run the migration.
 
 ---

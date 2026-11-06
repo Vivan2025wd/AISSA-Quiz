@@ -96,19 +96,11 @@ export default function QuestionBankSelectorModal({
       if (hideUsedQuestions) {
         const result = await supabase.rpc("get_unused_questions", {
           p_quiz_id: quizId ?? null,
+          p_subject: selectedSubject === "All" ? null : selectedSubject,
+          p_stream: selectedStream === "All" ? null : selectedStream,
         });
         queryError = result.error?.message ?? null;
         data = (result.data ?? []) as BankQuestion[];
-        if (!queryError) {
-          if (selectedSubject !== "All") {
-            data = data.filter((question) => question.subject === selectedSubject);
-          }
-          if (selectedStream === "Common") {
-            data = data.filter((question) => question.stream == null);
-          } else if (selectedStream !== "All") {
-            data = data.filter((question) => question.stream === selectedStream);
-          }
-        }
       } else {
         let query = supabase
             .from("questions")
