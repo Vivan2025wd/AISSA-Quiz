@@ -24,6 +24,9 @@ type QuestionSort = "recent" | "code";
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
+  // ✅ Total count from the database
+  const [totalQuestionsCount, setTotalQuestionsCount] = useState(0);
+  
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -38,6 +41,16 @@ export default function QuestionsPage() {
   const loadQuestions = useCallback(async () => {
     setLoading(true);
 
+    // ✅ 1. Fetch exact total count (bypasses the 1000 row limit)
+    const { count, error: countError } = await supabase
+      .from("questions")
+      .select("*", { count: "exact", head: true });
+
+    if (!countError && count !== null) {
+      setTotalQuestionsCount(count);
+    }
+
+    // 2. Fetch the actual questions list
     let query = supabase
       .from("questions")
       .select(
@@ -101,7 +114,7 @@ export default function QuestionsPage() {
   });
 
   // ============================================================
-  // Loading Screen — sized to fit the fixed layout shell
+  // Loading Screen
   // ============================================================
   if (loading && questions.length === 0) {
     return (
@@ -123,7 +136,7 @@ export default function QuestionsPage() {
   return (
     <div className="max-w-6xl mx-auto md:max-h-[calc(100vh-3rem)] flex flex-col gap-4 sm:gap-5">
 
-      {/* ═══ Header Banner — MOBILE-TIGHTENED ═══ */}
+      {/* ═══ Header Banner ═══ */}
       <div className="shrink-0 relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 via-slate-800 to-black text-white shadow-xl shadow-black/40 border border-slate-700/50">
         <div
           className="absolute inset-0 opacity-[0.15] pointer-events-none"
@@ -176,22 +189,35 @@ export default function QuestionsPage() {
             </div>
           </div>
 
-          {/* Add button — full-width on mobile, self-start on desktop */}
-          <button
-            onClick={() => setShowAddForm((prev) => !prev)}
-            className={`mt-4 sm:mt-5 w-full sm:w-auto sm:self-start px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm transition shadow-lg flex items-center justify-center gap-2 ${
-              showAddForm
-                ? "bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-200 border border-teal-400/30"
-                : "bg-teal-500 text-slate-900 hover:bg-teal-400 hover:shadow-teal-500/30 hover:scale-[1.01]"
-            }`}
-          >
-            {showAddForm ? <X className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
-            {showAddForm ? "Cancel" : "Add New Question"}
-          </button>
+          {/* ✅ Prominent Count & Add Button Row */}
+          <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full">
+            <button
+              onClick={() => setShowAddForm((prev) => !prev)}
+              className={`w-full sm:w-auto px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm transition shadow-lg flex items-center justify-center gap-2 shrink-0 ${
+                showAddForm
+                  ? "bg-teal-500/15 hover:bg-teal-500/25 backdrop-blur-md text-teal-200 border border-teal-400/30"
+                  : "bg-teal-500 text-slate-900 hover:bg-teal-400 hover:shadow-teal-500/30 hover:scale-[1.01]"
+              }`}
+            >
+              {showAddForm ? <X className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
+              {showAddForm ? "Cancel" : "Add New Question"}
+            </button>
+
+            {/* Highlighted Total Count Badge */}
+            <div className="w-full sm:w-auto flex items-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl px-4 py-1.5 shadow-inner">
+              <div className="p-1.5 bg-teal-500/20 rounded-lg">
+                <FileQuestion className="w-4 h-4 text-teal-300" />
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-medium leading-none mb-1 uppercase tracking-wider">Total Questions</p>
+                <p className="text-lg font-extrabold text-teal-300 leading-none">{totalQuestionsCount}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ═══ Inline Add Form — shrink-0 with capped height + its own scroll ═══ */}
+      {/* ═══ Inline Add Form ═══ */}
       {showAddForm && (
         <div className="shrink-0 md:max-h-[60vh] md:overflow-y-auto rounded-2xl">
           <QuestionEntryForm
@@ -204,9 +230,9 @@ export default function QuestionsPage() {
         </div>
       )}
 
-      {/* ═══ Filter Bar — MOBILE-TIGHTENED ═══ */}
+      {/* ═══ Filter Bar ═══ */}
       <div className="shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        {/* Search — spans both columns on mobile */}
+        {/* Search */}
         <div className="relative col-span-2 sm:col-span-1">
           <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-3 sm:top-3.5" />
           <input
@@ -261,20 +287,22 @@ export default function QuestionsPage() {
         </div>
       </div>
 
-      {/* ═══ Questions List — flex-1 + min-h-0 so ONLY this scrolls ═══ */}
+      {/* ═══ Questions List ═══ */}
       <div className="flex-1 min-h-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-white/70 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
         {/* Header strip */}
-        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
-          <h2 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100">
-            ප්‍රශ්න ලැයිස්තුව{" "}
-            <span className="text-emerald-700 dark:text-emerald-400">
-              ({filteredQuestions.length})
+        <div className="shrink-0 px-3.5 sm:px-5 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2 bg-gray-50/50 dark:bg-slate-800/50">
+          <h2 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            ප්‍රශ්න ලැයිස්තුව
+            <span className="text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+              {filteredQuestions.length} පෙන්වයි
             </span>
           </h2>
-          <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-            <span className="hidden sm:inline">Total in Bank: </span>
-            <strong className="text-gray-600 dark:text-gray-300">{questions.length}</strong>
-          </span>
+          
+          {/* ✅ Secondary Highlight for Total Count */}
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm whitespace-nowrap">
+            <span className="hidden sm:inline font-medium text-gray-500 dark:text-gray-400">Total Bank:</span>
+            <strong className="text-sm sm:text-base font-extrabold text-teal-600 dark:text-teal-400">{totalQuestionsCount}</strong>
+          </div>
         </div>
 
         {loading ? (
@@ -374,7 +402,7 @@ export default function QuestionsPage() {
                       </div>
                     )}
 
-                    {/* Options — 1-col on mobile (already), tighter padding */}
+                    {/* Options */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-gray-200/60 dark:border-slate-700">
                       {optionsList.map((opt, optIdx) => {
                         const isCorrect = q.correct_option === optIdx;

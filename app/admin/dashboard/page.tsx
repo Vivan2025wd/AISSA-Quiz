@@ -67,6 +67,7 @@ export default function AdminDashboardPage() {
     setFetchError(null);
 
     try {
+      // 1. Fetch Live Quizzes
       const { data: quizData, error: quizError } = await supabase
         .from("quizzes")
         .select(
@@ -85,28 +86,36 @@ export default function AdminDashboardPage() {
         setQuizzes((quizData as Quiz[]) ?? []);
       }
 
+      // 2. Fetch Questions Count (Fixed: Using count: 'exact' to bypass 1000-row limit)
+      const { count: qCount, error: qCountError } = await supabase
+        .from("questions")
+        .select("*", { count: "exact", head: true });
+
+      // 3. Fetch Questions by Subject (For the summary text)
+      // Note: If you have over 1000 questions, this will only grab up to 1000 for the breakdown. 
+      // The total count above will still be accurate.
       const { data: questionRows, error: questionError } = await supabase
         .from("questions")
         .select("subject");
 
-      let totalQuestions = 0;
+      const totalQuestions = qCount ?? 0;
       const questionsBySubject: Record<string, number> = {};
 
-      if (questionError) {
-        console.error("Error fetching questions:", questionError);
+      if (qCountError || questionError) {
+        console.error("Error fetching questions:", qCountError || questionError);
         setFetchError(
           (prev) =>
             prev ??
-            "ප්‍රශ්න load කිරීමේදී දෝෂයක් ඇති විය: " + questionError.message,
+            "ප්‍රශ්න load කිරීමේදී දෝෂයක් ඇති විය: " + (qCountError?.message || questionError?.message),
         );
       } else if (questionRows) {
-        totalQuestions = questionRows.length;
         for (const row of questionRows as { subject: string | null }[]) {
           const subj = row.subject?.trim() || "Other";
           questionsBySubject[subj] = (questionsBySubject[subj] || 0) + 1;
         }
       }
 
+      // 4. Fetch Student Count
       const { count: studentCount, error: studentError } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
@@ -116,6 +125,7 @@ export default function AdminDashboardPage() {
         console.error("Error fetching student count:", studentError);
       }
 
+      // 5. Fetch Active Schools
       const { data: schoolRows, error: schoolError } = await supabase
         .from("profiles")
         .select("school")
